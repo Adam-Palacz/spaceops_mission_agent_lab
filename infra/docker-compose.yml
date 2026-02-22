@@ -1,21 +1,22 @@
 # SpaceOps Mission Agent Lab — local stack
 # Postgres+pgvector, OTel Collector, Jaeger. Single-command run (goals.md §4.5).
 # Run from repo root: docker compose -f infra/docker-compose.yml up -d
+# .env in repo root is loaded automatically; POSTGRES_* and POSTGRES_PORT override defaults below.
 
 services:
   postgres:
     image: pgvector/pgvector:pg15
     container_name: spaceops-postgres
     environment:
-      POSTGRES_USER: spaceops
-      POSTGRES_PASSWORD: spaceops
-      POSTGRES_DB: spaceops
+      POSTGRES_USER: ${POSTGRES_USER:-spaceops}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-spaceops}
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U spaceops -d spaceops"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-spaceops} -d ${POSTGRES_DB:-spaceops}"]
       interval: 5s
       timeout: 5s
       retries: 5

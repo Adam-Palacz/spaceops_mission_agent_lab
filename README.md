@@ -9,6 +9,11 @@ Agent for satellite / ground segment anomaly triage, automatic action checklists
 - **[roadmap_F1.md](roadmap_F1.md)** ? Sprints (S1, S2), Phase 4 hardening, tasks.
 - **[docs/diagrams.md](docs/diagrams.md)** ? Mermaid diagrams: pipeline, architecture, state flow, Act flow, roadmap, requirements, audit schema, repo structure, MoE/MoP.
 
+## Environment (secure)
+
+- Copy **.env.example** to **.env** and set values (e.g. `OPENAI_API_KEY`). Do not commit `.env` (it is in `.gitignore`).
+- All apps load `.env` from repo root via `config.settings`; secrets stay out of shell history.
+
 ## Quick start (when implemented)
 
 ```bash

@@ -11,7 +11,7 @@ from pathlib import Path
 import httpx
 
 from config import settings
-from apps.agent.state import AgentState, Citation, PlanStep
+from apps.agent.state import AgentState, Citation, EscalationPacket, PlanStep
 from apps.agent.mcp_client import (
     call_telemetry,
     call_search_runbooks,
@@ -118,6 +118,64 @@ def investigate(state: AgentState) -> dict:
     return {"hypotheses": hypotheses, "citations": citations}
 
 
+def _should_escalate(state: AgentState) -> tuple[bool, str]:
+    """Return (escalate, reason). Conditions: no evidence, high risk + no citations, conflicting signals (F10)."""
+    hypotheses = state.get("hypotheses") or []
+    citations = state.get("citations") or []
+    risk = (state.get("risk") or "").lower()
+    # No evidence: only the fallback "No telemetry or KB hits" or no citations
+    no_evidence = not citations or (
+        len(hypotheses) == 1 and "No telemetry or KB hits" in (hypotheses[0] or "")
+    )
+    if no_evidence:
+        return True, "no_evidence"
+    # High risk with no supporting citations
+    if risk == "high" and len(citations) == 0:
+        return True, "high_risk_no_evidence"
+    # Conflicting signals: both "anomaly" and "normal" or "within limits" in hypotheses (simple heuristic)
+    text = " ".join(hypotheses).lower()
+    if "anomaly" in text and ("normal" in text or "within limits" in text):
+        return True, "conflicting_signals"
+    return False, ""
+
+
+def check_escalation(state: AgentState) -> dict:
+    """S1.8: Evaluate escalation conditions; if met, set escalation_packet (F10)."""
+    escalated, reason = _should_escalate(state)
+    if not escalated:
+        return {"escalated": False, "escalation_packet": {}}
+    incident_id = state.get("incident_id") or "unknown"
+    subsystem = state.get("subsystem") or ""
+    risk = state.get("risk") or ""
+    hypotheses = state.get("hypotheses") or []
+    citations = state.get("citations") or []
+    packet: EscalationPacket = {
+        "reason": reason,
+        "what_we_know": [
+            f"Incident {incident_id}",
+            f"Subsystem: {subsystem}, risk: {risk}",
+            f"Investigation produced {len(hypotheses)} note(s), {len(citations)} citation(s).",
+        ],
+        "what_we_dont_know": [
+            "Root cause not confirmed (insufficient evidence or conflicting signals).",
+            "Recommend manual review of telemetry and ground logs for the time window.",
+        ],
+        "what_to_check": [
+            "Verify time range and channels in payload match ingested data.",
+            "Check MCP Telemetry and KB servers are running if expecting runbook/postmortem hits.",
+            "Review raw telemetry and events for the incident window.",
+        ],
+    }
+    if reason == "no_evidence":
+        packet["what_we_dont_know"] = [
+            "No telemetry or KB retrieval results; cannot ground plan in evidence.",
+            "Manual review required to confirm anomaly and next steps.",
+        ]
+    elif reason == "conflicting_signals":
+        packet["what_to_check"].insert(0, "Resolve conflicting hypotheses (anomaly vs normal) with additional data.")
+    return {"escalated": True, "escalation_packet": packet}
+
+
 def decide(state: AgentState) -> dict:
     """Produce plan; each step must reference at least one doc_id or snippet_id (NF5a)."""
     hypotheses = state.get("hypotheses") or []
@@ -156,22 +214,31 @@ Output only the JSON array, no markdown."""
 
 
 def report(state: AgentState) -> dict:
-    """Format summary, evidence, actions, rollback, trace link."""
+    """Format summary, evidence, actions, rollback, trace link. Include escalation packet when escalated (F10)."""
     incident_id = state.get("incident_id") or "unknown"
     subsystem = state.get("subsystem") or ""
     risk = state.get("risk") or ""
     hypotheses = state.get("hypotheses") or []
     citations = state.get("citations") or []
     plan = state.get("plan") or []
+    escalated = state.get("escalated") or False
+    escalation_packet = state.get("escalation_packet") or {}
     trace_url = f"{settings.jaeger_ui_url}/trace/{incident_id}"  # placeholder; real trace in S1.10
     cite_refs = list({c.get("doc_id") or c.get("snippet_id") for c in citations if c.get("doc_id") or c.get("snippet_id")})
-    report_obj = {
+    report_obj: dict = {
         "incident_id": incident_id,
-        "executive_summary": f"Incident {incident_id}: subsystem={subsystem}, risk={risk}. {len(hypotheses)} investigation notes.",
+        "executive_summary": (
+            f"[ESCALATION] Incident {incident_id}: handoff to human. Reason: {escalation_packet.get('reason', 'unknown')}."
+            if escalated
+            else f"Incident {incident_id}: subsystem={subsystem}, risk={risk}. {len(hypotheses)} investigation notes."
+        ),
         "evidence": [{"hypothesis": h} for h in hypotheses[:5]],
         "citation_refs": cite_refs,
         "proposed_actions": [p.get("action", "") for p in plan if isinstance(p, dict)],
         "rollback": "Revert config changes via ops-config PR; no automated rollback in MVP.",
         "trace_link": trace_url,
     }
+    if escalated:
+        report_obj["escalation_packet"] = escalation_packet
+        report_obj["handoff"] = "Agent could not proceed with confidence; manual review required. See escalation_packet."
     return {"report": report_obj}

@@ -1,0 +1,49 @@
+# SpaceOps Mission Agent Lab — local stack
+# Postgres+pgvector, OTel Collector, Jaeger. Single-command run (goals.md §4.5).
+# Run from repo root: docker compose -f infra/docker-compose.yml up -d
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg15
+    container_name: spaceops-postgres
+    environment:
+      POSTGRES_USER: spaceops
+      POSTGRES_PASSWORD: spaceops
+      POSTGRES_DB: spaceops
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U spaceops -d spaceops"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.96.0
+    container_name: spaceops-otel-collector
+    command: ["--config=/etc/otel-collector.yaml"]
+    volumes:
+      - ./otel-collector.yaml:/etc/otel-collector.yaml:ro
+    ports:
+      - "4317:4317"   # OTLP gRPC (agent/API send here in S1.10)
+      - "4318:4318"   # OTLP HTTP
+    depends_on:
+      jaeger:
+        condition: service_started
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.55
+    container_name: spaceops-jaeger
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+    ports:
+      - "16686:16686"   # Query UI (http://localhost:16686)
+    # OTLP 4317/4318 used internally by otel-collector -> jaeger; no host expose needed
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_data:

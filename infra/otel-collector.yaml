@@ -1,0 +1,26 @@
+# OpenTelemetry Collector — receive from agent/API (OTLP), export to Jaeger.
+# Used by docker-compose; agent/API will send traces to otel-collector:4317 (S1.10).
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  batch: {}
+
+exporters:
+  otlp/jaeger:
+    endpoint: jaeger:4317
+    tls:
+      insecure: true
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlp/jaeger]

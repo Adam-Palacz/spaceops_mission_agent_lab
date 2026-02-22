@@ -1,0 +1,3 @@
+{"ts": "2025-02-14T09:59:00Z", "source": "ground-station-1", "level": "info", "message": "Track start pass 12345"}
+{"ts": "2025-02-14T10:00:00Z", "source": "ground-station-1", "level": "warn", "message": "Telemetry gap 2s on channel bus_voltage"}
+{"ts": "2025-02-14T10:01:00Z", "source": "ops", "level": "info", "message": "Anomaly review triggered"}

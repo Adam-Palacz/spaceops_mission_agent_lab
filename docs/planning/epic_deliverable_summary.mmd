@@ -1,0 +1,10 @@
+flowchart TB
+    E0[E0: Core pipeline]
+    E1[E1: Act + policy + safety]
+    E2[E2: Hardening]
+
+    E0 --> D1["S1: Ingest → Report + evals + OTel + escalation"]
+    E1 --> D2["S2: Act + OPA + approvals + injection suite + dashboards"]
+    E2 --> D3["Phase 4: Docs, runbooks, expanded evals, UI"]
+
+    D1 --> D2 --> D3

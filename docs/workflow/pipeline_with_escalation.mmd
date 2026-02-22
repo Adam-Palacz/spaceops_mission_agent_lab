@@ -1,0 +1,15 @@
+flowchart TB
+    IN[Ingest: NDJSON → validate → persist]
+    IN --> TRI[Triage: subsystem + risk]
+
+    TRI --> INV[Investigate: Telemetry + KB MCP, citations]
+    INV --> DEC[Decide: plan safe + restricted]
+
+    DEC --> CHECK{Confidence / evidence /<br/>timeout / OPA error?}
+    CHECK -->|Yes| ESC[Escalation packet:<br/>what we know, what we don't,<br/>what to check]
+    CHECK -->|No| ACT[Act: safe execute;<br/>restricted → OPA → approval]
+
+    ACT --> RPT[Report: summary, evidence,<br/>actions, rollback, trace link]
+    ESC --> RPT
+
+    RPT --> POST[Post-incident: postmortem → KB → eval]

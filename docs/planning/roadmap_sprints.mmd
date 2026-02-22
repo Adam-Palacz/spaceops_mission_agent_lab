@@ -1,0 +1,22 @@
+flowchart LR
+    subgraph S1["Sprint 1 (Weeks 1–2)"]
+        S1A[Repo + Docker + ingest]
+        S1B[Triage → Investigate → Decide → Report]
+        S1C[Telemetry + KB MCP]
+        S1D[Evals + OTel + audit log]
+        S1E[Escalation packet]
+    end
+
+    subgraph S2["Sprint 2 (Weeks 3–4)"]
+        S2A[Act: safe + restricted]
+        S2B[Ticketing + GitOps MCP]
+        S2C[OPA fail-closed + approvals]
+        S2D[Injection suite + dashboards]
+    end
+
+    subgraph P4["Phase 4 (Hardening)"]
+        P4A[Docs + runbooks]
+        P4B[Expanded evals + optional UI]
+    end
+
+    S1 --> S2 --> P4

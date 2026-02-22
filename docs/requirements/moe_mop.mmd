@@ -1,0 +1,15 @@
+flowchart TB
+    subgraph MoE["Measures of Effectiveness"]
+        MoE1[Triage accuracy @ top-1 / top-2]
+        MoE2[Citation precision]
+        MoE3[Unsafe-action rate = 0]
+        MoE4[Escalation correctness]
+    end
+
+    subgraph MoP["Measures of Performance"]
+        MoP1[Mean latency per incident]
+        MoP2[Tool-call count per run]
+    end
+
+    MoE --> Evals[Evals + CI]
+    MoP --> Dashboard[Grafana dashboard]

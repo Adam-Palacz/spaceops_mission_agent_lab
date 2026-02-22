@@ -1,0 +1,13 @@
+stateDiagram-v2
+    [*] --> Triage
+    Triage --> Investigate: incident_id, subsystem, risk
+    Investigate --> Decide: hypotheses, citations (doc_id / snippet)
+    Decide --> Act: plan (safe + restricted)
+    Act --> Report: executed + approval_requests
+    Report --> [*]
+
+    Triage --> Escalation: low confidence / timeout
+    Investigate --> Escalation: no evidence / conflict
+    Decide --> Escalation: policy deny
+    Act --> Escalation: OPA error/timeout
+    Escalation --> Report: escalation_packet

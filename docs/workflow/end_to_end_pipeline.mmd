@@ -1,0 +1,27 @@
+flowchart LR
+    subgraph In["0. Ingest"]
+        WH[Webhook / CLI]
+        API1[FastAPI]
+        Store1[(data/ / DuckDB)]
+        WH --> API1 --> Store1
+    end
+
+    subgraph Agent["Agent (LangGraph)"]
+        T["1. Triage"]
+        I["2. Investigate"]
+        D["3. Decide"]
+        A["4. Act"]
+        R["5. Report"]
+        T --> I --> D --> A --> R
+    end
+
+    subgraph Post["6. Post-incident"]
+        PM[postmortem.md]
+        KBIdx[Re-index KB]
+        Eval[New eval case + CI]
+        PM --> KBIdx --> Eval
+    end
+
+    Store1 --> T
+    R --> Post
+    A --> R

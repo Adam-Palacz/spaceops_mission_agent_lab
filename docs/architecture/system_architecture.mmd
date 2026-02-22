@@ -1,0 +1,58 @@
+flowchart TB
+    subgraph External["External"]
+        CLI[CLI]
+        WEB[Webhook]
+        HUMAN[Human / UI]
+    end
+
+    subgraph API["apps/api"]
+        FastAPI[FastAPI: /health, /ingest,<br/>/approvals, trigger run]
+    end
+
+    subgraph Agent["apps/agent"]
+        LG[LangGraph: Triage → Investigate<br/>→ Decide → Act → Report]
+    end
+
+    subgraph MCP["MCP servers"]
+        TMCP[Telemetry: query_telemetry]
+        KMCP[KB: search_runbooks,<br/>search_postmortems]
+        TKMCP[Ticketing: create_ticket]
+        GMCP[GitOps: create_pr]
+    end
+
+    subgraph Policy["Policy"]
+        OPA[OPA: allowlist,<br/>argument validation,<br/>fail-closed]
+    end
+
+    subgraph Data["Data & storage"]
+        PG[(Postgres + pgvector)]
+        DUCK[DuckDB]
+        FILES[(data/, kb/)]
+        OPS[ops-config repo]
+    end
+
+    subgraph Observability["Observability"]
+        OTel[OTel Collector]
+        Jaeger[Jaeger]
+        Prom[Prometheus]
+        Graf[Grafana]
+    end
+
+    CLI --> FastAPI
+    WEB --> FastAPI
+    HUMAN --> FastAPI
+    FastAPI --> LG
+    LG --> TMCP
+    LG --> KMCP
+    LG --> TKMCP
+    LG --> GMCP
+    LG --> OPA
+    TMCP --> DUCK
+    TMCP --> FILES
+    KMCP --> PG
+    GMCP --> OPS
+    LG --> OTel
+    FastAPI --> OTel
+    OTel --> Jaeger
+    OTel --> Prom
+    Prom --> Graf

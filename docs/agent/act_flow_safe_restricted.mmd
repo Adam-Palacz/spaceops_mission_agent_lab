@@ -1,0 +1,19 @@
+flowchart TB
+    PLAN[Decide: plan with steps]
+    PLAN --> STEP{Step type?}
+
+    STEP -->|Safe| EXEC_SAFE[Execute: ticket or PR]
+    EXEC_SAFE --> AUDIT1[Audit log]
+
+    STEP -->|Restricted| OPA_CALL[Call OPA: allow?]
+    OPA_CALL --> OPA_OK{OPA result}
+    OPA_OK -->|Error / Timeout / Unavailable| DENY[Deny + escalation packet]
+    OPA_OK -->|Deny| DENY
+    OPA_OK -->|Allow| REQ[Create approval request]
+    REQ --> WAIT[Wait for human]
+    WAIT --> APPROVE{Approve?}
+    APPROVE -->|Yes| EXEC_RESTRICTED[Execute e.g. GitOps PR]
+    APPROVE -->|No| REJECT[Reject]
+    EXEC_RESTRICTED --> AUDIT2[Audit log: who, when]
+    REJECT --> AUDIT2
+    DENY --> AUDIT2

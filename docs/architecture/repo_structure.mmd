@@ -1,0 +1,33 @@
+flowchart TB
+    ROOT[spaceops-mission-agent-lab]
+    ROOT --> APPS[apps/]
+    ROOT --> DATA[data/]
+    ROOT --> KB[kb/]
+    ROOT --> EVALS[evals/]
+    ROOT --> INFRA[infra/]
+    ROOT --> DOCS[docs/]
+    ROOT --> OPS[ops-config/]
+
+    APPS --> API[api/]
+    APPS --> AGENT[agent/]
+    APPS --> MCP[mcp/]
+    MCP --> TMCP[telemetry_server/]
+    MCP --> KMCP[kb_server/]
+    MCP --> TKMCP[ticket_server/]
+    MCP --> GMCP[gitops_server/]
+
+    DATA --> TEL[telemetry/]
+    DATA --> EV[events/]
+    DATA --> GL[ground_logs/]
+    DATA --> INC[incidents/]
+
+    KB --> RB[runbooks/]
+    KB --> PM[postmortems/]
+    KB --> POL[policies/]
+
+    EVALS --> CASES[cases.yaml]
+    EVALS --> SCORING[scoring.py]
+    EVALS --> INJ[injection_suite/]
+
+    INFRA --> DC[docker-compose.yml]
+    INFRA --> OTEL[otel-collector.yaml]

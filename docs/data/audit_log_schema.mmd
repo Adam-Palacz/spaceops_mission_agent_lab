@@ -1,0 +1,12 @@
+erDiagram
+    AUDIT_LOG {
+        string timestamp
+        string trace_id
+        string incident_id
+        string actor "agent | human"
+        string tool
+        string args_hash
+        string decision "allow | deny | escalate"
+        string policy_result "OPA allow | deny | error"
+        string outcome "success | failure | skipped"
+    }

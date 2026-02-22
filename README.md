@@ -12,6 +12,10 @@ Agent for satellite / ground segment anomaly triage, automatic action checklists
 ## Quick start (when implemented)
 
 ```bash
-docker-compose -f infra/docker-compose.yml up -d
+# Dependencies (Python 3.12)
+pip install -r requirements.txt
+
+# Stack (Postgres, OTel, Jaeger)
+docker compose -f infra/docker-compose.yml up -d
 # POST /ingest with NDJSON; trigger run; see docs/ and goals.md.
 ```

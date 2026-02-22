@@ -1,0 +1,36 @@
+# SpaceOps Mission Agent Lab — pinned deps (Python 3.12)
+# Install: pip install -r requirements.txt
+# Production-ready: exact versions for reproducible installs (goals.md §4.5)
+
+# API
+fastapi==0.115.6
+uvicorn[standard]==0.32.1
+
+# Agent / LangGraph
+langgraph==0.2.45
+langchain-core==0.3.21
+langchain-openai==0.2.9
+
+# Postgres + pgvector (RAG, KB)
+psycopg2-binary==2.9.10
+pgvector==0.3.6
+
+# OTel (traces — S1.10)
+opentelemetry-api==1.28.0
+opentelemetry-sdk==1.28.0
+opentelemetry-exporter-otlp-proto-grpc==1.28.0
+opentelemetry-instrumentation-fastapi==0.49b0
+
+# HTTP client, config
+httpx==0.27.2
+pydantic==2.10.3
+pydantic-settings==2.6.1
+
+# Data (fixtures, optional analytics)
+duckdb==1.1.3
+
+# Dev / CI (lint, type-check, test)
+ruff==0.8.4
+mypy==1.13.0
+pytest==8.3.4
+pytest-asyncio==0.24.0

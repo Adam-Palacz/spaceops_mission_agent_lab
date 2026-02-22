@@ -8,7 +8,7 @@
 | S1.4 | FastAPI health + ingest + trigger | Done | [S1.4-fastapi-ingest.md](S1.4-fastapi-ingest.md) |
 | S1.5 | NDJSON fixtures | Done | [S1.5-fixtures.md](S1.5-fixtures.md) |
 | S1.6 | MCP Telemetry + KB (RAG) | Done | [S1.6-mcp-telemetry-kb.md](S1.6-mcp-telemetry-kb.md) |
-| S1.7 | LangGraph Triage → Investigate → Decide → Report | Todo | [S1.7-langgraph-pipeline.md](S1.7-langgraph-pipeline.md) |
+| S1.7 | LangGraph Triage → Investigate → Decide → Report | Done | [S1.7-langgraph-pipeline.md](S1.7-langgraph-pipeline.md) |
 | S1.8 | Escalation path (F10) | Todo | [S1.8-escalation-path.md](S1.8-escalation-path.md) |
 | S1.9 | Audit log (schema + append-only) | Todo | [S1.9-audit-log.md](S1.9-audit-log.md) |
 | S1.10 | OTel + Jaeger traces | Todo | [S1.10-otel-jaeger.md](S1.10-otel-jaeger.md) |

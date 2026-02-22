@@ -6,6 +6,7 @@ List of ideas/specs that can be turned into sprint tasks. **No statuses** — wh
 |----|--------|-------------------------|------|
 | BL-001 | Monitoring improvement analysis | Verify whether S1.2 tools and config (Postgres, OTel, Jaeger) are suitable for production; document analysis and recommendations. | [BL-001-monitoring-improvement-analysis.md](BL-001-monitoring-improvement-analysis.md) |
 | BL-002 | README per folder | Add a short README.md to every folder in the repo (apps/, data/, kb/, evals/, infra/, docs/, roadmap/ and subfolders) describing purpose and links. | [BL-002-readme-per-folder.md](BL-002-readme-per-folder.md) |
+| BL-003 | MCP servers in Docker Compose | Add Telemetry MCP and KB MCP as services in infra/docker-compose.yml so one command brings up full stack (Postgres, OTel, Jaeger, MCPs). | [BL-003-mcp-docker-compose.md](BL-003-mcp-docker-compose.md) |
 
 ---
 

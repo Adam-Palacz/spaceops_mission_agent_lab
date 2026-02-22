@@ -32,8 +32,15 @@ class Settings(BaseSettings):
     postgres_host: str = Field(default="localhost")
     postgres_port: str = Field(default="5432")
     postgres_user: str = Field(default="spaceops")
-    postgres_password: str = Field(default="spaceops")
+    postgres_password: str = Field()
     postgres_db: str = Field(default="spaceops")
+
+    # MCP servers (agent calls these in S1.7)
+    telemetry_mcp_url: str = Field(default="http://localhost:8001/mcp")
+    kb_mcp_url: str = Field(default="http://localhost:8002/mcp")
+
+    # Jaeger (trace link in report)
+    jaeger_ui_url: str = Field(default="http://localhost:16686")
 
     @property
     def postgres_dsn(self) -> str:

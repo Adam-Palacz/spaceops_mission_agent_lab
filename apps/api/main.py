@@ -103,7 +103,7 @@ async def ingest(
 
 
 # ---------------------------------------------------------------------------
-# Run trigger (stub until S1.7)
+# Run trigger (S1.7 — invokes LangGraph pipeline)
 # ---------------------------------------------------------------------------
 
 
@@ -117,21 +117,23 @@ class RunTriggerPayload(BaseModel):
 @app.post("/runs")
 def trigger_run(payload: RunTriggerPayload) -> JSONResponse:
     """
-    Trigger an agent run. Stub: stores request and returns 202; actual pipeline in S1.7.
+    Trigger an agent run. Runs Triage → Investigate → Decide → Report; returns report.
     """
+    from apps.agent.graph import run_pipeline
+
     runs_dir = DATA_DIR / "incidents"
     runs_dir.mkdir(parents=True, exist_ok=True)
     run_file = runs_dir / f"run_{payload.incident_id}_{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')}.json"
-    with open(run_file, "w", encoding="utf-8") as f:
-        json.dump(payload.model_dump(), f, indent=2, ensure_ascii=False)
-    return JSONResponse(
-        status_code=202,
-        content={
-            "status": "accepted",
-            "incident_id": payload.incident_id,
-            "message": "Run trigger recorded; agent pipeline not yet connected (S1.7).",
-        },
-    )
+    try:
+        result = run_pipeline(payload.incident_id, payload.payload)
+        report = result.get("report") or {}
+        with open(run_file, "w", encoding="utf-8") as f:
+            json.dump({"incident_id": payload.incident_id, "payload": payload.payload, "report": report}, f, indent=2, ensure_ascii=False)
+        return JSONResponse(status_code=200, content={"status": "completed", "incident_id": payload.incident_id, "report": report})
+    except Exception as e:
+        with open(run_file, "w", encoding="utf-8") as f:
+            json.dump({"incident_id": payload.incident_id, "payload": payload.payload, "error": str(e)}, f, indent=2, ensure_ascii=False)
+        raise HTTPException(status_code=500, detail=f"Pipeline failed: {e}")
 
 
 # ---------------------------------------------------------------------------

@@ -1,0 +1,9 @@
+{
+  "incident_id": "test-inc-1",
+  "subsystem": "Payload",
+  "risk": "low",
+  "payload": {
+    "ref": "fixture"
+  },
+  "triaged_at": "2026-02-22T18:58:19.156021+00:00"
+}

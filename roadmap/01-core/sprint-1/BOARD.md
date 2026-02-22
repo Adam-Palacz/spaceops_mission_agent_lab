@@ -5,7 +5,7 @@
 | S1.1 | Directory structure | Done | [S1.1-directory-structure.md](S1.1-directory-structure.md) |
 | S1.2 | Docker Compose (Postgres, OTel, Jaeger) | Done | [S1.2-docker-compose.md](S1.2-docker-compose.md) |
 | S1.3 | Pinned deps + lockfile | Done | [S1.3-pinned-deps.md](S1.3-pinned-deps.md) |
-| S1.4 | FastAPI health + ingest + trigger | Todo | [S1.4-fastapi-ingest.md](S1.4-fastapi-ingest.md) |
+| S1.4 | FastAPI health + ingest + trigger | Done | [S1.4-fastapi-ingest.md](S1.4-fastapi-ingest.md) |
 | S1.5 | NDJSON fixtures | Todo | [S1.5-fixtures.md](S1.5-fixtures.md) |
 | S1.6 | MCP Telemetry + KB (RAG) | Todo | [S1.6-mcp-telemetry-kb.md](S1.6-mcp-telemetry-kb.md) |
 | S1.7 | LangGraph Triage → Investigate → Decide → Report | Todo | [S1.7-langgraph-pipeline.md](S1.7-langgraph-pipeline.md) |

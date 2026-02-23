@@ -30,6 +30,7 @@ class EscalationPacket(TypedDict, total=False):
 
 class AgentState(TypedDict, total=False):
     incident_id: str
+    trace_id: str
     payload: dict
     subsystem: str
     risk: str

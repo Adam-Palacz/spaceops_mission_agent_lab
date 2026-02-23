@@ -42,6 +42,7 @@ def run_pipeline(incident_id: str, payload: dict | None = None) -> dict:
     graph = build_graph()
     initial: AgentState = {
         "incident_id": incident_id,
+        "trace_id": incident_id,
         "payload": payload or {},
     }
     result = graph.invoke(initial)

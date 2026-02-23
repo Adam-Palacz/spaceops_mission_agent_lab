@@ -18,6 +18,7 @@ from apps.agent.mcp_client import (
     call_search_postmortems,
     signature_from_payload,
 )
+from apps.agent.audit_log import append_entry as audit_append
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 DATA_INCIDENTS = REPO_ROOT / "data" / "incidents"
@@ -80,17 +81,26 @@ Example: Power medium"""
 
 
 def investigate(state: AgentState) -> dict:
-    """Call Telemetry and KB MCPs; attach hypotheses and citations."""
+    """Call Telemetry and KB MCPs; attach hypotheses and citations. S1.9: audit each tool call."""
     payload = state.get("payload") or {}
     subsystem = state.get("subsystem") or "Ground"
     query = signature_from_payload(payload) or subsystem.lower()
+    incident_id = state.get("incident_id") or "unknown"
+    trace_id = state.get("trace_id") or incident_id
     # Time range from payload or default window
     start = (payload.get("time_range_start") or "2025-02-14T09:00:00Z")
     end = (payload.get("time_range_end") or "2025-02-14T11:00:00Z")
     channels = payload.get("channels")
+    # Tool call + audit (S1.9)
+    telemetry_args = {"time_range_start": start, "time_range_end": end, "channels": channels if isinstance(channels, list) else []}
     telemetry = call_telemetry(start, end, channels if isinstance(channels, list) else None)
+    audit_append(trace_id=trace_id, incident_id=incident_id, actor="agent", tool="query_telemetry", args=telemetry_args, outcome="success")
+    runbooks_args = {"query": query, "limit": 5}
     runbooks = call_search_runbooks(query, 5)
+    audit_append(trace_id=trace_id, incident_id=incident_id, actor="agent", tool="search_runbooks", args=runbooks_args, outcome="success")
+    postmortems_args = {"signature": query, "limit": 5}
     postmortems = call_search_postmortems(query, 5)
+    audit_append(trace_id=trace_id, incident_id=incident_id, actor="agent", tool="search_postmortems", args=postmortems_args, outcome="success")
     hypotheses: list[str] = []
     citations: list[Citation] = []
     if telemetry:

@@ -42,6 +42,9 @@ class Settings(BaseSettings):
     # Jaeger (trace link in report)
     jaeger_ui_url: str = Field(default="http://localhost:16686")
 
+    # Audit log (S1.9): path to NDJSON file; empty = use repo data/audit.ndjson
+    audit_log_path: str = Field(default="", description="Path to append-only audit NDJSON; empty = data/audit.ndjson")
+
     @property
     def postgres_dsn(self) -> str:
         """Connection string when DATABASE_URL is not set."""

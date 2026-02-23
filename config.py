@@ -39,6 +39,12 @@ class Settings(BaseSettings):
     telemetry_mcp_url: str = Field(default="http://localhost:8001/mcp")
     kb_mcp_url: str = Field(default="http://localhost:8002/mcp")
 
+    # OTel (S1.10): export traces to Collector; empty = disable tracing
+    otel_exporter_otlp_endpoint: str = Field(
+        default="",
+        description="OTLP gRPC endpoint (e.g. http://localhost:4317); empty = no export",
+    )
+
     # Jaeger (trace link in report)
     jaeger_ui_url: str = Field(default="http://localhost:16686")
 

@@ -1,6 +1,6 @@
 """
 SpaceOps Agent — LangGraph pipeline: Triage → Investigate → [Check escalation] → Decide or Report (S1.7, S1.8).
-No Act node yet. F10: when escalation conditions met, skip Decide and go to Report with escalation packet.
+S1.10: OTel spans per node; trace_id in state for Jaeger URL in report.
 """
 from __future__ import annotations
 
@@ -14,6 +14,19 @@ from apps.agent.nodes import (
     report as report_node_fn,
     triage,
 )
+from apps.telemetry import get_tracer, get_current_trace_id_hex, init_telemetry
+
+
+def _wrap_node(span_name: str, node_fn):
+    """S1.10: run node under a span; set incident_id attribute."""
+
+    def wrapped(state: AgentState) -> dict:
+        tracer = get_tracer("apps.agent")
+        with tracer.start_as_current_span(span_name) as span:
+            span.set_attribute("incident_id", state.get("incident_id") or "unknown")
+            return node_fn(state)
+
+    return wrapped
 
 
 def _route_after_escalation(state: AgentState) -> str:
@@ -23,11 +36,11 @@ def _route_after_escalation(state: AgentState) -> str:
 
 def build_graph():
     workflow = StateGraph(AgentState)
-    workflow.add_node("triage", triage)
-    workflow.add_node("investigate", investigate)
-    workflow.add_node("check_escalation", check_escalation)
-    workflow.add_node("decide", decide)
-    workflow.add_node("build_report", report_node_fn)
+    workflow.add_node("triage", _wrap_node("triage", triage))
+    workflow.add_node("investigate", _wrap_node("investigate", investigate))
+    workflow.add_node("check_escalation", _wrap_node("check_escalation", check_escalation))
+    workflow.add_node("decide", _wrap_node("decide", decide))
+    workflow.add_node("build_report", _wrap_node("build_report", report_node_fn))
     workflow.set_entry_point("triage")
     workflow.add_edge("triage", "investigate")
     workflow.add_edge("investigate", "check_escalation")
@@ -38,12 +51,17 @@ def build_graph():
 
 
 def run_pipeline(incident_id: str, payload: dict | None = None) -> dict:
-    """Run the pipeline and return final state (includes report)."""
+    """Run the pipeline and return final state (includes report). S1.10: root span + trace_id for Jaeger URL."""
+    init_telemetry()
     graph = build_graph()
-    initial: AgentState = {
-        "incident_id": incident_id,
-        "trace_id": incident_id,
-        "payload": payload or {},
-    }
-    result = graph.invoke(initial)
+    tracer = get_tracer("apps.agent")
+    with tracer.start_as_current_span("agent.run") as span:
+        span.set_attribute("incident_id", incident_id)
+        trace_id_hex = get_current_trace_id_hex()
+        initial: AgentState = {
+            "incident_id": incident_id,
+            "trace_id": trace_id_hex or incident_id,
+            "payload": payload or {},
+        }
+        result = graph.invoke(initial)
     return result

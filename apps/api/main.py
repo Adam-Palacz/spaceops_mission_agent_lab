@@ -1,6 +1,7 @@
 """
 SpaceOps Mission Agent Lab — API
-GET /health, POST /ingest (NDJSON), POST /runs (trigger agent — stub).
+GET /health, POST /ingest (NDJSON), POST /runs (trigger agent).
+S1.10: OTel request spans; structured logging.
 """
 from __future__ import annotations
 
@@ -13,6 +14,8 @@ from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
+from apps.telemetry import init_telemetry
+
 # Base path for data (repo root when run from repo)
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 DATA_DIR = REPO_ROOT / "data"
@@ -22,6 +25,14 @@ app = FastAPI(
     description="Ingest, health, and run trigger for anomaly triage pipeline.",
     version="0.1.0",
 )
+
+# S1.10: OTel request spans for /health, /ingest, /runs
+init_telemetry(service_name="spaceops-api")
+try:
+    from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+    FastAPIInstrumentor.instrument_app(app)
+except ImportError:
+    pass
 
 
 # ---------------------------------------------------------------------------

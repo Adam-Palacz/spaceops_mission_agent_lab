@@ -51,3 +51,53 @@ def test_scoring_module_runs_and_outputs_score():
     assert "Score:" in out or "PASS" in out or "FAIL" in out, "Output must show score or pass/fail per case"
     # If API key missing, may exit 1; we only require the script runs and produces expected output
     assert "evals" in out.lower() or "PASS" in out or "FAIL" in out or "OPENAI" in out or "Error" in out
+
+
+# --- S1.15 evals hardening: top_k and require_citations vs escalation ---
+
+
+def test_score_case_triage_respects_top_k():
+    """S1.15: triage pass only when actual is in expected_subsystem[:top_k]."""
+    from evals.scoring import score_case
+
+    # top_k=1: only first subsystem allowed
+    case_top1 = {"expected_subsystem_top_k": 1, "expected_subsystem": ["Power", "Thermal"], "must_escalate": False}
+    passed, failures = score_case(case_top1, {"subsystem": "Power", "escalated": False})
+    assert passed, failures
+    passed, failures = score_case(case_top1, {"subsystem": "Thermal", "escalated": False})
+    assert not passed and any("triage" in f for f in failures)
+
+    # top_k=2: first two allowed
+    case_top2 = {"expected_subsystem_top_k": 2, "expected_subsystem": ["ADCS", "Payload"], "must_escalate": False}
+    for sub in ("ADCS", "Payload"):
+        passed, _ = score_case(case_top2, {"subsystem": sub, "escalated": False})
+        assert passed, f"top_2 should allow {sub}"
+    passed, failures = score_case(case_top2, {"subsystem": "Power", "escalated": False})
+    assert not passed and any("triage" in f for f in failures)
+
+    # default top_k=1 when missing
+    case_no_top_k = {"expected_subsystem": ["A", "B"], "must_escalate": False}
+    passed, _ = score_case(case_no_top_k, {"subsystem": "A", "escalated": False})
+    assert passed
+    passed, failures = score_case(case_no_top_k, {"subsystem": "B", "escalated": False})
+    assert not passed and any("triage" in f for f in failures)
+
+
+def test_score_case_require_citations_fails_when_escalated():
+    """S1.15: case with require_citations and not must_escalate fails when run escalated."""
+    from evals.scoring import score_case
+
+    case = {"require_citations": True, "must_escalate": False, "expected_subsystem": ["Power"], "expected_subsystem_top_k": 1}
+    result_escalated = {"subsystem": "Power", "escalated": True, "escalation_packet": {"reason": "no_evidence"}}
+    passed, failures = score_case(case, result_escalated)
+    assert not passed, "require_citations + escalated must fail"
+    assert any("require_citations" in f and "escalated" in f for f in failures)
+
+    result_not_escalated_no_citations = {"subsystem": "Power", "escalated": False, "citations": [], "report": {}}
+    passed, failures = score_case(case, result_not_escalated_no_citations)
+    assert not passed
+    assert any("citation" in f.lower() for f in failures)
+
+    result_not_escalated_with_citations = {"subsystem": "Power", "escalated": False, "citations": [{"doc_id": "x"}], "report": {"citation_refs": ["x"]}}
+    passed, failures = score_case(case, result_not_escalated_with_citations)
+    assert passed, failures

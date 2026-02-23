@@ -16,8 +16,15 @@
 | S1.12 | Token/rate limits + timeouts (NF6) | Done | [S1.12-limits-timeouts.md](S1.12-limits-timeouts.md) |
 | S1.13 | pre-commit, GitHub Actions, README | Done | [S1.13-ci-readme.md](S1.13-ci-readme.md) |
 | S1.14 | Unit tests in tests/ | Done | [S1.14-unit-tests.md](S1.14-unit-tests.md) |
+| S1.15 | Evals hardening (top_k, citation vs escalation) | Done | [S1.15-evals-hardening.md](S1.15-evals-hardening.md) |
+| S1.16 | .env.example + single-command observability | Todo | [S1.16-env-observability.md](S1.16-env-observability.md) |
+| S1.17 | Config: optional Postgres for no-DB modes | Todo | [S1.17-config-optional-postgres.md](S1.17-config-optional-postgres.md) |
+| S1.18 | Audit log: outcome failure/empty + error details | Todo | [S1.18-audit-outcome-failure-empty.md](S1.18-audit-outcome-failure-empty.md) |
+| S1.19 | (Optional) Code readability pass | Todo | [S1.19-code-readability-pass.md](S1.19-code-readability-pass.md) |
 
 **Status key:** Todo | In progress | Done | Blocked
+
+*S1.15–S1.19 added after Sprint 1 review feedback (evals, config, observability, audit, readability).*
 
 ---
 

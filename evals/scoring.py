@@ -34,14 +34,19 @@ def run_case(case: dict) -> dict:
 def score_case(case: dict, result: dict) -> tuple[bool, list[str]]:
     """
     Compare result to case expectations. Return (passed, list of failure reasons).
+    S1.15: uses expected_subsystem_top_k; require_citations fails when run escalated.
     """
     failures: list[str] = []
-    # Triage: subsystem in expected_subsystem (top-k)
+    # Triage: subsystem must be in first top_k of expected_subsystem (S1.15)
     expected_subsystem: list[str] = case.get("expected_subsystem") or []
+    top_k = case.get("expected_subsystem_top_k")
+    if top_k is None or not isinstance(top_k, int):
+        top_k = 1
     if expected_subsystem:
         actual = (result.get("subsystem") or "").strip()
-        if actual not in expected_subsystem:
-            failures.append(f"triage: expected one of {expected_subsystem}, got '{actual}'")
+        allowed = expected_subsystem[:top_k]
+        if actual not in allowed:
+            failures.append(f"triage: expected one of {allowed} (top_{top_k}), got '{actual}'")
 
     # Must escalate
     must_escalate = case.get("must_escalate") is True
@@ -53,17 +58,16 @@ def score_case(case: dict, result: dict) -> tuple[bool, list[str]]:
         elif not escalation_packet.get("reason"):
             failures.append("must_escalate: expected escalation_packet with reason")
     else:
-        if escalated and case.get("require_citations"):
-            # Require citations but we escalated (no evidence) - fail only if we required citations
-            pass  # allow; or fail: failures.append("expected citations but got escalation")
-        # If not must_escalate and require_citations, check below
+        # S1.15: require_citations + escalation => fail (do not allow escalation to "rescue" citation case)
+        if case.get("require_citations") and escalated:
+            failures.append("require_citations: expected citations but run escalated")
 
-    # Citation presence (when not must_escalate and require_citations)
-    if case.get("require_citations") and not must_escalate:
+    # Citation presence (when not must_escalate and require_citations, and did not escalate)
+    if case.get("require_citations") and not must_escalate and not escalated:
         citations = result.get("citations") or []
         report = result.get("report") or {}
         refs = report.get("citation_refs") or []
-        if not escalated and len(citations) == 0 and len(refs) == 0:
+        if len(citations) == 0 and len(refs) == 0:
             failures.append("require_citations: expected at least one citation or citation_ref")
 
     passed = len(failures) == 0

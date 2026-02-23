@@ -6,7 +6,7 @@ Agent for satellite / ground segment anomaly triage: **ingest ? triage ? investi
 
 | Doc | Description |
 |-----|-------------|
-| [**roadmap/goals.md**](./roadmap/goals.md) | Goals, assumptions, requirements (F1?F10, NF1?NF9), policy, MoE/MoP, production-ready criteria, audit log schema (§4.6). |
+| [**roadmap/goals.md**](./roadmap/goals.md) | Goals, assumptions, requirements (F1?F10, NF1?NF9), policy, MoE/MoP, production-ready criteria, audit log schema (?4.6). |
 | [**roadmap/01-core-roadmap.md**](./roadmap/01-core-roadmap.md) | Sprints (S1, S2), Phase 4 hardening, task list. |
 | [**roadmap/README.md**](./roadmap/README.md) | Execution plan: phases, sprints, task specs. |
 | [**docs/README.md**](./docs/README.md) | Index of Mermaid diagrams (pipeline, architecture, state flow, Act flow, repo structure). |
@@ -15,6 +15,7 @@ Agent for satellite / ground segment anomaly triage: **ingest ? triage ? investi
 ## Environment
 
 - Copy **.env.example** to **.env** and set `OPENAI_API_KEY` (required for agent). Optional: `POSTGRES_*` if not using defaults.
+- **Limits and timeouts (S1.12, NF6):** `AGENT_RUN_TIMEOUT_SECONDS` (default 120; 0 = no limit), `AGENT_LLM_CALL_TIMEOUT_SECONDS` (default 30), `AGENT_TOKEN_BUDGET_PER_RUN` (default 50000; 0 = no limit), `AGENT_MAX_LLM_CALLS_PER_RUN` (default 10; 0 = no limit). When exceeded, run escalates to human.
 - Do not commit `.env` (in `.gitignore`). All apps load it from repo root via `config.settings`.
 
 ## Quick start

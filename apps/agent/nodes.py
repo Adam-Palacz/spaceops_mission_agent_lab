@@ -29,11 +29,31 @@ _SUBSYSTEMS = ("ADCS", "Power", "Thermal", "Comms", "Payload", "Ground")
 OPENAI_CHAT_URL = "https://api.openai.com/v1/chat/completions"
 
 
-def _chat_completion(prompt: str, model: str = "gpt-4o-mini", temperature: float = 0) -> str:
-    """Call OpenAI Chat Completions API; return assistant message content."""
+def _escalation_for_limit_or_timeout(
+    incident_id: str, reason: str, detail: str
+) -> dict:
+    """S1.12: build state delta for token_limit, rate_limit or timeout escalation (NF6, F10)."""
+    packet: EscalationPacket = {
+        "reason": reason,
+        "what_we_know": [f"Incident {incident_id}", detail],
+        "what_we_dont_know": ["Run did not complete; limit or timeout was hit."],
+        "what_to_check": [
+            "Review incident payload and consider increasing limits or retrying.",
+            "Check agent_run_timeout_seconds, agent_token_budget_per_run, agent_llm_call_timeout_seconds, agent_max_llm_calls_per_run in config.",
+        ],
+    }
+    return {"escalated": True, "escalation_packet": packet}
+
+
+def _chat_completion(prompt: str, model: str = "gpt-4o-mini", temperature: float = 0) -> tuple[str, int]:
+    """
+    Call OpenAI Chat Completions API. Return (content, total_tokens).
+    S1.12: uses agent_llm_call_timeout_seconds; raises httpx.TimeoutException on timeout.
+    """
     if not settings.openai_api_key:
         raise RuntimeError("OPENAI_API_KEY required for agent; set in .env")
-    with httpx.Client(timeout=60.0) as client:
+    timeout = max(1, getattr(settings, "agent_llm_call_timeout_seconds", 30))
+    with httpx.Client(timeout=float(timeout)) as client:
         r = client.post(
             OPENAI_CHAT_URL,
             headers={
@@ -48,19 +68,44 @@ def _chat_completion(prompt: str, model: str = "gpt-4o-mini", temperature: float
         )
         r.raise_for_status()
         data = r.json()
-    return (data.get("choices") or [{}])[0].get("message", {}).get("content") or ""
+    content = (data.get("choices") or [{}])[0].get("message", {}).get("content") or ""
+    usage = (data.get("usage") or {}).get("total_tokens") or 0
+    return content, usage
 
 
 def triage(state: AgentState) -> dict:
-    """Classify subsystem and risk; persist incident record."""
+    """Classify subsystem and risk; persist incident record. S1.12: token budget, rate limit, LLM timeout → escalate."""
     incident_id = state.get("incident_id") or "unknown"
     payload = state.get("payload") or {}
+    tokens_used = state.get("tokens_used") or 0
+    llm_calls_used = state.get("llm_calls_used") or 0
+    token_budget = max(0, getattr(settings, "agent_token_budget_per_run", 0))
+    max_llm_calls = max(0, getattr(settings, "agent_max_llm_calls_per_run", 0))
+    if token_budget and tokens_used >= token_budget:
+        return _escalation_for_limit_or_timeout(
+            incident_id, "token_limit", f"Token budget ({token_budget}) already reached before triage."
+        ) | {"tokens_used": tokens_used, "llm_calls_used": llm_calls_used}
+    if max_llm_calls and llm_calls_used >= max_llm_calls:
+        return _escalation_for_limit_or_timeout(
+            incident_id, "rate_limit", f"Max LLM calls per run ({max_llm_calls}) already reached before triage."
+        ) | {"tokens_used": tokens_used, "llm_calls_used": llm_calls_used}
     prompt = f"""Classify this incident. Payload: {payload}
 Return exactly two words on one line, separated by a space: SUBSYSTEM RISK
 SUBSYSTEM must be one of: {', '.join(_SUBSYSTEMS)}
 RISK must be one of: low, medium, high
 Example: Power medium"""
-    content = _chat_completion(prompt)
+    try:
+        content, usage = _chat_completion(prompt)
+    except httpx.TimeoutException:
+        return _escalation_for_limit_or_timeout(
+            incident_id, "llm_timeout", "LLM call timed out during triage."
+        ) | {"tokens_used": tokens_used, "llm_calls_used": llm_calls_used}
+    tokens_used += usage
+    llm_calls_used += 1
+    if token_budget and tokens_used > token_budget:
+        return _escalation_for_limit_or_timeout(
+            incident_id, "token_limit", f"Token budget ({token_budget}) exceeded during triage (used {tokens_used})."
+        ) | {"tokens_used": tokens_used, "llm_calls_used": llm_calls_used}
     text = content.strip().split()
     subsystem = text[0] if len(text) >= 1 else "Ground"
     risk = text[1] if len(text) >= 2 else "medium"
@@ -78,7 +123,7 @@ Example: Power medium"""
     out_file = DATA_INCIDENTS / f"incident_{incident_id}.json"
     with open(out_file, "w", encoding="utf-8") as f:
         json.dump(record, f, indent=2, ensure_ascii=False)
-    return {"subsystem": subsystem, "risk": risk}
+    return {"subsystem": subsystem, "risk": risk, "tokens_used": tokens_used, "llm_calls_used": llm_calls_used}
 
 
 def investigate(state: AgentState) -> dict:
@@ -158,7 +203,12 @@ def _should_escalate(state: AgentState) -> tuple[bool, str]:
 
 
 def check_escalation(state: AgentState) -> dict:
-    """S1.8: Evaluate escalation conditions; if met, set escalation_packet (F10)."""
+    """S1.8: Evaluate escalation conditions; if met, set escalation_packet (F10). S1.12: preserve limit/timeout escalation."""
+    # Preserve escalation already set by token_limit, llm_timeout, or run_timeout (NF6)
+    if state.get("escalated") and state.get("escalation_packet", {}).get("reason") in (
+        "token_limit", "rate_limit", "llm_timeout", "run_timeout"
+    ):
+        return {"escalated": True, "escalation_packet": state.get("escalation_packet") or {}}
     escalated, reason = _should_escalate(state)
     if not escalated:
         return {"escalated": False, "escalation_packet": {}}
@@ -195,7 +245,20 @@ def check_escalation(state: AgentState) -> dict:
 
 
 def decide(state: AgentState) -> dict:
-    """Produce plan; each step must reference at least one doc_id or snippet_id (NF5a)."""
+    """Produce plan; each step must reference at least one doc_id or snippet_id (NF5a). S1.12: token budget, rate limit, timeout."""
+    incident_id = state.get("incident_id") or "unknown"
+    tokens_used = state.get("tokens_used") or 0
+    llm_calls_used = state.get("llm_calls_used") or 0
+    token_budget = max(0, getattr(settings, "agent_token_budget_per_run", 0))
+    max_llm_calls = max(0, getattr(settings, "agent_max_llm_calls_per_run", 0))
+    if token_budget and tokens_used >= token_budget:
+        return _escalation_for_limit_or_timeout(
+            incident_id, "token_limit", f"Token budget ({token_budget}) already reached before decide."
+        ) | {"tokens_used": tokens_used, "llm_calls_used": llm_calls_used}
+    if max_llm_calls and llm_calls_used >= max_llm_calls:
+        return _escalation_for_limit_or_timeout(
+            incident_id, "rate_limit", f"Max LLM calls per run ({max_llm_calls}) already reached before decide."
+        ) | {"tokens_used": tokens_used, "llm_calls_used": llm_calls_used}
     hypotheses = state.get("hypotheses") or []
     citations = state.get("citations") or []
     subsystem = state.get("subsystem") or "Ground"
@@ -212,7 +275,18 @@ snippet_ids: {snippet_ids[:10]}
 Return a JSON array of steps. Each step: {{"action": "...", "safe": true|false, "doc_ids": ["..."], "snippet_ids": ["..."]}}
 Safe=true for ticket/report/query; safe=false for config/restart (restricted).
 Output only the JSON array, no markdown."""
-    content = _chat_completion(prompt)
+    try:
+        content, usage = _chat_completion(prompt)
+    except httpx.TimeoutException:
+        return _escalation_for_limit_or_timeout(
+            incident_id, "llm_timeout", "LLM call timed out during decide."
+        ) | {"tokens_used": tokens_used, "llm_calls_used": llm_calls_used}
+    tokens_used += usage
+    llm_calls_used += 1
+    if token_budget and tokens_used > token_budget:
+        return _escalation_for_limit_or_timeout(
+            incident_id, "token_limit", f"Token budget ({token_budget}) exceeded during decide (used {tokens_used})."
+        ) | {"tokens_used": tokens_used, "llm_calls_used": llm_calls_used}
     text = content.strip()
     if "```" in text:
         text = text.split("```")[1].replace("json", "").strip()
@@ -228,7 +302,7 @@ Output only the JSON array, no markdown."""
             if not step.get("doc_ids") and not step.get("snippet_ids"):
                 step["doc_ids"] = doc_ids[:1] if doc_ids else []
                 step["snippet_ids"] = snippet_ids[:1] if snippet_ids else []
-    return {"plan": plan}
+    return {"plan": plan, "tokens_used": tokens_used, "llm_calls_used": llm_calls_used}
 
 
 def report(state: AgentState) -> dict:

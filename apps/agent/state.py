@@ -32,6 +32,8 @@ class AgentState(TypedDict, total=False):
     incident_id: str
     trace_id: str
     payload: dict
+    tokens_used: int  # S1.12: cumulative token count for budget check
+    llm_calls_used: int  # S1.12: number of LLM calls so far (rate limit per run)
     subsystem: str
     risk: str
     hypotheses: list[str]

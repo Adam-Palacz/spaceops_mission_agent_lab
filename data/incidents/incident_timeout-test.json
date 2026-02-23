@@ -1,0 +1,9 @@
+{
+  "incident_id": "timeout-test",
+  "subsystem": "Payload",
+  "risk": "low",
+  "payload": {
+    "ref": "test"
+  },
+  "triaged_at": "2026-02-23T17:45:47.657186+00:00"
+}

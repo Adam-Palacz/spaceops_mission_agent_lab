@@ -51,6 +51,12 @@ class Settings(BaseSettings):
     # Audit log (S1.9): path to NDJSON file; empty = use repo data/audit.ndjson
     audit_log_path: str = Field(default="", description="Path to append-only audit NDJSON; empty = data/audit.ndjson")
 
+    # S1.12 NF6: token/rate limits and timeouts; on limit or timeout → escalation
+    agent_run_timeout_seconds: int = Field(default=120, description="Max wall-clock time per run; 0 = no limit")
+    agent_llm_call_timeout_seconds: int = Field(default=30, description="Timeout per LLM call (seconds)")
+    agent_token_budget_per_run: int = Field(default=50_000, description="Max total tokens per run; 0 = no limit")
+    agent_max_llm_calls_per_run: int = Field(default=10, description="Max LLM calls per run; 0 = no limit (rate limit NF6)")
+
     @property
     def postgres_dsn(self) -> str:
         """Connection string when DATABASE_URL is not set."""

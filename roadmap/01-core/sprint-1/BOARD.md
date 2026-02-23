@@ -15,7 +15,7 @@
 | S1.11 | Evals (5–10 cases, CI) | Done | [S1.11-evals.md](S1.11-evals.md) |
 | S1.12 | Token/rate limits + timeouts (NF6) | Done | [S1.12-limits-timeouts.md](S1.12-limits-timeouts.md) |
 | S1.13 | pre-commit, GitHub Actions, README | Done | [S1.13-ci-readme.md](S1.13-ci-readme.md) |
-| S1.14 | Unit tests in tests/ | Todo | [S1.14-unit-tests.md](S1.14-unit-tests.md) |
+| S1.14 | Unit tests in tests/ | Done | [S1.14-unit-tests.md](S1.14-unit-tests.md) |
 
 **Status key:** Todo | In progress | Done | Blocked
 

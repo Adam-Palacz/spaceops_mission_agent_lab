@@ -1,0 +1,13 @@
+{
+  "incident_id": "citation-present",
+  "subsystem": "Power",
+  "risk": "low",
+  "payload": {
+    "time_range_start": "2025-02-14T09:00:00Z",
+    "time_range_end": "2025-02-14T11:00:00Z",
+    "channels": [
+      "power.bus_voltage"
+    ]
+  },
+  "triaged_at": "2026-02-23T17:14:31.820375+00:00"
+}

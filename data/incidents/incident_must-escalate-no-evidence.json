@@ -1,0 +1,11 @@
+{
+  "incident_id": "must-escalate-no-evidence",
+  "subsystem": "Payload",
+  "risk": "low",
+  "payload": {
+    "time_range_start": "2025-02-14T09:00:00Z",
+    "time_range_end": "2025-02-14T09:00:01Z",
+    "ref": "no-data"
+  },
+  "triaged_at": "2026-02-23T17:14:40.302842+00:00"
+}

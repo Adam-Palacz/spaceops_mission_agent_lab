@@ -1,0 +1,11 @@
+{
+  "incident_id": "triage-payload",
+  "subsystem": "Payload",
+  "risk": "medium",
+  "payload": {
+    "time_range_start": "2025-02-14T09:00:00Z",
+    "time_range_end": "2025-02-14T11:00:00Z",
+    "message": "payload sensor anomaly"
+  },
+  "triaged_at": "2026-02-23T17:14:57.253047+00:00"
+}

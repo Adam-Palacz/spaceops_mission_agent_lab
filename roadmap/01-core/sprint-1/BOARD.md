@@ -12,7 +12,7 @@
 | S1.8 | Escalation path (F10) | Done | [S1.8-escalation-path.md](S1.8-escalation-path.md) |
 | S1.9 | Audit log (schema + append-only) | Done | [S1.9-audit-log.md](S1.9-audit-log.md) |
 | S1.10 | OTel + Jaeger traces | Done | [S1.10-otel-jaeger.md](S1.10-otel-jaeger.md) |
-| S1.11 | Evals (5–10 cases, CI) | Todo | [S1.11-evals.md](S1.11-evals.md) |
+| S1.11 | Evals (5–10 cases, CI) | Done | [S1.11-evals.md](S1.11-evals.md) |
 | S1.12 | Token/rate limits + timeouts (NF6) | Todo | [S1.12-limits-timeouts.md](S1.12-limits-timeouts.md) |
 | S1.13 | pre-commit, GitHub Actions, README | Todo | [S1.13-ci-readme.md](S1.13-ci-readme.md) |
 | S1.14 | Unit tests in tests/ | Todo | [S1.14-unit-tests.md](S1.14-unit-tests.md) |

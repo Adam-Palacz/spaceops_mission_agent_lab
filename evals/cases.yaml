@@ -1,0 +1,92 @@
+# S1.11 Eval cases: triage (top-1/top-2), citation presence, must-escalate.
+# Run from repo root: python -m evals.scoring
+# Deterministic: agent uses temperature=0 (pinned behaviour).
+
+cases:
+  - id: triage-power
+    description: Triage identifies Power subsystem (top-1)
+    payload:
+      time_range_start: "2025-02-14T09:00:00Z"
+      time_range_end: "2025-02-14T11:00:00Z"
+      message: "power bus voltage anomaly"
+    expected_subsystem_top_k: 1
+    expected_subsystem: ["Power"]
+    require_citations: false  # optional for triage-only check
+    must_escalate: false
+
+  - id: triage-thermal
+    description: Triage identifies Thermal subsystem
+    payload:
+      time_range_start: "2025-02-14T09:00:00Z"
+      time_range_end: "2025-02-14T11:00:00Z"
+      message: "thermal plate temperature high"
+    expected_subsystem_top_k: 1
+    expected_subsystem: ["Thermal"]
+    require_citations: false
+    must_escalate: false
+
+  - id: triage-adcs
+    description: Triage identifies ADCS (top-1 or top-2)
+    payload:
+      time_range_start: "2025-02-14T09:00:00Z"
+      time_range_end: "2025-02-14T11:00:00Z"
+      message: "attitude control anomaly"
+    expected_subsystem_top_k: 2
+    expected_subsystem: ["ADCS", "Payload"]
+    require_citations: false
+    must_escalate: false
+
+  - id: triage-comms
+    description: Triage identifies Comms or Ground
+    payload:
+      time_range_start: "2025-02-14T09:00:00Z"
+      time_range_end: "2025-02-14T11:00:00Z"
+      message: "communication link degraded"
+    expected_subsystem_top_k: 2
+    expected_subsystem: ["Comms", "Ground"]
+    require_citations: false
+    must_escalate: false
+
+  - id: citation-present
+    description: Run produces citations when KB/telemetry available (MoE2)
+    payload:
+      time_range_start: "2025-02-14T09:00:00Z"
+      time_range_end: "2025-02-14T11:00:00Z"
+      channels: ["power.bus_voltage"]
+    expected_subsystem_top_k: 2
+    expected_subsystem: ["Power", "Thermal", "Ground", "ADCS", "Comms", "Payload"]
+    require_citations: true
+    must_escalate: false
+
+  - id: must-escalate-no-evidence
+    description: No evidence / low confidence triggers escalation packet (MoE4, F10)
+    payload:
+      time_range_start: "2025-02-14T09:00:00Z"
+      time_range_end: "2025-02-14T09:00:01Z"
+      ref: "no-data"
+    expected_subsystem_top_k: 2
+    expected_subsystem: ["Power", "Thermal", "Ground", "ADCS", "Comms", "Payload"]
+    require_citations: false
+    must_escalate: true
+
+  - id: triage-ground
+    description: Triage identifies Ground
+    payload:
+      time_range_start: "2025-02-14T09:00:00Z"
+      time_range_end: "2025-02-14T11:00:00Z"
+      message: "ground station log error"
+    expected_subsystem_top_k: 1
+    expected_subsystem: ["Ground"]
+    require_citations: false
+    must_escalate: false
+
+  - id: triage-payload
+    description: Triage identifies Payload (top-2)
+    payload:
+      time_range_start: "2025-02-14T09:00:00Z"
+      time_range_end: "2025-02-14T11:00:00Z"
+      message: "payload sensor anomaly"
+    expected_subsystem_top_k: 2
+    expected_subsystem: ["Payload", "ADCS"]
+    require_citations: false
+    must_escalate: false

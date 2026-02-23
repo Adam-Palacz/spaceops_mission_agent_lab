@@ -68,4 +68,4 @@ class Settings(BaseSettings):
         )
 
 
-settings = Settings()
+settings = Settings()  # type: ignore[call-arg]  # postgres_password from env

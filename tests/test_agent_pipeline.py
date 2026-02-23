@@ -4,12 +4,9 @@ E2E with real MCP/LLM requires OPENAI_API_KEY and MCP servers.
 """
 from __future__ import annotations
 
-import json
-from pathlib import Path
-
 import pytest
 
-from apps.agent.state import AgentState, Citation, PlanStep
+from apps.agent.state import AgentState
 from apps.agent.graph import build_graph, run_pipeline
 from apps.agent.nodes import _should_escalate, check_escalation
 

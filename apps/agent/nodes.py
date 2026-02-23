@@ -11,7 +11,7 @@ from pathlib import Path
 import httpx
 
 from config import settings
-from apps.agent.state import AgentState, Citation, EscalationPacket, PlanStep
+from apps.agent.state import AgentState, Citation, EscalationPacket
 from apps.agent.mcp_client import (
     call_telemetry,
     call_search_runbooks,

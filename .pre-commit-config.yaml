@@ -1,0 +1,20 @@
+# S1.13 — pre-commit: ruff (lint), mypy (type check).
+# Install: pre-commit install
+# Run manually: pre-commit run --all-files
+
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.4
+    hooks:
+      - id: ruff
+        args: [--fix]
+
+  - repo: local
+    hooks:
+      - id: mypy
+        name: mypy
+        entry: mypy
+        language: system
+        types: [python]
+        args: [-m, apps.agent, -m, apps.api, -m, config, -m, evals, --ignore-missing-imports, --no-error-summary]
+        pass_filenames: false

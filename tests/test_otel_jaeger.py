@@ -46,7 +46,7 @@ def test_trace_id_in_state_when_otel_enabled(monkeypatch):
     try:
         init_telemetry("spaceops-test")
         tracer = get_tracer("test")
-        with tracer.start_as_current_span("test.span") as span:
+        with tracer.start_as_current_span("test.span"):
             trace_id = get_current_trace_id_hex()
             assert trace_id is not None
             assert len(trace_id) == 32

@@ -76,7 +76,6 @@ def main() -> int:
         print("No cases in evals/cases.yaml")
         return 1
 
-    threshold = 0.0  # require all pass; could be configurable
     passed_count = 0
     results_summary: list[tuple[str, bool, list[str]]] = []
 

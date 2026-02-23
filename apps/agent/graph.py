@@ -1,4 +1,4 @@
-git """
+"""
 SpaceOps Agent — LangGraph pipeline: Triage → Investigate → [Check escalation] → Decide or Report (S1.7, S1.8).
 S1.10: OTel spans per node; trace_id in state for Jaeger URL in report.
 S1.12: Run-level timeout and token budget; on timeout/limit → escalation (NF6).

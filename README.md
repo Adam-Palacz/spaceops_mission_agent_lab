@@ -47,4 +47,6 @@ python -m apps.api.main
 pytest tests/ -v
 ```
 
-Pre-commit (when configured): `pre-commit run --all-files`. CI runs ruff, mypy, pytest (see S1.13 / S1.14).
+**Evals (S1.11):** `python -m evals.scoring` (requires `OPENAI_API_KEY`). See [evals/README.md](evals/README.md).
+
+**Pre-commit:** Install hooks with `pip install pre-commit && pre-commit install`. Run manually: `pre-commit run --all-files` (ruff + mypy). CI runs ruff, mypy, pytest, and evals on push/PR (S1.13).

@@ -1,6 +1,6 @@
 """
 SpaceOps Agent — append-only audit log (S1.9, goals.md §4.6).
-Schema: timestamp, trace_id, incident_id, actor, tool, args_hash, decision, policy_result, outcome.
+Schema: timestamp, trace_id, incident_id, actor, tool, args_hash, decision, policy_result, outcome, [error_message].
 Storage: single NDJSON file; process only appends, no update/delete.
 """
 from __future__ import annotations
@@ -39,13 +39,15 @@ def append_entry(
     decision: str = "allow",
     policy_result: str = "allow",
     outcome: str = "success",
+    error_message: str | None = None,
 ) -> None:
     """
     Append one audit log entry. Append-only; no update/delete.
     actor: "agent" | "human"
     decision: e.g. allow, deny, escalate
     policy_result: OPA result — allow, deny, error (or "n/a" if no OPA yet)
-    outcome: success, failure, skipped
+    outcome: success, empty, failure, skipped
+    error_message: optional short, safe description when outcome=failure
     """
     path = get_audit_path()
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -60,5 +62,7 @@ def append_entry(
         "policy_result": policy_result,
         "outcome": outcome,
     }
+    if error_message:
+        entry["error_message"] = error_message
     with open(path, "a", encoding="utf-8") as f:
         f.write(json.dumps(entry, ensure_ascii=False) + "\n")

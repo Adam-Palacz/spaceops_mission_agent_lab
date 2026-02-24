@@ -19,7 +19,7 @@
 | S1.15 | Evals hardening (top_k, citation vs escalation) | Done | [S1.15-evals-hardening.md](S1.15-evals-hardening.md) |
 | S1.16 | .env.example + single-command observability | Done | [S1.16-env-observability.md](S1.16-env-observability.md) |
 | S1.17 | Config: optional Postgres for no-DB modes | Done | [S1.17-config-optional-postgres.md](S1.17-config-optional-postgres.md) |
-| S1.18 | Audit log: outcome failure/empty + error details | Todo | [S1.18-audit-outcome-failure-empty.md](S1.18-audit-outcome-failure-empty.md) |
+| S1.18 | Audit log: outcome failure/empty + error details | Done | [S1.18-audit-outcome-failure-empty.md](S1.18-audit-outcome-failure-empty.md) |
 | S1.19 | (Optional) Code readability pass | Todo | [S1.19-code-readability-pass.md](S1.19-code-readability-pass.md) |
 | S1.20 | MCP Telemetry client integration (citation-present) | Todo | [S1.20-mcp-telemetry-client-integration.md](S1.20-mcp-telemetry-client-integration.md) |
 

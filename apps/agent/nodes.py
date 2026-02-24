@@ -45,6 +45,20 @@ def _escalation_for_limit_or_timeout(
     return {"escalated": True, "escalation_packet": packet}
 
 
+def _safe_error_message(exc: Exception, max_length: int = 200) -> str:
+    """
+    Build a short, safe error string for audit log.
+
+    No stack traces or PII; just exception class and message, truncated.
+    """
+    msg = f"{exc.__class__.__name__}: {exc}"
+    # Replace newlines to keep audit entries single-line JSON
+    msg = msg.replace("\r", " ").replace("\n", " ")
+    if len(msg) > max_length:
+        msg = msg[: max_length - 3] + "..."
+    return msg
+
+
 def _chat_completion(prompt: str, model: str = "gpt-4o-mini", temperature: float = 0) -> tuple[str, int]:
     """
     Call OpenAI Chat Completions API. Return (content, total_tokens).
@@ -142,18 +156,77 @@ def investigate(state: AgentState) -> dict:
     telemetry_args = {"time_range_start": start, "time_range_end": end, "channels": channels if isinstance(channels, list) else []}
     with tracer.start_as_current_span("mcp.query_telemetry") as sp:
         sp.set_attribute("incident_id", incident_id)
-        telemetry = call_telemetry(start, end, channels if isinstance(channels, list) else None)
-    audit_append(trace_id=trace_id, incident_id=incident_id, actor="agent", tool="query_telemetry", args=telemetry_args, outcome="success")
+        try:
+            telemetry = call_telemetry(start, end, channels if isinstance(channels, list) else None)
+            telemetry_error: str | None = None
+        except Exception as exc:  # pragma: no cover - exercised via monkeypatch in tests
+            telemetry = []
+            telemetry_error = _safe_error_message(exc)
+    if telemetry_error:
+        telemetry_outcome = "failure"
+    elif telemetry:
+        telemetry_outcome = "success"
+    else:
+        telemetry_outcome = "empty"
+    audit_append(
+        trace_id=trace_id,
+        incident_id=incident_id,
+        actor="agent",
+        tool="query_telemetry",
+        args=telemetry_args,
+        outcome=telemetry_outcome,
+        error_message=telemetry_error,
+    )
+
     runbooks_args = {"query": query, "limit": 5}
     with tracer.start_as_current_span("mcp.search_runbooks") as sp:
         sp.set_attribute("incident_id", incident_id)
-        runbooks = call_search_runbooks(query, 5)
-    audit_append(trace_id=trace_id, incident_id=incident_id, actor="agent", tool="search_runbooks", args=runbooks_args, outcome="success")
+        try:
+            runbooks = call_search_runbooks(query, 5)
+            runbooks_error: str | None = None
+        except Exception as exc:  # pragma: no cover - exercised via monkeypatch in tests
+            runbooks = []
+            runbooks_error = _safe_error_message(exc)
+    if runbooks_error:
+        runbooks_outcome = "failure"
+    elif runbooks:
+        runbooks_outcome = "success"
+    else:
+        runbooks_outcome = "empty"
+    audit_append(
+        trace_id=trace_id,
+        incident_id=incident_id,
+        actor="agent",
+        tool="search_runbooks",
+        args=runbooks_args,
+        outcome=runbooks_outcome,
+        error_message=runbooks_error,
+    )
+
     postmortems_args = {"signature": query, "limit": 5}
     with tracer.start_as_current_span("mcp.search_postmortems") as sp:
         sp.set_attribute("incident_id", incident_id)
-        postmortems = call_search_postmortems(query, 5)
-    audit_append(trace_id=trace_id, incident_id=incident_id, actor="agent", tool="search_postmortems", args=postmortems_args, outcome="success")
+        try:
+            postmortems = call_search_postmortems(query, 5)
+            postmortems_error: str | None = None
+        except Exception as exc:  # pragma: no cover - exercised via monkeypatch in tests
+            postmortems = []
+            postmortems_error = _safe_error_message(exc)
+    if postmortems_error:
+        postmortems_outcome = "failure"
+    elif postmortems:
+        postmortems_outcome = "success"
+    else:
+        postmortems_outcome = "empty"
+    audit_append(
+        trace_id=trace_id,
+        incident_id=incident_id,
+        actor="agent",
+        tool="search_postmortems",
+        args=postmortems_args,
+        outcome=postmortems_outcome,
+        error_message=postmortems_error,
+    )
     hypotheses: list[str] = []
     citations: list[Citation] = []
     if telemetry:

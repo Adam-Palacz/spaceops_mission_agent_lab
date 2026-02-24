@@ -99,3 +99,60 @@ def test_audit_log_append_only_no_update_delete():
     # Must not truncate or overwrite the audit file
     assert "open(path, \"w\"" not in source
     assert "open(path, 'w'" not in source
+
+
+def test_audit_outcome_success_empty_failure_and_error_message(tmp_path: Path, monkeypatch):
+    """S1.18: outcome semantics and optional error_message."""
+    monkeypatch.setattr("config.settings.audit_log_path", str(tmp_path / "audit.ndjson"))
+    path = get_audit_path()
+
+    # success (non-empty result; no error_message)
+    append_entry(
+        trace_id="t1",
+        incident_id="i1",
+        actor="agent",
+        tool="tool_success",
+        args={"x": 1},
+        outcome="success",
+    )
+    # empty (tool ran, but no results; no error_message)
+    append_entry(
+        trace_id="t2",
+        incident_id="i2",
+        actor="agent",
+        tool="tool_empty",
+        args={"y": 2},
+        outcome="empty",
+    )
+    # failure (tool failed; error_message set)
+    append_entry(
+        trace_id="t3",
+        incident_id="i3",
+        actor="agent",
+        tool="tool_failure",
+        args={"z": 3},
+        outcome="failure",
+        error_message="TimeoutError: tool failed",
+    )
+
+    lines = [ln.strip() for ln in path.read_text(encoding="utf-8").strip().split("\n") if ln.strip()]
+    assert len(lines) == 3
+    entries = [json.loads(ln) for ln in lines]
+
+    # success
+    e_success = entries[0]
+    assert e_success["outcome"] == "success"
+    assert "error_message" not in e_success
+
+    # empty
+    e_empty = entries[1]
+    assert e_empty["outcome"] == "empty"
+    assert "error_message" not in e_empty
+
+    # failure
+    e_failure = entries[2]
+    assert e_failure["outcome"] == "failure"
+    assert "error_message" in e_failure
+    # Should be short, single-line, no obvious stack trace markers
+    assert "\n" not in e_failure["error_message"]
+    assert len(e_failure["error_message"]) <= 200

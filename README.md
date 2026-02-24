@@ -51,3 +51,9 @@ pytest tests/ -v
 **Evals (S1.11):** `python -m evals.scoring` (requires `OPENAI_API_KEY`). See [evals/README.md](evals/README.md).
 
 **Pre-commit:** Install hooks with `pip install pre-commit && pre-commit install`. Run manually: `pre-commit run --all-files` (ruff + mypy). CI runs ruff, mypy, pytest, and evals on push/PR (S1.13).
+
+## Code style (agents, MCP, evals)
+
+- Prefer one statement per line for control flow (no compressed one-liners with multiple `if`/`and`/`or` branches).
+- Name intermediate values when they clarify intent (e.g. `allowed_subsystems`, `telemetry_outcome`) instead of deeply nested expressions.
+- Keep evals and agent logic readable first; micro-optimizations are secondary to clarity, especially around escalation, limits, and audit logging.

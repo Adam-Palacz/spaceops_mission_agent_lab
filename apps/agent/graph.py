@@ -3,6 +3,7 @@ SpaceOps Agent — LangGraph pipeline: Triage → Investigate → [Check escalat
 S1.10: OTel spans per node; trace_id in state for Jaeger URL in report.
 S1.12: Run-level timeout and token budget; on timeout/limit → escalation (NF6).
 """
+
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
@@ -42,13 +43,19 @@ def build_graph():
     workflow = StateGraph(AgentState)
     workflow.add_node("triage", _wrap_node("triage", triage))
     workflow.add_node("investigate", _wrap_node("investigate", investigate))
-    workflow.add_node("check_escalation", _wrap_node("check_escalation", check_escalation))
+    workflow.add_node(
+        "check_escalation", _wrap_node("check_escalation", check_escalation)
+    )
     workflow.add_node("decide", _wrap_node("decide", decide))
     workflow.add_node("build_report", _wrap_node("build_report", report_node_fn))
     workflow.set_entry_point("triage")
     workflow.add_edge("triage", "investigate")
     workflow.add_edge("investigate", "check_escalation")
-    workflow.add_conditional_edges("check_escalation", _route_after_escalation, {"build_report": "build_report", "decide": "decide"})
+    workflow.add_conditional_edges(
+        "check_escalation",
+        _route_after_escalation,
+        {"build_report": "build_report", "decide": "decide"},
+    )
     workflow.add_edge("decide", "build_report")
     workflow.add_edge("build_report", END)
     return workflow.compile()
@@ -57,9 +64,13 @@ def build_graph():
 def _run_timeout_escalation_result(incident_id: str, trace_id: str) -> dict:
     """S1.12: Build result dict when run hits timeout (NF6, F10)."""
     from config import settings as s
+
     packet = {
         "reason": "run_timeout",
-        "what_we_know": [f"Incident {incident_id}", "Run exceeded agent_run_timeout_seconds; stopped."],
+        "what_we_know": [
+            f"Incident {incident_id}",
+            "Run exceeded agent_run_timeout_seconds; stopped.",
+        ],
         "what_we_dont_know": ["Pipeline did not complete; outcome unknown."],
         "what_to_check": [
             "Increase agent_run_timeout_seconds or simplify payload.",

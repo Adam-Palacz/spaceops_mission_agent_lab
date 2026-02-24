@@ -2,6 +2,7 @@
 SpaceOps Mission Agent Lab — MCP Telemetry Server
 Tool: query_telemetry(time_range_start, time_range_end, channels) — reads from data/telemetry (NDJSON).
 """
+
 from __future__ import annotations
 
 import json
@@ -74,5 +75,6 @@ def query_telemetry(
 
 if __name__ == "__main__":
     import uvicorn
+
     app = mcp.streamable_http_app()
     uvicorn.run(app, host="0.0.0.0", port=8001)

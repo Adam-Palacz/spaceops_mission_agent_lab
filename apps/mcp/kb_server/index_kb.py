@@ -3,6 +3,7 @@ SpaceOps KB — embed runbooks and postmortems into pgvector.
 Run from repo root: python -m apps.mcp.kb_server.index_kb
 Requires: .env with OPENAI_API_KEY and Postgres (POSTGRES_* or DATABASE_URL). Schema: infra/sql/001_kb_vector.sql.
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -26,7 +27,10 @@ def get_connection():
     S1.17: Fail fast with a clear error if Postgres is not configured.
     Core app (API/agent without KB) should not require POSTGRES_PASSWORD, but index_kb does.
     """
-    if not settings.database_url and not getattr(settings, "postgres_password", "").strip():
+    if (
+        not settings.database_url
+        and not getattr(settings, "postgres_password", "").strip()
+    ):
         raise SystemExit(
             "Postgres is required to index KB chunks. "
             "Set DATABASE_URL or POSTGRES_PASSWORD/POSTGRES_* in the environment or .env."
@@ -47,7 +51,9 @@ def ensure_schema(conn):
               created_at TIMESTAMPTZ DEFAULT NOW()
             );
         """)
-        cur.execute("CREATE INDEX IF NOT EXISTS kb_chunks_doc_type ON kb_chunks(doc_type);")
+        cur.execute(
+            "CREATE INDEX IF NOT EXISTS kb_chunks_doc_type ON kb_chunks(doc_type);"
+        )
     conn.commit()
 
 

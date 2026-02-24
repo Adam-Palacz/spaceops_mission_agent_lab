@@ -1,6 +1,7 @@
 """
 SpaceOps Agent — MCP client helpers to call Telemetry and KB servers (S1.7).
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -12,12 +13,15 @@ from config import settings
 try:
     from mcp import ClientSession
     from mcp.client.streamable_http import streamable_http_client
+
     _MCP_AVAILABLE = True
 except ImportError:
     _MCP_AVAILABLE = False
 
 
-async def _call_telemetry_mcp(time_range_start: str, time_range_end: str, channels: list[str] | None = None) -> list[dict]:
+async def _call_telemetry_mcp(
+    time_range_start: str, time_range_end: str, channels: list[str] | None = None
+) -> list[dict]:
     if not _MCP_AVAILABLE:
         return []
     url = settings.telemetry_mcp_url
@@ -34,12 +38,20 @@ async def _call_telemetry_mcp(time_range_start: str, time_range_end: str, channe
                     },
                 )
                 # MCP SDK may use is_error (snake_case) or isError (camelCase)
-                if getattr(result, "is_error", False) or getattr(result, "isError", False):
+                if getattr(result, "is_error", False) or getattr(
+                    result, "isError", False
+                ):
                     return []
                 # Prefer structured_content (snake_case); fallback structuredContent (camelCase)
-                structured = getattr(result, "structured_content", None) or getattr(result, "structuredContent", None)
+                structured = getattr(result, "structured_content", None) or getattr(
+                    result, "structuredContent", None
+                )
                 if structured is not None:
-                    if isinstance(structured, dict) and "result" in structured and isinstance(structured["result"], list):
+                    if (
+                        isinstance(structured, dict)
+                        and "result" in structured
+                        and isinstance(structured["result"], list)
+                    ):
                         return structured["result"]
                     if isinstance(structured, list):
                         return structured
@@ -80,7 +92,11 @@ async def _call_telemetry_mcp(time_range_start: str, time_range_end: str, channe
                     except json.JSONDecodeError:
                         pass
                 if collected:
-                    if len(collected) == 1 and isinstance(collected[0], dict) and "result" in collected[0]:
+                    if (
+                        len(collected) == 1
+                        and isinstance(collected[0], dict)
+                        and "result" in collected[0]
+                    ):
                         inner = collected[0]["result"]
                         if isinstance(inner, list):
                             return inner
@@ -98,12 +114,22 @@ async def _call_kb_runbooks_mcp(query: str, limit: int = 5) -> list[dict]:
         async with streamable_http_client(url) as (read_stream, write_stream, _):
             async with ClientSession(read_stream, write_stream) as session:
                 await session.initialize()
-                result = await session.call_tool("search_runbooks", arguments={"query": query, "limit": limit})
-                if getattr(result, "is_error", False) or getattr(result, "isError", False):
+                result = await session.call_tool(
+                    "search_runbooks", arguments={"query": query, "limit": limit}
+                )
+                if getattr(result, "is_error", False) or getattr(
+                    result, "isError", False
+                ):
                     return []
-                structured = getattr(result, "structured_content", None) or getattr(result, "structuredContent", None)
+                structured = getattr(result, "structured_content", None) or getattr(
+                    result, "structuredContent", None
+                )
                 if structured is not None:
-                    if isinstance(structured, dict) and "result" in structured and isinstance(structured["result"], list):
+                    if (
+                        isinstance(structured, dict)
+                        and "result" in structured
+                        and isinstance(structured["result"], list)
+                    ):
                         return structured["result"]
                     if isinstance(structured, list):
                         return structured
@@ -144,7 +170,11 @@ async def _call_kb_runbooks_mcp(query: str, limit: int = 5) -> list[dict]:
                     except json.JSONDecodeError:
                         pass
                 if collected:
-                    if len(collected) == 1 and isinstance(collected[0], dict) and "result" in collected[0]:
+                    if (
+                        len(collected) == 1
+                        and isinstance(collected[0], dict)
+                        and "result" in collected[0]
+                    ):
                         inner = collected[0]["result"]
                         if isinstance(inner, list):
                             return inner
@@ -162,12 +192,23 @@ async def _call_kb_postmortems_mcp(signature: str, limit: int = 5) -> list[dict]
         async with streamable_http_client(url) as (read_stream, write_stream, _):
             async with ClientSession(read_stream, write_stream) as session:
                 await session.initialize()
-                result = await session.call_tool("search_postmortems", arguments={"signature": signature, "limit": limit})
-                if getattr(result, "is_error", False) or getattr(result, "isError", False):
+                result = await session.call_tool(
+                    "search_postmortems",
+                    arguments={"signature": signature, "limit": limit},
+                )
+                if getattr(result, "is_error", False) or getattr(
+                    result, "isError", False
+                ):
                     return []
-                structured = getattr(result, "structured_content", None) or getattr(result, "structuredContent", None)
+                structured = getattr(result, "structured_content", None) or getattr(
+                    result, "structuredContent", None
+                )
                 if structured is not None:
-                    if isinstance(structured, dict) and "result" in structured and isinstance(structured["result"], list):
+                    if (
+                        isinstance(structured, dict)
+                        and "result" in structured
+                        and isinstance(structured["result"], list)
+                    ):
                         return structured["result"]
                     if isinstance(structured, list):
                         return structured
@@ -208,7 +249,11 @@ async def _call_kb_postmortems_mcp(signature: str, limit: int = 5) -> list[dict]
                     except json.JSONDecodeError:
                         pass
                 if collected:
-                    if len(collected) == 1 and isinstance(collected[0], dict) and "result" in collected[0]:
+                    if (
+                        len(collected) == 1
+                        and isinstance(collected[0], dict)
+                        and "result" in collected[0]
+                    ):
                         inner = collected[0]["result"]
                         if isinstance(inner, list):
                             return inner
@@ -218,7 +263,9 @@ async def _call_kb_postmortems_mcp(signature: str, limit: int = 5) -> list[dict]
     return []
 
 
-def call_telemetry(time_range_start: str, time_range_end: str, channels: list[str] | None = None) -> list[dict]:
+def call_telemetry(
+    time_range_start: str, time_range_end: str, channels: list[str] | None = None
+) -> list[dict]:
     """Sync wrapper for query_telemetry MCP call."""
     return asyncio.run(_call_telemetry_mcp(time_range_start, time_range_end, channels))
 

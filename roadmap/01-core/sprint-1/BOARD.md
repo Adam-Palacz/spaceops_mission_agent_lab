@@ -23,7 +23,7 @@
 | S1.19 | (Optional) Code readability pass | Done | [S1.19-code-readability-pass.md](S1.19-code-readability-pass.md) |
 | S1.20 | MCP Telemetry client integration (citation-present) | Done | [S1.20-mcp-telemetry-client-integration.md](S1.20-mcp-telemetry-client-integration.md) |
 | S1.21 | NF6 tests hardening (LLM/MCP mocking, no OPENAI dependency) | Done | [S1.21-nf6-tests-hardening.md](S1.21-nf6-tests-hardening.md) |
-| S1.22 | Code style enforcement (ruff format, config/infra readability) | Todo | [S1.22-style-formatting.md](S1.22-style-formatting.md) |
+| S1.22 | Code style enforcement (ruff format, config/infra readability) | Done | [S1.22-style-formatting.md](S1.22-style-formatting.md) |
 
 **Status key:** Todo | In progress | Done | Blocked
 

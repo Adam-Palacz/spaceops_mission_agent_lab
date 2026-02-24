@@ -2,6 +2,7 @@
 SpaceOps Agent — CLI entrypoint (S1.7).
 Usage: python -m apps.agent.run <incident_id> [payload_json]
 """
+
 from __future__ import annotations
 
 import json

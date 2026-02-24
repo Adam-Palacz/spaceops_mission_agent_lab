@@ -4,6 +4,7 @@ MoE1 (triage), MoE2 (citations), MoE4 (escalation). Deterministic (temperature=0
 Run from repo root: python -m evals.scoring
 Exit 0 if all pass and score >= threshold; else non-zero.
 """
+
 from __future__ import annotations
 
 import sys
@@ -17,6 +18,7 @@ if str(REPO_ROOT) not in sys.path:
 def load_cases() -> list[dict]:
     """Load evals/cases.yaml."""
     import yaml
+
     path = Path(__file__).resolve().parent / "cases.yaml"
     data = yaml.safe_load(path.read_text(encoding="utf-8"))
     return data.get("cases") or []
@@ -25,6 +27,7 @@ def load_cases() -> list[dict]:
 def run_case(case: dict) -> dict:
     """Run pipeline for one case; return result state."""
     from apps.agent.graph import run_pipeline
+
     case_id = case.get("id") or "unknown"
     payload = case.get("payload") or {}
     result = run_pipeline(case_id, payload)
@@ -48,14 +51,18 @@ def score_case(case: dict, result: dict) -> tuple[bool, list[str]]:
         actual = (result.get("subsystem") or "").strip()
         allowed = expected_subsystem[:top_k]
         if actual not in allowed:
-            failures.append(f"triage: expected one of {allowed} (top_{top_k}), got '{actual}'")
+            failures.append(
+                f"triage: expected one of {allowed} (top_{top_k}), got '{actual}'"
+            )
 
     # Must escalate
     escalated = result.get("escalated") is True
     escalation_packet = result.get("escalation_packet") or {}
     if must_escalate:
         if not escalated:
-            failures.append("must_escalate: expected escalation, agent did not escalate")
+            failures.append(
+                "must_escalate: expected escalation, agent did not escalate"
+            )
         elif not escalation_packet.get("reason"):
             failures.append("must_escalate: expected escalation_packet with reason")
     else:
@@ -69,7 +76,9 @@ def score_case(case: dict, result: dict) -> tuple[bool, list[str]]:
         report = result.get("report") or {}
         refs = report.get("citation_refs") or []
         if len(citations) == 0 and len(refs) == 0:
-            failures.append("require_citations: expected at least one citation or citation_ref")
+            failures.append(
+                "require_citations: expected at least one citation or citation_ref"
+            )
 
     passed = len(failures) == 0
     return passed, failures
@@ -99,7 +108,9 @@ def main() -> int:
     # Output
     for case_id, passed, failures in results_summary:
         status = "PASS" if passed else "FAIL"
-        print(f"  {status}  {case_id}" + (f"  {'; '.join(failures)}" if failures else ""))
+        print(
+            f"  {status}  {case_id}" + (f"  {'; '.join(failures)}" if failures else "")
+        )
     score = passed_count / len(cases) if cases else 0.0
     print(f"\nScore: {passed_count}/{len(cases)} ({score:.0%})")
     if score >= (1.0 - 1e-9) and passed_count == len(cases):

@@ -48,9 +48,16 @@ python -m apps.api.main
 pytest tests/ -v
 ```
 
+## Formatting
+
+```bash
+# Apply standard formatting to Python modules (ruff format)
+python -m ruff format .
+```
+
 **Evals (S1.11):** `python -m evals.scoring` (requires `OPENAI_API_KEY`). See [evals/README.md](evals/README.md).
 
-**Pre-commit:** Install hooks with `pip install pre-commit && pre-commit install`. Run manually: `pre-commit run --all-files` (ruff + mypy). CI runs ruff, mypy, pytest, and evals on push/PR (S1.13).
+**Pre-commit:** Install hooks with `pip install pre-commit && pre-commit install`. Run manually: `pre-commit run --all-files` (ruff, ruff-format, mypy). CI runs ruff, mypy, pytest, and evals on push/PR (S1.13).
 
 ## Code style (agents, MCP, evals)
 

@@ -3,6 +3,7 @@ SpaceOps Agent — append-only audit log (S1.9, goals.md §4.6).
 Schema: timestamp, trace_id, incident_id, actor, tool, args_hash, decision, policy_result, outcome, [error_message].
 Storage: single NDJSON file; process only appends, no update/delete.
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -23,6 +24,7 @@ def _args_hash(args: dict) -> str:
 def get_audit_path() -> Path:
     """Path to the audit NDJSON file (append-only)."""
     from config import settings
+
     path = (getattr(settings, "audit_log_path", None) or "").strip()
     if path:
         return Path(path)

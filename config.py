@@ -3,6 +3,7 @@ SpaceOps Mission Agent Lab — central config from environment.
 Loads .env from repo root so secrets stay out of shell history and are never committed.
 Use: from config import settings
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -25,15 +26,22 @@ class Settings(BaseSettings):
     )
 
     # OpenAI (KB embedding + agent)
-    openai_api_key: str = Field(default="", description="OpenAI API key; required for KB and agent.")
+    openai_api_key: str = Field(
+        default="", description="OpenAI API key; required for KB and agent."
+    )
 
     # Postgres (RAG, KB)
-    database_url: str = Field(default="", description="Full DB URL; overrides POSTGRES_* if set.")
+    database_url: str = Field(
+        default="", description="Full DB URL; overrides POSTGRES_* if set."
+    )
     postgres_host: str = Field(default="localhost")
     postgres_port: str = Field(default="5432")
     postgres_user: str = Field(default="spaceops")
     # Optional for core app (API/agent without KB); required when using KB server or indexer.
-    postgres_password: str = Field(default="", description="Postgres password; required for KB/RAG, optional otherwise.")
+    postgres_password: str = Field(
+        default="",
+        description="Postgres password; required for KB/RAG, optional otherwise.",
+    )
     postgres_db: str = Field(default="spaceops")
 
     # MCP servers (agent calls these in S1.7)
@@ -50,13 +58,24 @@ class Settings(BaseSettings):
     jaeger_ui_url: str = Field(default="http://localhost:16686")
 
     # Audit log (S1.9): path to NDJSON file; empty = use repo data/audit.ndjson
-    audit_log_path: str = Field(default="", description="Path to append-only audit NDJSON; empty = data/audit.ndjson")
+    audit_log_path: str = Field(
+        default="",
+        description="Path to append-only audit NDJSON; empty = data/audit.ndjson",
+    )
 
     # S1.12 NF6: token/rate limits and timeouts; on limit or timeout → escalation
-    agent_run_timeout_seconds: int = Field(default=120, description="Max wall-clock time per run; 0 = no limit")
-    agent_llm_call_timeout_seconds: int = Field(default=30, description="Timeout per LLM call (seconds)")
-    agent_token_budget_per_run: int = Field(default=50_000, description="Max total tokens per run; 0 = no limit")
-    agent_max_llm_calls_per_run: int = Field(default=10, description="Max LLM calls per run; 0 = no limit (rate limit NF6)")
+    agent_run_timeout_seconds: int = Field(
+        default=120, description="Max wall-clock time per run; 0 = no limit"
+    )
+    agent_llm_call_timeout_seconds: int = Field(
+        default=30, description="Timeout per LLM call (seconds)"
+    )
+    agent_token_budget_per_run: int = Field(
+        default=50_000, description="Max total tokens per run; 0 = no limit"
+    )
+    agent_max_llm_calls_per_run: int = Field(
+        default=10, description="Max LLM calls per run; 0 = no limit (rate limit NF6)"
+    )
 
     @property
     def postgres_dsn(self) -> str:

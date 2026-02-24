@@ -2,6 +2,7 @@
 SpaceOps Agent — pipeline nodes: Triage, Investigate, Decide, Report (S1.7).
 Uses OpenAI Chat Completions API via httpx (avoids LangChain/Pydantic BaseCache issue).
 """
+
 from __future__ import annotations
 
 import json
@@ -59,7 +60,9 @@ def _safe_error_message(exc: Exception, max_length: int = 200) -> str:
     return msg
 
 
-def _chat_completion(prompt: str, model: str = "gpt-4o-mini", temperature: float = 0) -> tuple[str, int]:
+def _chat_completion(
+    prompt: str, model: str = "gpt-4o-mini", temperature: float = 0
+) -> tuple[str, int]:
     """
     Call OpenAI Chat Completions API. Return (content, total_tokens).
     S1.12: uses agent_llm_call_timeout_seconds; raises httpx.TimeoutException on timeout.
@@ -97,11 +100,15 @@ def triage(state: AgentState) -> dict:
     max_llm_calls = max(0, getattr(settings, "agent_max_llm_calls_per_run", 0))
     if token_budget and tokens_used >= token_budget:
         return _escalation_for_limit_or_timeout(
-            incident_id, "token_limit", f"Token budget ({token_budget}) already reached before triage."
+            incident_id,
+            "token_limit",
+            f"Token budget ({token_budget}) already reached before triage.",
         ) | {"tokens_used": tokens_used, "llm_calls_used": llm_calls_used}
     if max_llm_calls and llm_calls_used >= max_llm_calls:
         return _escalation_for_limit_or_timeout(
-            incident_id, "rate_limit", f"Max LLM calls per run ({max_llm_calls}) already reached before triage."
+            incident_id,
+            "rate_limit",
+            f"Max LLM calls per run ({max_llm_calls}) already reached before triage.",
         ) | {"tokens_used": tokens_used, "llm_calls_used": llm_calls_used}
     prompt = f"""Classify this incident. Payload: {payload}
 Return exactly two words on one line, separated by a space: SUBSYSTEM RISK
@@ -118,7 +125,9 @@ Example: Power medium"""
     llm_calls_used += 1
     if token_budget and tokens_used > token_budget:
         return _escalation_for_limit_or_timeout(
-            incident_id, "token_limit", f"Token budget ({token_budget}) exceeded during triage (used {tokens_used})."
+            incident_id,
+            "token_limit",
+            f"Token budget ({token_budget}) exceeded during triage (used {tokens_used}).",
         ) | {"tokens_used": tokens_used, "llm_calls_used": llm_calls_used}
     text = content.strip().split()
     subsystem = text[0] if len(text) >= 1 else "Ground"
@@ -137,7 +146,12 @@ Example: Power medium"""
     out_file = DATA_INCIDENTS / f"incident_{incident_id}.json"
     with open(out_file, "w", encoding="utf-8") as f:
         json.dump(record, f, indent=2, ensure_ascii=False)
-    return {"subsystem": subsystem, "risk": risk, "tokens_used": tokens_used, "llm_calls_used": llm_calls_used}
+    return {
+        "subsystem": subsystem,
+        "risk": risk,
+        "tokens_used": tokens_used,
+        "llm_calls_used": llm_calls_used,
+    }
 
 
 def investigate(state: AgentState) -> dict:
@@ -148,18 +162,26 @@ def investigate(state: AgentState) -> dict:
     incident_id = state.get("incident_id") or "unknown"
     trace_id = state.get("trace_id") or incident_id
     # Time range from payload or default window
-    start = (payload.get("time_range_start") or "2025-02-14T09:00:00Z")
-    end = (payload.get("time_range_end") or "2025-02-14T11:00:00Z")
+    start = payload.get("time_range_start") or "2025-02-14T09:00:00Z"
+    end = payload.get("time_range_end") or "2025-02-14T11:00:00Z"
     channels = payload.get("channels")
     # Tool call + audit (S1.9) + span per tool (S1.10)
     tracer = get_tracer("apps.agent")
-    telemetry_args = {"time_range_start": start, "time_range_end": end, "channels": channels if isinstance(channels, list) else []}
+    telemetry_args = {
+        "time_range_start": start,
+        "time_range_end": end,
+        "channels": channels if isinstance(channels, list) else [],
+    }
     with tracer.start_as_current_span("mcp.query_telemetry") as sp:
         sp.set_attribute("incident_id", incident_id)
         try:
-            telemetry = call_telemetry(start, end, channels if isinstance(channels, list) else None)
+            telemetry = call_telemetry(
+                start, end, channels if isinstance(channels, list) else None
+            )
             telemetry_error: str | None = None
-        except Exception as exc:  # pragma: no cover - exercised via monkeypatch in tests
+        except (
+            Exception
+        ) as exc:  # pragma: no cover - exercised via monkeypatch in tests
             telemetry = []
             telemetry_error = _safe_error_message(exc)
     if telemetry_error:
@@ -184,7 +206,9 @@ def investigate(state: AgentState) -> dict:
         try:
             runbooks = call_search_runbooks(query, 5)
             runbooks_error: str | None = None
-        except Exception as exc:  # pragma: no cover - exercised via monkeypatch in tests
+        except (
+            Exception
+        ) as exc:  # pragma: no cover - exercised via monkeypatch in tests
             runbooks = []
             runbooks_error = _safe_error_message(exc)
     if runbooks_error:
@@ -209,7 +233,9 @@ def investigate(state: AgentState) -> dict:
         try:
             postmortems = call_search_postmortems(query, 5)
             postmortems_error: str | None = None
-        except Exception as exc:  # pragma: no cover - exercised via monkeypatch in tests
+        except (
+            Exception
+        ) as exc:  # pragma: no cover - exercised via monkeypatch in tests
             postmortems = []
             postmortems_error = _safe_error_message(exc)
     if postmortems_error:
@@ -230,25 +256,37 @@ def investigate(state: AgentState) -> dict:
     hypotheses: list[str] = []
     citations: list[Citation] = []
     if telemetry:
-        hypotheses.append(f"Telemetry: {len(telemetry)} samples in range; review for anomalies.")
+        hypotheses.append(
+            f"Telemetry: {len(telemetry)} samples in range; review for anomalies."
+        )
         for i, r in enumerate(telemetry[:5]):
-            citations.append({"snippet_id": f"telemetry_{i}", "content": str(r), "doc_id": "telemetry"})
+            citations.append(
+                {
+                    "snippet_id": f"telemetry_{i}",
+                    "content": str(r),
+                    "doc_id": "telemetry",
+                }
+            )
     for chunk in runbooks:
         if isinstance(chunk, dict) and chunk.get("doc_id"):
             hypotheses.append(f"Runbook: {chunk.get('content', '')[:200]}...")
-            citations.append({
-                "doc_id": chunk.get("doc_id", ""),
-                "content": chunk.get("content", ""),
-                "snippet_id": f"runbook_{chunk.get('doc_id', '')}",
-            })
+            citations.append(
+                {
+                    "doc_id": chunk.get("doc_id", ""),
+                    "content": chunk.get("content", ""),
+                    "snippet_id": f"runbook_{chunk.get('doc_id', '')}",
+                }
+            )
     for chunk in postmortems:
         if isinstance(chunk, dict) and chunk.get("doc_id"):
             hypotheses.append(f"Postmortem: {chunk.get('content', '')[:200]}...")
-            citations.append({
-                "doc_id": chunk.get("doc_id", ""),
-                "content": chunk.get("content", ""),
-                "snippet_id": f"postmortem_{chunk.get('doc_id', '')}",
-            })
+            citations.append(
+                {
+                    "doc_id": chunk.get("doc_id", ""),
+                    "content": chunk.get("content", ""),
+                    "snippet_id": f"postmortem_{chunk.get('doc_id', '')}",
+                }
+            )
     if not hypotheses:
         hypotheses.append("No telemetry or KB hits; escalate for manual review.")
     return {"hypotheses": hypotheses, "citations": citations}
@@ -279,9 +317,15 @@ def check_escalation(state: AgentState) -> dict:
     """S1.8: Evaluate escalation conditions; if met, set escalation_packet (F10). S1.12: preserve limit/timeout escalation."""
     # Preserve escalation already set by token_limit, llm_timeout, or run_timeout (NF6)
     if state.get("escalated") and state.get("escalation_packet", {}).get("reason") in (
-        "token_limit", "rate_limit", "llm_timeout", "run_timeout"
+        "token_limit",
+        "rate_limit",
+        "llm_timeout",
+        "run_timeout",
     ):
-        return {"escalated": True, "escalation_packet": state.get("escalation_packet") or {}}
+        return {
+            "escalated": True,
+            "escalation_packet": state.get("escalation_packet") or {},
+        }
     escalated, reason = _should_escalate(state)
     if not escalated:
         return {"escalated": False, "escalation_packet": {}}
@@ -313,7 +357,10 @@ def check_escalation(state: AgentState) -> dict:
             "Manual review required to confirm anomaly and next steps.",
         ]
     elif reason == "conflicting_signals":
-        packet["what_to_check"].insert(0, "Resolve conflicting hypotheses (anomaly vs normal) with additional data.")
+        packet["what_to_check"].insert(
+            0,
+            "Resolve conflicting hypotheses (anomaly vs normal) with additional data.",
+        )
     return {"escalated": True, "escalation_packet": packet}
 
 
@@ -326,11 +373,15 @@ def decide(state: AgentState) -> dict:
     max_llm_calls = max(0, getattr(settings, "agent_max_llm_calls_per_run", 0))
     if token_budget and tokens_used >= token_budget:
         return _escalation_for_limit_or_timeout(
-            incident_id, "token_limit", f"Token budget ({token_budget}) already reached before decide."
+            incident_id,
+            "token_limit",
+            f"Token budget ({token_budget}) already reached before decide.",
         ) | {"tokens_used": tokens_used, "llm_calls_used": llm_calls_used}
     if max_llm_calls and llm_calls_used >= max_llm_calls:
         return _escalation_for_limit_or_timeout(
-            incident_id, "rate_limit", f"Max LLM calls per run ({max_llm_calls}) already reached before decide."
+            incident_id,
+            "rate_limit",
+            f"Max LLM calls per run ({max_llm_calls}) already reached before decide.",
         ) | {"tokens_used": tokens_used, "llm_calls_used": llm_calls_used}
     hypotheses = state.get("hypotheses") or []
     citations = state.get("citations") or []
@@ -358,7 +409,9 @@ Output only the JSON array, no markdown."""
     llm_calls_used += 1
     if token_budget and tokens_used > token_budget:
         return _escalation_for_limit_or_timeout(
-            incident_id, "token_limit", f"Token budget ({token_budget}) exceeded during decide (used {tokens_used})."
+            incident_id,
+            "token_limit",
+            f"Token budget ({token_budget}) exceeded during decide (used {tokens_used}).",
         ) | {"tokens_used": tokens_used, "llm_calls_used": llm_calls_used}
     text = content.strip()
     if "```" in text:
@@ -366,7 +419,14 @@ Output only the JSON array, no markdown."""
     try:
         plan = json.loads(text)
     except json.JSONDecodeError:
-        plan = [{"action": "Escalate to ops", "safe": True, "doc_ids": doc_ids[:1] or [], "snippet_ids": snippet_ids[:1] or []}]
+        plan = [
+            {
+                "action": "Escalate to ops",
+                "safe": True,
+                "doc_ids": doc_ids[:1] or [],
+                "snippet_ids": snippet_ids[:1] or [],
+            }
+        ]
     if not isinstance(plan, list):
         plan = [plan]
     # Ensure each step has at least one citation
@@ -391,7 +451,13 @@ def report(state: AgentState) -> dict:
     # S1.10: trace_id from OTel (32-char hex) when exporting; else incident_id
     trace_id = state.get("trace_id") or incident_id
     trace_url = f"{settings.jaeger_ui_url}/trace/{trace_id}"
-    cite_refs = list({c.get("doc_id") or c.get("snippet_id") for c in citations if c.get("doc_id") or c.get("snippet_id")})
+    cite_refs = list(
+        {
+            c.get("doc_id") or c.get("snippet_id")
+            for c in citations
+            if c.get("doc_id") or c.get("snippet_id")
+        }
+    )
     report_obj: dict = {
         "incident_id": incident_id,
         "executive_summary": (
@@ -407,5 +473,7 @@ def report(state: AgentState) -> dict:
     }
     if escalated:
         report_obj["escalation_packet"] = escalation_packet
-        report_obj["handoff"] = "Agent could not proceed with confidence; manual review required. See escalation_packet."
+        report_obj["handoff"] = (
+            "Agent could not proceed with confidence; manual review required. See escalation_packet."
+        )
     return {"report": report_obj}

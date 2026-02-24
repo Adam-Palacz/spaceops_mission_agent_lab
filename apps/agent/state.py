@@ -3,6 +3,7 @@ SpaceOps Agent — pipeline state schema (S1.7, S1.8).
 NF5a: plan steps must reference doc_id or snippet (citation grounding).
 F10: escalation packet when low confidence, no evidence, conflicting signals, timeout.
 """
+
 from __future__ import annotations
 
 from typing import TypedDict

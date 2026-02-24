@@ -3,6 +3,7 @@ SpaceOps Mission Agent Lab — MCP KB Server
 Tools: search_runbooks(query), search_postmortems(signature) — RAG over pgvector.
 Requires: Postgres with kb_chunks populated (run index_kb.py); set OPENAI_API_KEY in .env.
 """
+
 from __future__ import annotations
 
 from typing import TypedDict
@@ -24,7 +25,10 @@ def get_connection():
     S1.17: Fail fast with a clear error if Postgres is not configured.
     Core app (API/agent without KB) should not require POSTGRES_PASSWORD, but KB server does.
     """
-    if not settings.database_url and not getattr(settings, "postgres_password", "").strip():
+    if (
+        not settings.database_url
+        and not getattr(settings, "postgres_password", "").strip()
+    ):
         raise RuntimeError(
             "Postgres is required for KB server (RAG). "
             "Set DATABASE_URL or POSTGRES_PASSWORD/POSTGRES_* in the environment or .env."
@@ -64,7 +68,9 @@ def _get_embeddings():
     global _embeddings
     if _embeddings is None:
         if not settings.openai_api_key:
-            raise RuntimeError("OPENAI_API_KEY is required; set it in .env or environment.")
+            raise RuntimeError(
+                "OPENAI_API_KEY is required; set it in .env or environment."
+            )
         _embeddings = OpenAIEmbeddings(
             model="text-embedding-3-small",
             openai_api_key=settings.openai_api_key,
@@ -98,5 +104,6 @@ def search_postmortems(signature: str, limit: int = 5) -> list[ChunkResult]:
 
 if __name__ == "__main__":
     import uvicorn
+
     app = mcp.streamable_http_app()
     uvicorn.run(app, host="0.0.0.0", port=8002)

@@ -1,14 +1,14 @@
 # Sprint 1 — Review
 
 **Sprint:** 01-core, Sprint 1 (Full pipeline to Report)  
-**Scope:** S1.1–S1.14  
+**Scope:** S1.1–S1.20 (including post-review hardening tasks)  
 **Status:** All tasks Done.
 
 ---
 
 ## 1. Executive summary
 
-Sprint 1 delivered a **complete pipeline** from ingest to report: a single command brings up the stack (Postgres, OTel, Jaeger); the API accepts data and invokes the agent; the agent runs Triage → Investigate → Decide → Report with escalation on lack of evidence/timeouts/limits; audit log and OTel traces are in place; evals and unit tests run in CI. **Sprint goal achieved.** Act (ticketing, GitOps, OPA, approvals) is intentionally out of scope for S1 and planned for S2.
+Sprint 1 delivered a **complete pipeline** from ingest to report: a single command brings up the stack (Postgres, OTel, Jaeger); the API accepts data and invokes the agent; the agent runs Triage → Investigate → Decide → Report with escalation on lack of evidence/timeouts/limits; audit log and OTel traces are in place; evals and unit tests run in CI. Post-review tasks (S1.15–S1.20) hardened eval scoring, observability/config, audit semantics, and MCP telemetry client behaviour. **Sprint goal achieved.** Act (ticketing, GitOps, OPA, approvals) is intentionally out of scope for S1 and planned for S2.
 
 ---
 
@@ -108,6 +108,30 @@ Sprint 1 delivered a **complete pipeline** from ingest to report: a single comma
 ### S1.14 — Unit tests
 - **Why:** Regression and behaviour documentation.
 - **What:** `tests/conftest.py` (api_client with DATA_DIR/REPO_ROOT patch); `tests/test_api.py` (health, ingest valid/invalid/persistence/source); `tests/test_fixtures.py` (NDJSON fixture schema). Existing: test_audit_log, test_agent_pipeline, test_evals, test_limits_timeouts, test_otel_jaeger, test_mcp_telemetry.
+
+### S1.15 — Evals hardening (top_k, citation vs escalation)
+- **Why:** Make evals truly gate quality for triage and citations; prevent citation-required cases from “passing via escalation”.
+- **What:** `evals/scoring.py` now respects `expected_subsystem_top_k` (triage must land within the first k expected subsystems) and treats `require_citations: true` + non-mandatory escalation as a failure (escalation is not allowed to satisfy citation-present cases); full evals run remains deterministic and CI-stable.
+
+### S1.16 — .env.example and single-command observability
+- **Why:** Ensure that the “single-command” experience actually produces traces in Jaeger and that all important env vars are discoverable.
+- **What:** `.env.example` extended with OTel and agent limit/timeouts (`OTEL_EXPORTER_OTLP_ENDPOINT`, `AGENT_*`); with Compose up + copying `.env.example` and setting `OPENAI_API_KEY` and OTLP endpoint, running one `/runs` produces traces visible in Jaeger; README/.env comments clarify how to enable tracing.
+
+### S1.17 — Config: optional Postgres for no-DB modes
+- **Why:** Allow running the core API/agent and Telemetry MCP without requiring Postgres when KB/RAG is not in use.
+- **What:** `config.Settings.postgres_password` made optional for core apps; `postgres_dsn` is only required/used by KB server/indexer, which now fail fast with a clear error when DB config is missing; `.env.example` documents that Postgres vars are optional unless using KB/RAG.
+
+### S1.18 — Audit log: outcome failure vs empty, error details
+- **Why:** Distinguish “tool returned no results” from “tool failed” in audits, for better debugging and compliance.
+- **What:** Audit entries for MCP calls now set `outcome` to `success`, `empty`, or `failure`, and on failures can capture a short, safe error indicator (e.g. `error_message`/hash); `audit_log.append_entry` schema extended accordingly and tests updated to cover the new semantics.
+
+### S1.19 — (Optional) Code readability / maintainability pass
+- **Why:** Reduce cognitive load for future work on the agent, MCP integration, and evals without changing behaviour.
+- **What:** Light readability pass on `apps/agent/nodes.py`, `apps/agent/mcp_client.py`, `evals/scoring.py`, and related config: split dense one-liners, name intermediate values, and clarify non-obvious conditionals; tests and evals continue to pass unchanged.
+
+### S1.20 — MCP Telemetry client integration (citation-present)
+- **Why:** Fix the Telemetry MCP client so that when telemetry evidence exists, the agent uses it for grounded citations instead of escalating.
+- **What:** `apps/agent/mcp_client.py::call_telemetry` (and related KB MCP helpers) updated to correctly decode FastMCP/StreamableHTTP tool results (`structuredContent` and `content` blocks), so that for the `citation-present` window and `channels: ["bus_voltage"]` the client returns real telemetry samples; full eval run (`python -m evals.scoring`) now passes all 8 cases with `citation-present` succeeding via citations rather than escalation.
 
 ---
 

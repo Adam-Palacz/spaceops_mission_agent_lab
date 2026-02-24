@@ -1,9 +1,9 @@
 {
   "incident_id": "timeout-test",
-  "subsystem": "Payload",
-  "risk": "low",
+  "subsystem": "Power",
+  "risk": "medium",
   "payload": {
     "ref": "test"
   },
-  "triaged_at": "2026-02-23T17:45:47.657186+00:00"
+  "triaged_at": "2026-02-24T12:19:25.598842+00:00"
 }

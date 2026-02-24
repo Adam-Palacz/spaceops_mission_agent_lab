@@ -1,9 +1,9 @@
 {
   "incident_id": "normal-limits-test",
-  "subsystem": "Payload",
-  "risk": "low",
+  "subsystem": "Power",
+  "risk": "medium",
   "payload": {
     "ref": "test"
   },
-  "triaged_at": "2026-02-23T17:46:05.277291+00:00"
+  "triaged_at": "2026-02-24T12:19:38.955268+00:00"
 }

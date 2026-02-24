@@ -20,6 +20,17 @@ EMBEDDING_DIM = 1536
 
 
 def get_connection():
+    """
+    Return a Postgres connection for KB indexing.
+
+    S1.17: Fail fast with a clear error if Postgres is not configured.
+    Core app (API/agent without KB) should not require POSTGRES_PASSWORD, but index_kb does.
+    """
+    if not settings.database_url and not getattr(settings, "postgres_password", "").strip():
+        raise SystemExit(
+            "Postgres is required to index KB chunks. "
+            "Set DATABASE_URL or POSTGRES_PASSWORD/POSTGRES_* in the environment or .env."
+        )
     return psycopg2.connect(settings.postgres_dsn)
 
 

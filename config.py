@@ -32,7 +32,8 @@ class Settings(BaseSettings):
     postgres_host: str = Field(default="localhost")
     postgres_port: str = Field(default="5432")
     postgres_user: str = Field(default="spaceops")
-    postgres_password: str = Field()
+    # Optional for core app (API/agent without KB); required when using KB server or indexer.
+    postgres_password: str = Field(default="", description="Postgres password; required for KB/RAG, optional otherwise.")
     postgres_db: str = Field(default="spaceops")
 
     # MCP servers (agent calls these in S1.7)

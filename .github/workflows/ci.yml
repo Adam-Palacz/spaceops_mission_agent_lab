@@ -64,8 +64,17 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run evals
+      - name: Run evals (with Telemetry MCP server)
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
-        run: python -m evals.scoring
+        run: |
+          # Start Telemetry MCP server in background (reads from data/telemetry fixtures)
+          python -m apps.mcp.telemetry_server.main &
+          MCP_PID=$!
+          # Give the server a moment to start
+          sleep 5
+          # Run evals; this will call Telemetry MCP over HTTP (http://localhost:8001/mcp)
+          python -m evals.scoring
+          # Stop MCP server (best-effort)
+          kill $MCP_PID || true

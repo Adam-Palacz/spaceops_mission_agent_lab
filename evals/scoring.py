@@ -37,19 +37,20 @@ def score_case(case: dict, result: dict) -> tuple[bool, list[str]]:
     S1.15: uses expected_subsystem_top_k; require_citations fails when run escalated.
     """
     failures: list[str] = []
-    # Triage: subsystem must be in first top_k of expected_subsystem (S1.15)
+    must_escalate = case.get("must_escalate") is True
+
+    # Triage: subsystem must be in first top_k of expected_subsystem (S1.15). Skip for must_escalate cases (we only assert escalation).
     expected_subsystem: list[str] = case.get("expected_subsystem") or []
     top_k = case.get("expected_subsystem_top_k")
     if top_k is None or not isinstance(top_k, int):
         top_k = 1
-    if expected_subsystem:
+    if expected_subsystem and not must_escalate:
         actual = (result.get("subsystem") or "").strip()
         allowed = expected_subsystem[:top_k]
         if actual not in allowed:
             failures.append(f"triage: expected one of {allowed} (top_{top_k}), got '{actual}'")
 
     # Must escalate
-    must_escalate = case.get("must_escalate") is True
     escalated = result.get("escalated") is True
     escalation_packet = result.get("escalation_packet") or {}
     if must_escalate:

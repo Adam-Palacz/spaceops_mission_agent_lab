@@ -35,11 +35,23 @@ async def _call_telemetry_mcp(time_range_start: str, time_range_end: str, channe
                 )
                 if result.isError:
                     return []
-                if result.structuredContent:
-                    return list(result.structuredContent) if isinstance(result.structuredContent, list) else [result.structuredContent]
-                if result.content:
-                    text = result.content[0].text if result.content else ""
-                    return json.loads(text) if text.strip().startswith("[") else []
+                # Prefer structuredContent when available (FastMCP json_response=True).
+                structured = getattr(result, "structuredContent", None)
+                if structured is not None:
+                    return list(structured) if isinstance(structured, list) else [structured]
+                # Fallback: try to pull JSON payload from content parts (newer MCP clients may expose .json or .data).
+                content = getattr(result, "content", None) or []
+                for part in content:
+                    payload = getattr(part, "json", None)
+                    if isinstance(payload, list):
+                        return payload
+                    payload = getattr(part, "data", None)
+                    if isinstance(payload, list):
+                        return payload
+                if content:
+                    # Last resort: try to parse text as JSON array.
+                    text = getattr(content[0], "text", "") or ""
+                    return json.loads(text) if isinstance(text, str) and text.strip().startswith("[") else []
     except Exception:
         return []
     return []
@@ -56,11 +68,20 @@ async def _call_kb_runbooks_mcp(query: str, limit: int = 5) -> list[dict]:
                 result = await session.call_tool("search_runbooks", arguments={"query": query, "limit": limit})
                 if result.isError:
                     return []
-                if result.structuredContent:
-                    return list(result.structuredContent) if isinstance(result.structuredContent, list) else [result.structuredContent]
-                if result.content:
-                    text = result.content[0].text if result.content else ""
-                    return json.loads(text) if text.strip().startswith("[") else []
+                structured = getattr(result, "structuredContent", None)
+                if structured is not None:
+                    return list(structured) if isinstance(structured, list) else [structured]
+                content = getattr(result, "content", None) or []
+                for part in content:
+                    payload = getattr(part, "json", None)
+                    if isinstance(payload, list):
+                        return payload
+                    payload = getattr(part, "data", None)
+                    if isinstance(payload, list):
+                        return payload
+                if content:
+                    text = getattr(content[0], "text", "") or ""
+                    return json.loads(text) if isinstance(text, str) and text.strip().startswith("[") else []
     except Exception:
         return []
     return []
@@ -77,11 +98,20 @@ async def _call_kb_postmortems_mcp(signature: str, limit: int = 5) -> list[dict]
                 result = await session.call_tool("search_postmortems", arguments={"signature": signature, "limit": limit})
                 if result.isError:
                     return []
-                if result.structuredContent:
-                    return list(result.structuredContent) if isinstance(result.structuredContent, list) else [result.structuredContent]
-                if result.content:
-                    text = result.content[0].text if result.content else ""
-                    return json.loads(text) if text.strip().startswith("[") else []
+                structured = getattr(result, "structuredContent", None)
+                if structured is not None:
+                    return list(structured) if isinstance(structured, list) else [structured]
+                content = getattr(result, "content", None) or []
+                for part in content:
+                    payload = getattr(part, "json", None)
+                    if isinstance(payload, list):
+                        return payload
+                    payload = getattr(part, "data", None)
+                    if isinstance(payload, list):
+                        return payload
+                if content:
+                    text = getattr(content[0], "text", "") or ""
+                    return json.loads(text) if isinstance(text, str) and text.strip().startswith("[") else []
     except Exception:
         return []
     return []

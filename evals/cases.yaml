@@ -52,7 +52,8 @@ cases:
     payload:
       time_range_start: "2025-02-14T09:00:00Z"
       time_range_end: "2025-02-14T11:00:00Z"
-      channels: ["power.bus_voltage"]
+      # Match fixture channel name in data/telemetry/telemetry.ndjson
+      channels: ["bus_voltage"]
     expected_subsystem_top_k: 2
     expected_subsystem: ["Power", "Thermal", "Ground", "ADCS", "Comms", "Payload"]
     require_citations: true

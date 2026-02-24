@@ -6,8 +6,8 @@
     "time_range_start": "2025-02-14T09:00:00Z",
     "time_range_end": "2025-02-14T11:00:00Z",
     "channels": [
-      "power.bus_voltage"
+      "bus_voltage"
     ]
   },
-  "triaged_at": "2026-02-23T19:17:16.738625+00:00"
+  "triaged_at": "2026-02-24T09:13:48.838152+00:00"
 }

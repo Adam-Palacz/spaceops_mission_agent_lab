@@ -33,25 +33,58 @@ async def _call_telemetry_mcp(time_range_start: str, time_range_end: str, channe
                         "channels": channels or [],
                     },
                 )
-                if result.isError:
+                # MCP SDK may use is_error (snake_case) or isError (camelCase)
+                if getattr(result, "is_error", False) or getattr(result, "isError", False):
                     return []
-                # Prefer structuredContent when available (FastMCP json_response=True).
-                structured = getattr(result, "structuredContent", None)
+                # Prefer structured_content (snake_case); fallback structuredContent (camelCase)
+                structured = getattr(result, "structured_content", None) or getattr(result, "structuredContent", None)
                 if structured is not None:
-                    return list(structured) if isinstance(structured, list) else [structured]
-                # Fallback: try to pull JSON payload from content parts (newer MCP clients may expose .json or .data).
+                    if isinstance(structured, dict) and "result" in structured and isinstance(structured["result"], list):
+                        return structured["result"]
+                    if isinstance(structured, list):
+                        return structured
+                    return [structured]
                 content = getattr(result, "content", None) or []
                 for part in content:
-                    payload = getattr(part, "json", None)
-                    if isinstance(payload, list):
-                        return payload
-                    payload = getattr(part, "data", None)
-                    if isinstance(payload, list):
-                        return payload
-                if content:
-                    # Last resort: try to parse text as JSON array.
-                    text = getattr(content[0], "text", "") or ""
-                    return json.loads(text) if isinstance(text, str) and text.strip().startswith("[") else []
+                    for attr in ("json", "data"):
+                        payload = getattr(part, attr, None)
+                        if isinstance(payload, list):
+                            return payload
+                        if payload is not None:
+                            return payload if isinstance(payload, list) else [payload]
+                collected: list[dict] = []
+                for part in content:
+                    text = (
+                        getattr(part, "text", None)
+                        or (part.get("text", "") if isinstance(part, dict) else "")
+                        or ""
+                    )
+                    if not isinstance(text, str):
+                        continue
+                    text = text.strip()
+                    if not text:
+                        continue
+                    try:
+                        if text.startswith("["):
+                            return json.loads(text)
+                        if text.startswith("{"):
+                            obj = json.loads(text)
+                            if isinstance(obj, dict):
+                                if "result" in obj and isinstance(obj["result"], list):
+                                    return obj["result"]
+                                if len(obj) == 1:
+                                    only = next(iter(obj.values()))
+                                    if isinstance(only, list):
+                                        return only
+                            collected.append(obj)
+                    except json.JSONDecodeError:
+                        pass
+                if collected:
+                    if len(collected) == 1 and isinstance(collected[0], dict) and "result" in collected[0]:
+                        inner = collected[0]["result"]
+                        if isinstance(inner, list):
+                            return inner
+                    return collected
     except Exception:
         return []
     return []
@@ -66,22 +99,56 @@ async def _call_kb_runbooks_mcp(query: str, limit: int = 5) -> list[dict]:
             async with ClientSession(read_stream, write_stream) as session:
                 await session.initialize()
                 result = await session.call_tool("search_runbooks", arguments={"query": query, "limit": limit})
-                if result.isError:
+                if getattr(result, "is_error", False) or getattr(result, "isError", False):
                     return []
-                structured = getattr(result, "structuredContent", None)
+                structured = getattr(result, "structured_content", None) or getattr(result, "structuredContent", None)
                 if structured is not None:
-                    return list(structured) if isinstance(structured, list) else [structured]
+                    if isinstance(structured, dict) and "result" in structured and isinstance(structured["result"], list):
+                        return structured["result"]
+                    if isinstance(structured, list):
+                        return structured
+                    return [structured]
                 content = getattr(result, "content", None) or []
                 for part in content:
-                    payload = getattr(part, "json", None)
-                    if isinstance(payload, list):
-                        return payload
-                    payload = getattr(part, "data", None)
-                    if isinstance(payload, list):
-                        return payload
-                if content:
-                    text = getattr(content[0], "text", "") or ""
-                    return json.loads(text) if isinstance(text, str) and text.strip().startswith("[") else []
+                    for attr in ("json", "data"):
+                        payload = getattr(part, attr, None)
+                        if isinstance(payload, list):
+                            return payload
+                        if payload is not None:
+                            return payload if isinstance(payload, list) else [payload]
+                collected: list[dict] = []
+                for part in content:
+                    text = (
+                        getattr(part, "text", None)
+                        or (part.get("text", "") if isinstance(part, dict) else "")
+                        or ""
+                    )
+                    if not isinstance(text, str):
+                        continue
+                    text = text.strip()
+                    if not text:
+                        continue
+                    try:
+                        if text.startswith("["):
+                            return json.loads(text)
+                        if text.startswith("{"):
+                            obj = json.loads(text)
+                            if isinstance(obj, dict):
+                                if "result" in obj and isinstance(obj["result"], list):
+                                    return obj["result"]
+                                if len(obj) == 1:
+                                    only = next(iter(obj.values()))
+                                    if isinstance(only, list):
+                                        return only
+                            collected.append(obj)
+                    except json.JSONDecodeError:
+                        pass
+                if collected:
+                    if len(collected) == 1 and isinstance(collected[0], dict) and "result" in collected[0]:
+                        inner = collected[0]["result"]
+                        if isinstance(inner, list):
+                            return inner
+                    return collected
     except Exception:
         return []
     return []
@@ -96,22 +163,56 @@ async def _call_kb_postmortems_mcp(signature: str, limit: int = 5) -> list[dict]
             async with ClientSession(read_stream, write_stream) as session:
                 await session.initialize()
                 result = await session.call_tool("search_postmortems", arguments={"signature": signature, "limit": limit})
-                if result.isError:
+                if getattr(result, "is_error", False) or getattr(result, "isError", False):
                     return []
-                structured = getattr(result, "structuredContent", None)
+                structured = getattr(result, "structured_content", None) or getattr(result, "structuredContent", None)
                 if structured is not None:
-                    return list(structured) if isinstance(structured, list) else [structured]
+                    if isinstance(structured, dict) and "result" in structured and isinstance(structured["result"], list):
+                        return structured["result"]
+                    if isinstance(structured, list):
+                        return structured
+                    return [structured]
                 content = getattr(result, "content", None) or []
                 for part in content:
-                    payload = getattr(part, "json", None)
-                    if isinstance(payload, list):
-                        return payload
-                    payload = getattr(part, "data", None)
-                    if isinstance(payload, list):
-                        return payload
-                if content:
-                    text = getattr(content[0], "text", "") or ""
-                    return json.loads(text) if isinstance(text, str) and text.strip().startswith("[") else []
+                    for attr in ("json", "data"):
+                        payload = getattr(part, attr, None)
+                        if isinstance(payload, list):
+                            return payload
+                        if payload is not None:
+                            return payload if isinstance(payload, list) else [payload]
+                collected: list[dict] = []
+                for part in content:
+                    text = (
+                        getattr(part, "text", None)
+                        or (part.get("text", "") if isinstance(part, dict) else "")
+                        or ""
+                    )
+                    if not isinstance(text, str):
+                        continue
+                    text = text.strip()
+                    if not text:
+                        continue
+                    try:
+                        if text.startswith("["):
+                            return json.loads(text)
+                        if text.startswith("{"):
+                            obj = json.loads(text)
+                            if isinstance(obj, dict):
+                                if "result" in obj and isinstance(obj["result"], list):
+                                    return obj["result"]
+                                if len(obj) == 1:
+                                    only = next(iter(obj.values()))
+                                    if isinstance(only, list):
+                                        return only
+                            collected.append(obj)
+                    except json.JSONDecodeError:
+                        pass
+                if collected:
+                    if len(collected) == 1 and isinstance(collected[0], dict) and "result" in collected[0]:
+                        inner = collected[0]["result"]
+                        if isinstance(inner, list):
+                            return inner
+                    return collected
     except Exception:
         return []
     return []

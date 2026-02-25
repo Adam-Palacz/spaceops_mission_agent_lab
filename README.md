@@ -42,6 +42,8 @@ python -m apps.api.main
 
 **Optional (richer Investigate):** Run MCP Telemetry (port 8001) and MCP KB (8002); index KB: `python -m apps.mcp.kb_server.index_kb`. See [apps/agent/README.md](apps/agent/README.md), [apps/mcp/](apps/mcp/).
 
+**GitOps / ops-config (S2):** Config PRs from the agent target the [ops-config/](ops-config/) subtree at repo root. Default branch: `main`; path for MCP: `ops-config/` (local) or the separate repo URL if split. See [ops-config/README.md](ops-config/README.md).
+
 ## Testing
 
 ```bash

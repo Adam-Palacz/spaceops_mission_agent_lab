@@ -1,14 +1,14 @@
 # Sprint 1 — Review
 
 **Sprint:** 01-core, Sprint 1 (Full pipeline to Report)  
-**Scope:** S1.1–S1.20 (including post-review hardening tasks)  
+**Scope:** S1.1–S1.22 (including post-review hardening tasks)  
 **Status:** All tasks Done.
 
 ---
 
 ## 1. Executive summary
 
-Sprint 1 delivered a **complete pipeline** from ingest to report: a single command brings up the stack (Postgres, OTel, Jaeger); the API accepts data and invokes the agent; the agent runs Triage → Investigate → Decide → Report with escalation on lack of evidence/timeouts/limits; audit log and OTel traces are in place; evals and unit tests run in CI. Post-review tasks (S1.15–S1.20) hardened eval scoring, observability/config, audit semantics, and MCP telemetry client behaviour. **Sprint goal achieved.** Act (ticketing, GitOps, OPA, approvals) is intentionally out of scope for S1 and planned for S2.
+Sprint 1 delivered a **complete pipeline** from ingest to report: a single command brings up the stack (Postgres, OTel, Jaeger); the API accepts data and invokes the agent; the agent runs Triage → Investigate → Decide → Report with escalation on lack of evidence/timeouts/limits; audit log and OTel traces are in place; evals and unit tests run in CI. Post-review tasks (S1.15–S1.22) hardened eval scoring, observability/config, audit semantics, MCP telemetry client behaviour, NF6 tests, oraz spójny styl/formatowanie kodu. **Sprint goal achieved.** Act (ticketing, GitOps, OPA, approvals) is intentionally out of scope for S1 and planned for S2.
 
 ---
 
@@ -133,6 +133,14 @@ Sprint 1 delivered a **complete pipeline** from ingest to report: a single comma
 - **Why:** Fix the Telemetry MCP client so that when telemetry evidence exists, the agent uses it for grounded citations instead of escalating.
 - **What:** `apps/agent/mcp_client.py::call_telemetry` (and related KB MCP helpers) updated to correctly decode FastMCP/StreamableHTTP tool results (`structuredContent` and `content` blocks), so that for the `citation-present` window and `channels: ["bus_voltage"]` the client returns real telemetry samples; full eval run (`python -m evals.scoring`) now passes all 8 cases with `citation-present` succeeding via citations rather than escalation.
 
+### S1.21 — NF6 tests hardening (LLM/MCP mocking, no OPENAI dependency)
+- **Why:** Ensure NF6 (limits/timeouts) behaviour is reliably gated by unit tests in CI even when `OPENAI_API_KEY` or external services are unavailable.
+- **What:** `tests/test_limits_timeouts.py` was refactored to monkeypatch `apps.agent.nodes._chat_completion` with deterministic stubs (for timeout, token limit, normal runs), removed `OPENAI_API_KEY`-based skips, and kept MCP fully mocked, so NF6 invariants are enforced in the standard `test` job without network calls.
+
+### S1.22 — Code style enforcement (ruff format, config/infra readability)
+- **Why:** Bring Sprint 1 code to a consistent, “production-ready” readability baseline and make future changes easier to review.
+- **What:** Adopted `ruff format` as the canonical Python formatter (documented in `README.md`, wired into `.pre-commit-config.yaml` via `ruff-format` hook) and ran it across core modules (`apps/agent/**`, `apps/mcp/**`, `evals/`, `config.py`); performed a light readability pass over `infra/docker-compose.yml`, `.github/workflows/ci.yml`, and related docs to keep configuration and CI steps easy to scan, without changing behaviour.
+
 ---
 
 ## 4. Project state after S1
@@ -181,8 +189,8 @@ Sprint 1 delivered a **complete pipeline** from ingest to report: a single comma
 | NF2 | Traces + audit log | ✅ | OTel + audit_log.ndjson |
 | NF4 | Evals in CI | ✅ | evals in ci.yml |
 | NF5a | Citation grounding | ✅ | Decide requires doc_id/snippet_id in steps |
-| NF6 | Token/rate limits, timeouts | ✅ | S1.12 |
-| NF7 | Documentation | ✅ | README, docs/README, evals/README, roadmap |
+| NF6 | Token/rate limits, timeouts | ✅ | S1.12 core behaviour + S1.21 NF6 tests hardening (no OPENAI dependency in unit tests) |
+| NF7 | Documentation | ✅ | README, docs/README, evals/README, roadmap, documented formatter/style (S1.19, S1.22) |
 
 F5, F6, F8 (Act, OPA, Approval API) and NF3, NF8, NF9 are planned for **S2**.
 

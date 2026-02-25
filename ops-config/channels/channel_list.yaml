@@ -1,0 +1,18 @@
+# Telemetry channel list — reference for agent and tooling.
+# Optional; agent may propose new channels or metadata via PR.
+
+version: "1"
+
+channels:
+  - name: bus_voltage
+    subsystem: Power
+    unit: V
+    description: "Main power bus voltage."
+  - name: temp_plate_1
+    subsystem: Thermal
+    unit: "C"
+    description: "Thermal plate 1 temperature."
+  - name: wheel_rpm
+    subsystem: ADCS
+    unit: rpm
+    description: "Reaction wheel RPM."

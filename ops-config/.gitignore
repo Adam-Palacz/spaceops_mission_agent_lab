@@ -1,0 +1,4 @@
+# Local/temp files only; keep subtree clean if split to separate repo.
+*.tmp
+*.bak
+.DS_Store

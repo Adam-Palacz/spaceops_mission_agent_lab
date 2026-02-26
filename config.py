@@ -44,9 +44,31 @@ class Settings(BaseSettings):
     )
     postgres_db: str = Field(default="spaceops")
 
-    # MCP servers (agent calls these in S1.7)
+    # MCP servers (agent calls these in S1.7, S2.2)
     telemetry_mcp_url: str = Field(default="http://localhost:8001/mcp")
     kb_mcp_url: str = Field(default="http://localhost:8002/mcp")
+    ticket_mcp_url: str = Field(
+        default="http://localhost:8003/mcp",
+        description="MCP Ticketing (create_ticket); S2.2.",
+    )
+    gitops_mcp_url: str = Field(
+        default="http://localhost:8004/mcp",
+        description="MCP GitOps (create_pr to ops-config); S2.2.",
+    )
+
+    # GitOps: push branch + create PR (S2.2). Empty = only write files locally.
+    github_token: str = Field(
+        default="",
+        description="GitHub token (repo scope) for push and Create PR; empty = no push/PR.",
+    )
+    github_repo: str = Field(
+        default="",
+        description="GitHub repo 'owner/name' for ops-config (or main repo with ops-config subtree); required for push/PR.",
+    )
+    github_repo_base_branch: str = Field(
+        default="main",
+        description="Base branch for new PRs (e.g. main).",
+    )
 
     # OTel (S1.10): export traces to Collector; empty = disable tracing
     otel_exporter_otlp_endpoint: str = Field(

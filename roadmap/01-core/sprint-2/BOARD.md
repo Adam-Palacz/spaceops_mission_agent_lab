@@ -4,7 +4,7 @@
 |------|--------|--------|-----------|
 | S2.1 | ops-config repo / subtree | Done | [S2.1-ops-config.md](S2.1-ops-config.md) |
 | S2.2 | MCP Ticketing + GitOps | Todo | [S2.2-mcp-ticketing-gitops.md](S2.2-mcp-ticketing-gitops.md) |
-| S2.3 | Decide safe/restricted + Act | Todo | [S2.3-decide-act.md](S2.3-decide-act.md) |
+| S2.3 | Decide safe/restricted + Act | Done | [S2.3-decide-act.md](S2.3-decide-act.md) |
 | S2.4 | OPA (allowlist, fail-closed) | Todo | [S2.4-opa-fail-closed.md](S2.4-opa-fail-closed.md) |
 | S2.5 | Approval API (idempotent, auth) | Todo | [S2.5-approval-api.md](S2.5-approval-api.md) |
 | S2.6 | Execute restricted on approve | Todo | [S2.6-execute-restricted.md](S2.6-execute-restricted.md) |

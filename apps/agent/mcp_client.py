@@ -263,11 +263,92 @@ async def _call_kb_postmortems_mcp(signature: str, limit: int = 5) -> list[dict]
     return []
 
 
+def _decode_single_result(result, *, content_attr: str = "content") -> dict | None:
+    """Decode MCP tool result to a single dict (e.g. create_ticket, create_pr)."""
+    if getattr(result, "is_error", False) or getattr(result, "isError", False):
+        return None
+    # Some MCP SDKs expose parsed body as .data
+    data = getattr(result, "data", None)
+    if isinstance(data, dict):
+        return data
+    structured = getattr(result, "structured_content", None) or getattr(
+        result, "structuredContent", None
+    )
+    if isinstance(structured, dict):
+        if "result" in structured and isinstance(structured["result"], dict):
+            return structured["result"]
+        return structured
+    content = getattr(result, content_attr, None) or []
+    for part in content:
+        text = (
+            getattr(part, "text", None)
+            or (part.get("text", "") if isinstance(part, dict) else "")
+            or ""
+        )
+        if isinstance(text, str) and text.strip().startswith("{"):
+            try:
+                return json.loads(text)
+            except json.JSONDecodeError:
+                pass
+    return None
+
+
+async def _call_ticket_mcp(title: str, body: str) -> dict | None:
+    if not _MCP_AVAILABLE:
+        return None
+    url = getattr(settings, "ticket_mcp_url", "http://localhost:8003/mcp")
+    try:
+        async with streamable_http_client(url) as (read_stream, write_stream, _):
+            async with ClientSession(read_stream, write_stream) as session:
+                await session.initialize()
+                result = await session.call_tool(
+                    "create_ticket", arguments={"title": title, "body": body}
+                )
+                return _decode_single_result(result)
+    except Exception:
+        return None
+
+
+async def _call_gitops_mcp(
+    repo_path: str | None, branch: str, files: list[dict]
+) -> dict | None:
+    if not _MCP_AVAILABLE:
+        return None
+    url = getattr(settings, "gitops_mcp_url", "http://localhost:8004/mcp")
+    try:
+        async with streamable_http_client(url) as (read_stream, write_stream, _):
+            async with ClientSession(read_stream, write_stream) as session:
+                await session.initialize()
+                result = await session.call_tool(
+                    "create_pr",
+                    arguments={
+                        "repo_path": repo_path,
+                        "branch": branch,
+                        "files": files,
+                    },
+                )
+                return _decode_single_result(result)
+    except Exception:
+        return None
+
+
 def call_telemetry(
     time_range_start: str, time_range_end: str, channels: list[str] | None = None
 ) -> list[dict]:
     """Sync wrapper for query_telemetry MCP call."""
     return asyncio.run(_call_telemetry_mcp(time_range_start, time_range_end, channels))
+
+
+def call_create_ticket(title: str, body: str) -> dict | None:
+    """Sync wrapper for create_ticket MCP call (S2.2). Returns ticket dict or None."""
+    return asyncio.run(_call_ticket_mcp(title, body))
+
+
+def call_create_pr(
+    repo_path: str | None, branch: str, files: list[dict]
+) -> dict | None:
+    """Sync wrapper for create_pr MCP call (S2.2). Returns result dict or None."""
+    return asyncio.run(_call_gitops_mcp(repo_path, branch, files))
 
 
 def call_search_runbooks(query: str, limit: int = 5) -> list[dict]:

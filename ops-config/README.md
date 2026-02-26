@@ -20,3 +20,21 @@ Operational configuration target for **GitOps PRs** from the SpaceOps agent (S2.
 - **Safe actions:** Agent can create a PR that adds or edits files under `ops-config/` (e.g. change a threshold in `alerts/thresholds.yaml`).
 - **Restricted actions:** After OPA allow and human approval, the approved action may create a PR here (S2.6).
 - Branch protection on `main` is optional for MVP; recommended once in production.
+
+## Testing create_pr (GitOps MCP)
+
+1. **Optional (full PR flow):** In `.env` set `GITHUB_TOKEN` (repo scope) and `GITHUB_REPO` (e.g. `owner/repo` or `https://github.com/owner/repo`). Leave empty to test local-only (files written under `ops-config/`, no push/PR).
+
+2. **Start the GitOps MCP server** from repo root:
+   ```bash
+   PYTHONPATH=. python -m apps.mcp.gitops_server.main
+   ```
+   Server listens on port 8004.
+
+3. **In another terminal**, from repo root run the test script:
+   ```bash
+   PYTHONPATH=. python scripts/test_gitops_pr.py
+   ```
+   This calls `create_pr` with a test branch and file; the script prints the result (`note`, `pr_url`, or `push_error`).
+
+4. **Verify:** Without token/repo you should see files under `ops-config/alerts/` (e.g. `test_threshold.yaml`). With token/repo set, a branch is pushed and a PR is created; check the repo on GitHub.

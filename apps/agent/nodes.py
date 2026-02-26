@@ -17,9 +17,12 @@ from apps.agent.mcp_client import (
     call_telemetry,
     call_search_runbooks,
     call_search_postmortems,
+    call_create_ticket,
+    call_create_pr,
     signature_from_payload,
 )
 from apps.agent.audit_log import append_entry as audit_append
+from apps.agent.opa_client import opa_allow
 from apps.telemetry import get_tracer
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
@@ -396,8 +399,9 @@ Produce a short action plan. Each step MUST cite at least one of these doc_ids o
 doc_ids: {doc_ids}
 snippet_ids: {snippet_ids[:10]}
 
-Return a JSON array of steps. Each step: {{"action": "...", "safe": true|false, "doc_ids": ["..."], "snippet_ids": ["..."]}}
-Safe=true for ticket/report/query; safe=false for config/restart (restricted).
+Return a JSON array of steps. Each step: {{"action": "...", "safe": true|false, "action_type": "create_ticket"|"create_pr"|"change_config"|"report", "doc_ids": ["..."], "snippet_ids": ["..."]}}
+- safe=true for ticket, report, extra query; safe=false for config change/restart (restricted).
+- action_type: use "create_ticket" for creating a ticket, "create_pr" for proposing a config/PR change, "change_config" for restricted config changes, "report" for documentation-only.
 Output only the JSON array, no markdown."""
     try:
         content, usage = _chat_completion(prompt)
@@ -429,13 +433,158 @@ Output only the JSON array, no markdown."""
         ]
     if not isinstance(plan, list):
         plan = [plan]
-    # Ensure each step has at least one citation
+    # Ensure each step has at least one citation and action_type
     for step in plan:
         if isinstance(step, dict):
             if not step.get("doc_ids") and not step.get("snippet_ids"):
                 step["doc_ids"] = doc_ids[:1] if doc_ids else []
                 step["snippet_ids"] = snippet_ids[:1] if snippet_ids else []
+            if not step.get("action_type"):
+                step["action_type"] = "report"
     return {"plan": plan, "tokens_used": tokens_used, "llm_calls_used": llm_calls_used}
+
+
+def act(state: AgentState) -> dict:
+    """
+    S2.3: Execute safe steps via Ticketing/GitOps MCP; for restricted, call OPA
+    and if allow create approval request; on deny/error escalate.
+    """
+    incident_id = state.get("incident_id") or "unknown"
+    trace_id = state.get("trace_id") or incident_id
+    plan = state.get("plan") or []
+    act_results: list[dict] = []
+    approval_requests: list[dict] = []
+    tracer = get_tracer("apps.agent")
+
+    for i, step in enumerate(plan):
+        if not isinstance(step, dict):
+            continue
+        safe = step.get("safe", True)
+        action_type = (step.get("action_type") or "report").strip().lower()
+        action_text = step.get("action", "") or ""
+
+        if safe and action_type == "create_ticket":
+            with tracer.start_as_current_span("mcp.create_ticket") as sp:
+                sp.set_attribute("incident_id", incident_id)
+                try:
+                    ticket = call_create_ticket(
+                        title=action_text[:200], body=action_text
+                    )
+                    outcome = "success" if ticket else "empty"
+                    err_msg = None
+                except Exception as exc:
+                    ticket = None
+                    outcome = "failure"
+                    err_msg = _safe_error_message(exc)
+            audit_append(
+                trace_id=trace_id,
+                incident_id=incident_id,
+                actor="agent",
+                tool="create_ticket",
+                args={"title": action_text[:100], "body_len": len(action_text)},
+                outcome=outcome,
+                error_message=err_msg,
+            )
+            act_results.append(
+                {
+                    "step_index": i,
+                    "tool": "create_ticket",
+                    "outcome": outcome,
+                    "result": ticket,
+                }
+            )
+
+        elif safe and action_type == "create_pr":
+            branch = f"agent/{incident_id}"
+            files = [
+                {
+                    "path": "alerts/agent-proposed.yaml",
+                    "content": f"# Agent proposal: {action_text}\n",
+                }
+            ]
+            with tracer.start_as_current_span("mcp.create_pr") as sp:
+                sp.set_attribute("incident_id", incident_id)
+                try:
+                    pr_result = call_create_pr(
+                        repo_path=None, branch=branch, files=files
+                    )
+                    outcome = "success" if pr_result else "empty"
+                    err_msg = None
+                except Exception as exc:
+                    pr_result = None
+                    outcome = "failure"
+                    err_msg = _safe_error_message(exc)
+            audit_append(
+                trace_id=trace_id,
+                incident_id=incident_id,
+                actor="agent",
+                tool="create_pr",
+                args={"branch": branch, "files_count": len(files)},
+                outcome=outcome,
+                error_message=err_msg,
+            )
+            act_results.append(
+                {
+                    "step_index": i,
+                    "tool": "create_pr",
+                    "outcome": outcome,
+                    "result": pr_result,
+                }
+            )
+
+        elif not safe:
+            if opa_allow(step, incident_id):
+                approval_requests.append(
+                    {
+                        "step_index": i,
+                        "step": step,
+                        "incident_id": incident_id,
+                        "reason": "restricted",
+                    }
+                )
+                audit_append(
+                    trace_id=trace_id,
+                    incident_id=incident_id,
+                    actor="agent",
+                    tool="approval_request",
+                    args={"step_index": i, "action": action_text[:80]},
+                    outcome="success",
+                )
+            else:
+                packet: EscalationPacket = {
+                    "reason": "policy_deny",
+                    "what_we_know": [
+                        f"Incident {incident_id}",
+                        f"Restricted step denied by policy: {action_text[:100]}",
+                    ],
+                    "what_we_dont_know": [
+                        "OPA denied or unavailable; step not executed."
+                    ],
+                    "what_to_check": [
+                        "Review OPA policy (S2.4) and approval flow.",
+                        "If step is valid, create approval request via API (S2.5).",
+                    ],
+                }
+                audit_append(
+                    trace_id=trace_id,
+                    incident_id=incident_id,
+                    actor="agent",
+                    tool="opa_check",
+                    args={"step_index": i},
+                    outcome="failure",
+                    error_message="OPA deny or unavailable",
+                )
+                return {
+                    "act_results": act_results,
+                    "approval_requests": approval_requests,
+                    "escalated": True,
+                    "escalation_packet": packet,
+                }
+
+    return {
+        "act_results": act_results,
+        "approval_requests": approval_requests,
+    }
 
 
 def report(state: AgentState) -> dict:
@@ -458,6 +607,8 @@ def report(state: AgentState) -> dict:
             if c.get("doc_id") or c.get("snippet_id")
         }
     )
+    act_results = state.get("act_results") or []
+    approval_requests = state.get("approval_requests") or []
     report_obj: dict = {
         "incident_id": incident_id,
         "executive_summary": (
@@ -471,6 +622,10 @@ def report(state: AgentState) -> dict:
         "rollback": "Revert config changes via ops-config PR; no automated rollback in MVP.",
         "trace_link": trace_url,
     }
+    if act_results:
+        report_obj["act_results"] = act_results
+    if approval_requests:
+        report_obj["approval_requests"] = approval_requests
     if escalated:
         report_obj["escalation_packet"] = escalation_packet
         report_obj["handoff"] = (

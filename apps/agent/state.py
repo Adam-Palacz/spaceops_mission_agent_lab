@@ -20,6 +20,8 @@ class PlanStep(TypedDict, total=False):
     safe: bool
     doc_ids: list[str]
     snippet_ids: list[str]
+    # S2.3: action_type routes Act (create_ticket | create_pr | change_config | report)
+    action_type: str
 
 
 class EscalationPacket(TypedDict, total=False):
@@ -40,6 +42,9 @@ class AgentState(TypedDict, total=False):
     hypotheses: list[str]
     citations: list[Citation]
     plan: list[PlanStep]
+    # S2.3 Act: results of safe actions; restricted steps pending approval
+    act_results: list[dict]
+    approval_requests: list[dict]
     report: dict
     escalated: bool
     escalation_packet: EscalationPacket

@@ -13,6 +13,7 @@ from langgraph.graph import END, StateGraph
 from config import settings
 from apps.agent.state import AgentState
 from apps.agent.nodes import (
+    act,
     check_escalation,
     decide,
     investigate,
@@ -47,6 +48,7 @@ def build_graph():
         "check_escalation", _wrap_node("check_escalation", check_escalation)
     )
     workflow.add_node("decide", _wrap_node("decide", decide))
+    workflow.add_node("act", _wrap_node("act", act))
     workflow.add_node("build_report", _wrap_node("build_report", report_node_fn))
     workflow.set_entry_point("triage")
     workflow.add_edge("triage", "investigate")
@@ -56,7 +58,8 @@ def build_graph():
         _route_after_escalation,
         {"build_report": "build_report", "decide": "decide"},
     )
-    workflow.add_edge("decide", "build_report")
+    workflow.add_edge("decide", "act")
+    workflow.add_edge("act", "build_report")
     workflow.add_edge("build_report", END)
     return workflow.compile()
 

@@ -43,7 +43,7 @@
   - [ ] `AgentReport.v1`
   - [ ] `EscalationPacket.v1`
 - [ ] Ingest API (NDJSON/events) with schema validation + dedupe (`event_id` unique)
-- [ ] Postgres stores:
+- [ ] Postgres stores (with migrations, e.g. Alembic) so schema evolution is auditable:
   - [ ] `telemetry_events` (append-only)
   - [ ] `incidents`
   - [ ] `runs` (run metadata)
@@ -58,6 +58,9 @@
   - [ ] `generate()` + tool-calling interface
   - [ ] backend: `openai` (default)
   - [ ] logs: model/version/latency (+ optional cost estimate)
+  - [ ] **Implementation note:** prefer reusing a battle-tested gateway such as **LiteLLM**
+        (as a sidecar/container) instead of building a custom proxy from scratch; LiteLLM
+        provides unified OpenAI-compatible APIs, fallbacks, retries, and spend tracking.
 - [ ] **Guardrails (minimum)**:
   - [ ] mandatory escalation when evidence missing
   - [ ] output schema enforcement (report + escalation)
@@ -120,7 +123,7 @@
   - [ ] `dlq_events(event_id, reason, retry_count, next_retry_at, last_error_hash)`
 
 ### Option B (Recommended)
-- [ ] NATS JetStream **or** Redpanda/Kafka
+- [ ] NATS JetStream **(preferred for SpaceOps/edge realism)** or Redpanda/Kafka
 - [ ] Partitioning by `sat_id` and/or subsystem
 - [ ] Consumers: triage / enrich / report
 - [ ] DLQ + replay tooling
@@ -164,6 +167,8 @@
   - [ ] tool input sanitization
   - [ ] allowlists for tool parameters
   - [ ] safe rendering (no tool instructions from user content)
+  - [ ] evaluate adopting a dedicated guardrails engine (e.g. Nvidia NeMo Guardrails or
+        an LLM firewall such as Lakera Guard) instead of only bespoke regex/prompt rules.
 
 ### Quality gates (expanded)
 - [ ] Evals in CI that block regressions:
@@ -171,6 +176,9 @@
   - [ ] subsystem classification top-k expectations
   - [ ] must_escalate cases
   - [ ] tool failure must set correct audit outcome (failure vs empty)
+  - [ ] where needed, use **LLM-as-a-judge** / semantic metrics (e.g. LangSmith/RAGAS-style)
+        instead of strict string equality, to allow multiple correct answers while still
+        catching regressions.
 - [ ] Golden runs suite (replay + snapshots)
 - [ ] Basic “behavior metrics” emitted:
   - [ ] escalation rate
@@ -221,6 +229,9 @@
 - [ ] NetworkPolicy
 - [ ] Policies (OPA Gatekeeper or Kyverno) for guardrails
 - [ ] Secrets (SOPS or External Secrets)
+  - [ ] for enterprise deployments, consider **External Secrets Operator (ESO)** integrated
+        with a managed secrets backend (e.g. Google Secret Manager, HashiCorp Vault) so that
+        rotation of tokens (Jira/GitHub/etc.) is automated.
 
 ### Optional GitOps
 - [ ] Argo CD or Flux with repo-driven deploy
@@ -262,6 +273,31 @@
 - [ ] Basic dependency hygiene:
   - [ ] pinned dependencies
   - [ ] SBOM or dependency scanning (minimal)
+
+---
+
+## Technical Debt Management
+
+Some roadmap items are really about **managing long-term technical debt**, especially in an
+LLM-heavy, safety-critical system like SpaceOps. Treat these as ongoing themes rather than
+one-off tasks:
+
+- **Model & prompt lifecycle:** plan for model deprecation/migration, shadow testing of new models,
+  and a versioned prompt registry instead of inline prompts only in code.
+- **Reliability patterns:** central retries/backoff and circuit-breakers for MCP and external HTTP
+  calls; chaos/degradation testing (e.g. Toxiproxy) to validate escalation behaviour under failure.
+- **Infra/Sec hygiene:** keep dependency hygiene and secret management (e.g. future Vault/Secrets
+  manager work) under a recurring “tech debt” stream, not only as optional backlog.
+- **Tech-debt budget:** after S2, reserve a fixed percentage of sprint capacity for refactors,
+  dead-code removal, and maintainability improvements, and use evals to guard against regressions.
+
+---
+
+## Ideas (backlog / future)
+- **GitOps deployment on K8s (Argo CD / Flux):** repo-driven deploy, sync from `ops-config` (or app manifests); CD for agent, MCPs, and ops-config changes.
+- **Model monitoring (Langfuse):** LLM observability (latency, token usage, cost), trace per run, prompt/response logging and evaluation hooks.
+- **Service mesh for K8s (Istio / Linkerd):** mTLS between services, traffic shaping for agent/MCP calls, retries/timeouts at mesh layer, and richer telemetry for policy/debugging.
+- **Fine-tuning / reinforcement fine-tuning:** task-specific adapters or fine-tuned models for anomaly triage/reporting, with RLHF/RLAIF-style feedback loops driven by evals and human-in-the-loop labels (on top of the LLM Gateway, not baked into core logic).
 
 ---
 

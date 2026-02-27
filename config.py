@@ -56,6 +56,16 @@ class Settings(BaseSettings):
         description="MCP GitOps (create_pr to ops-config); S2.2.",
     )
 
+    # OPA (S2.4): policy for restricted actions (Act node).
+    opa_url: str = Field(
+        default="http://localhost:8181/v1/data/agent/allow",
+        description="OPA policy endpoint for restricted actions (POST with {input:{incident_id,step}}).",
+    )
+    opa_timeout_seconds: int = Field(
+        default=2,
+        description="OPA HTTP timeout (seconds). On timeout/error → deny (fail-closed, NF8).",
+    )
+
     # GitOps: push branch + create PR (S2.2). Empty = only write files locally.
     github_token: str = Field(
         default="",

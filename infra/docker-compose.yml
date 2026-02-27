@@ -46,5 +46,19 @@ services:
       postgres:
         condition: service_healthy
 
+  opa:
+    image: openpolicyagent/opa:0.64.1-rootless
+    container_name: spaceops-opa
+    command:
+      - "run"
+      - "--server"
+      - "--addr=0.0.0.0:8181"
+      - "/policies"
+    working_dir: /policies
+    volumes:
+      - ./opa:/policies:ro
+    ports:
+      - "8181:8181"
+
 volumes:
   postgres_data:

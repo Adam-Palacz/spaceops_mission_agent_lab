@@ -7,16 +7,22 @@ Agent for satellite / ground segment anomaly triage: **ingest ? triage ? investi
 | Doc | Description |
 |-----|-------------|
 | [**roadmap/goals.md**](./roadmap/goals.md) | Goals, assumptions, requirements (F1?F10, NF1?NF9), policy, MoE/MoP, production-ready criteria, audit log schema (?4.6). |
-| [**roadmap/base-roadmap.md**](./roadmap/base-roadmap.md) | Sprints (S1, S2), Phase 4 hardening, task list. |
+| [**roadmap/base-roadmap.md**](./roadmap/base-roadmap.md) | Sprints (S1, S2, S3), Phase 4 hardening, tech-debt sprint, task list. |
+| [**roadmap/01-foundation-mvp.md**](./roadmap/01-foundation-mvp.md) | Foundation/MVP storyline: core agent, MCPs, evals, and escalation. |
+| [**roadmap/02-production-scale.md**](./roadmap/02-production-scale.md) | Post-MVP productionisation: streaming, safety gates, LLM backends, K8s/cloud. |
+| [**roadmap/post-mvp.md**](./roadmap/post-mvp.md) | Long-term roadmap: phases, ideas, and production-grade criteria. |
+| [**roadmap/03-next-gen-autonomy.md**](./roadmap/03-next-gen-autonomy.md) | Next-gen autonomy (L3/L4): Flight Director multi-agent pattern, collaborative planning, compliance gateway, edge SLMs, GraphRAG. |
 | [**roadmap/README.md**](./roadmap/README.md) | Execution plan: phases, sprints, task specs. |
 | [**docs/README.md**](./docs/README.md) | Index of Mermaid diagrams (pipeline, architecture, state flow, Act flow, repo structure). |
-| [**roadmap/01-core/README.md**](./roadmap/01-core/README.md) | Sprint boards and task specs (S1.x, S2.x). |
+| [**roadmap/01-core/README.md**](./roadmap/01-core/README.md) | Sprint boards and task specs (S1.x, S2.x, S3.x). |
 
 ## Environment
 
 - Copy **.env.example** to **.env** and set `OPENAI_API_KEY` (required for agent). Optional: `POSTGRES_*` if not using defaults.
 - **Limits and timeouts (S1.12, NF6):** `AGENT_RUN_TIMEOUT_SECONDS` (default 120; 0 = no limit), `AGENT_LLM_CALL_TIMEOUT_SECONDS` (default 30), `AGENT_TOKEN_BUDGET_PER_RUN` (default 50000; 0 = no limit), `AGENT_MAX_LLM_CALLS_PER_RUN` (default 10; 0 = no limit). When exceeded, run escalates to human.
 - **OTel traces (S1.10):** to export traces to the local collector/Jaeger from apps, set `OTEL_EXPORTER_OTLP_ENDPOINT` (e.g. `http://localhost:4317`, matching `infra/docker-compose.yml`).
+- **MCP + GitOps (S2):** MCP URLs can be overridden via `TELEMETRY_MCP_URL`, `KB_MCP_URL`, `TICKET_MCP_URL`, `GITOPS_MCP_URL` (see `.env.example`). For GitOps PR creation, set `GITHUB_TOKEN`, `GITHUB_REPO`, `GITHUB_REPO_BASE_BRANCH`.
+- **OPA policy (S2.4):** OPA endpoint and timeout are configurable via `OPA_URL` and `OPA_TIMEOUT_SECONDS`; by default OPA runs as `opa` service in `infra/docker-compose.yml`.
 - Do not commit `.env` (in `.gitignore`). All apps load it from repo root via `config.settings`.
 
 ## Quick start
@@ -42,7 +48,7 @@ python -m apps.api.main
 
 **Optional (richer Investigate):** Run MCP Telemetry (port 8001) and MCP KB (8002); index KB: `python -m apps.mcp.kb_server.index_kb`. See [apps/agent/README.md](apps/agent/README.md), [apps/mcp/](apps/mcp/).
 
-**GitOps / ops-config (S2):** Config PRs from the agent target the [ops-config/](ops-config/) subtree at repo root. Default branch: `main`; path for MCP: `ops-config/` (local) or the separate repo URL if split. See [ops-config/README.md](ops-config/README.md).
+**GitOps / ops-config (S2):** Config PRs from the agent target the [ops-config/](ops-config/) subtree at repo root. Default branch: `main`; path for MCP: `ops-config/` (local) or the separate repo URL if split. See [ops-config/README.md](ops-config/README.md). To exercise GitOps PR flow locally, run the GitOps MCP server (`python -m apps.mcp.gitops_server.main`) and use `scripts/test_gitops_pr.py` (requires `GITHUB_TOKEN` / `GITHUB_REPO`).
 
 ## Testing
 

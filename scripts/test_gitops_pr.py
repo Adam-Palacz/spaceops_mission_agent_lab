@@ -55,10 +55,12 @@ def _check_server_reachable(url: str) -> bool:
 def main() -> None:
     verbose = "--verbose" in sys.argv or "-v" in sys.argv
     branch = _branch_name()
+    # Unikalna treść przy każdym uruchomieniu, żeby git widział zmianę (inaczej "No changes to commit")
+    ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
     files = [
         {
             "path": "alerts/test_threshold.yaml",
-            "content": "# Test file from scripts/test_gitops_pr.py\nthreshold: 0.9\n",
+            "content": f"# Test from scripts/test_gitops_pr.py\n# branch: {branch}\n# at: {ts}\nthreshold: 0.9\n",
         },
     ]
     # Sprawdź, czy serwer jest uruchomiony

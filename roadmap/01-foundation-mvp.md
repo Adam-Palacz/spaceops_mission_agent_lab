@@ -115,12 +115,34 @@ Sprints are **2 weeks** each. **Core delivery in 2 sprints** (S1 + S2); Phase 4 
 
 ---
 
+## Technical Debt Management (LLM, Resiliency, Infra, Process)
+
+Even with Hardening, technical debt will grow unless it is managed explicitly. The following
+themes should be treated as **recurring backlog streams** and pulled into sprints after S2:
+
+- **Model & prompt lifecycle (LLMOps tech debt):**
+  - Model upgrade/shadow-testing pipeline for safe migration when providers deprecate models.
+  - Prompt registry (versioned prompts outside code, e.g. YAML or external service) instead of ad hoc inline prompts.
+  - Context-window optimization: summarization/compaction for long runs and growing KB, to avoid hitting NF6 limits by accident.
+- **Resiliency & chaos (reliability debt):**
+  - Centralised retry patterns (exponential backoff + circuit breaker) for MCP and other external HTTP calls.
+  - Chaos/degradation tests (e.g. Toxiproxy) for MCP servers and DB, verifying correct escalation packets and audit outcomes.
+- **Infra/Sec debt:**
+  - Automated dependency updates (Dependabot/Renovate) gated by unit tests + eval suite.
+  - IaC for non-local environments (Terraform/Tofu and/or Helm charts) instead of ad hoc compose-only setups.
+  - Secrets management and rotation via a proper secrets backend (Vault / cloud secrets manager), not `.env` in long term.
+- **Process debt:**
+  - Tech-debt budget: reserve ~20% of capacity in each post-S2 sprint for refactors, dead-code removal, and readability/maintainability work.
+
+---
+
 ## Summary: sprint → deliverables
 
 | Sprint | Main deliverable |
 |--------|-------------------|
 | **S1** | Ingest → Triage → Investigate → Decide → Report + evals + OTel + audit log + escalation packet |
 | **S2** | Act (safe + restricted with OPA + approval), idempotent auth’d approvals, injection suite, dashboards |
+| **S3** | Technical debt management: LLM/prompt lifecycle, resiliency patterns, infra/sec hygiene, and process guardrails |
 | **Phase 4** | Docs, runbooks, expanded evals, optional UI |
 
 ---

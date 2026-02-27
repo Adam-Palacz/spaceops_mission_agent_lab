@@ -10,6 +10,7 @@ This folder holds the **execution plan**: phases, sprints, and task-level specs.
 |------|---------|
 | **[01-core/](01-core/)** | Phase: core pipeline (Sprint 1 + Sprint 2). Ingest → Report → Act + OPA + approvals. |
 | **[02-hardening/](02-hardening/)** | Phase 4: docs, runbooks, expanded evals, optional UI. |
+| **[03-next-gen-autonomy.md](03-next-gen-autonomy.md)** | Vision and backlog for L3/L4 autonomy: multi-agent Flight Director, collaborative planning, compliance-aware gateway, edge SLMs, GraphRAG. |
 | **[backlog/](backlog/)** | Pool of ideas/specs (items.md + BL-xxx.md). Use backlog to create sprint tasks — no statuses in backlog. |
 
 Each phase contains **sprint folders** (e.g. `01-core/sprint-1/`). Inside each sprint:

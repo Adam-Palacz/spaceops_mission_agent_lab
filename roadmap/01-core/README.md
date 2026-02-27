@@ -10,6 +10,7 @@ Delivers the full pipeline to Report (S1) and Act + OPA + approvals + injection 
 |--------|--------|------|
 | **Sprint 1** | [sprint-1/](sprint-1/) | Ingest → Triage → Investigate → Decide → Report + evals + OTel + audit log + escalation. |
 | **Sprint 2** | [sprint-2/](sprint-2/) | Act (safe + restricted), OPA fail-closed, approval API, injection suite, Prometheus/Grafana. |
+| **Sprint 3** | sprint-3/ | Technical debt management (LLM/prompt lifecycle, resiliency patterns, infra/sec hygiene, process). |
 
 ---
 

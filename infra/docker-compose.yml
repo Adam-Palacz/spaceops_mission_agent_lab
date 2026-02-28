@@ -1,8 +1,14 @@
 # SpaceOps Mission Agent Lab — local stack
 # Postgres+pgvector, OTel Collector, Jaeger. Single-command run (goals.md §4.5).
-# Run from repo root so that .env (POSTGRES_PASSWORD, etc.) is loaded:
+#
+# Run from repo root so that .env and volume paths resolve correctly:
 #   docker compose -f infra/docker-compose.yml --project-directory . up -d
-# Without --project-directory ., Compose uses infra/ as project dir and looks for infra/.env only.
+#
+# Without --project-directory ., Compose uses infra/ as project dir: .env is not found
+# and infra/otel-collector.yaml becomes infra/infra/otel-collector.yaml (missing),
+# so Docker mounts an empty directory and OTel fails with "is a directory".
+# If you saw that error, run: docker compose -f infra/docker-compose.yml --project-directory . down
+# then again: ... --project-directory . up -d
 
 services:
   postgres:
@@ -27,7 +33,8 @@ services:
     container_name: spaceops-otel-collector
     command: ["--config=/etc/otel-collector.yaml"]
     volumes:
-      - ./otel-collector.yaml:/etc/otel-collector.yaml:ro
+      # ./ = bind mount (path relative to project dir). Use --project-directory . from repo root.
+      - ./infra/otel-collector.yaml:/etc/otel-collector.yaml:ro
     ports:
       - "4317:4317"   # OTLP gRPC (agent/API send here in S1.10)
       - "4318:4318"   # OTLP HTTP

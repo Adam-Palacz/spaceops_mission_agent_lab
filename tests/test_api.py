@@ -172,7 +172,7 @@ def test_approvals_post_reject_without_auth_returns_401(
 def test_approvals_approve_reject_flow_and_idempotent(
     api_client, tmp_path: Path, monkeypatch
 ):
-    """Create approval via store; GET pending; approve with auth; second approve is 200 and idempotent; audit has entry."""
+    """Create approval via store; GET pending; approve with auth; execution runs once (S2.6); second approve is 200 and idempotent (no re-execution); audit has entries."""
     monkeypatch.setattr("config.settings.approval_api_key", _API_KEY)
     monkeypatch.setattr(
         "config.settings.approval_store_path", str(tmp_path / "approvals")
@@ -181,6 +181,15 @@ def test_approvals_approve_reject_flow_and_idempotent(
         "config.settings.audit_log_path", str(tmp_path / "audit.ndjson")
     )
     from apps.agent.approval_store import create as create_approval
+
+    # Mock executor so we don't call real GitOps MCP in tests
+    def _mock_execute(approval_id: str, rec: dict):
+        return {"outcome": "success", "result": {"pr_url": "", "note": "mocked"}}
+
+    monkeypatch.setattr(
+        "apps.agent.approval_executor.execute_approved_action",
+        _mock_execute,
+    )
 
     approval_id = create_approval(
         incident_id="inc-1",
@@ -201,22 +210,77 @@ def test_approvals_approve_reject_flow_and_idempotent(
     assert approve_resp.status_code == 200
     assert approve_resp.json().get("status") == "approved"
     assert approve_resp.json().get("approval", {}).get("decided_by") == "operator-1"
+    # S2.6: first approve triggers execution once; response includes execution
+    assert "execution" in approve_resp.json()
+    assert approve_resp.json()["execution"].get("outcome") == "success"
 
-    # Idempotent: second approve returns 200 and does not change outcome
+    # Idempotent: second approve returns 200, no execution (no re-run)
     approve_second = api_client.post(
         f"/approvals/{approval_id}/approve",
         headers={"X-API-Key": _API_KEY},
     )
     assert approve_second.status_code == 200
     assert approve_second.json().get("status") == "approved"
+    assert "execution" not in approve_second.json()
 
-    # Audit log contains human approve entry
+    # Audit log: human approve + execute_restricted (once)
     audit_path = tmp_path / "audit.ndjson"
     assert audit_path.exists()
     lines = [
         ln for ln in audit_path.read_text(encoding="utf-8").strip().split("\n") if ln
     ]
     assert any("approve" in ln and "human" in ln for ln in lines)
+    assert sum(1 for ln in lines if "execute_restricted" in ln) == 1
+
+
+def test_approvals_approve_execution_failure_recorded(
+    api_client, tmp_path: Path, monkeypatch
+):
+    """S2.6: Failed execution (e.g. GitOps error) is recorded in audit; client gets execution outcome."""
+    monkeypatch.setattr("config.settings.approval_api_key", _API_KEY)
+    monkeypatch.setattr(
+        "config.settings.approval_store_path", str(tmp_path / "approvals")
+    )
+    monkeypatch.setattr(
+        "config.settings.audit_log_path", str(tmp_path / "audit.ndjson")
+    )
+
+    def _mock_fail(_aid: str, _rec: dict):
+        return {"outcome": "failure", "error_message": "GitOps push failed"}
+
+    monkeypatch.setattr(
+        "apps.agent.approval_executor.execute_approved_action",
+        _mock_fail,
+    )
+
+    from apps.agent.approval_store import create as create_approval
+
+    approval_id = create_approval(
+        incident_id="inc-fail",
+        step_index=0,
+        step={"action": "Change config", "action_type": "change_config"},
+        reason="restricted",
+    )
+    approve_resp = api_client.post(
+        f"/approvals/{approval_id}/approve",
+        headers={"X-API-Key": _API_KEY},
+    )
+    assert approve_resp.status_code == 200
+    assert approve_resp.json().get("status") == "approved"
+    assert approve_resp.json().get("execution", {}).get("outcome") == "failure"
+    assert "GitOps push failed" in (
+        approve_resp.json().get("execution", {}).get("error_message") or ""
+    )
+
+    lines = [
+        ln
+        for ln in (tmp_path / "audit.ndjson")
+        .read_text(encoding="utf-8")
+        .strip()
+        .split("\n")
+        if ln
+    ]
+    assert any("execute_restricted" in ln and "failure" in ln for ln in lines)
 
 
 def test_approvals_reject_and_404(api_client, tmp_path: Path, monkeypatch):

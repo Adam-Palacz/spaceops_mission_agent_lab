@@ -240,15 +240,24 @@ def approve_request(
     who: str = Depends(_approval_identity),
 ) -> JSONResponse:
     """
-    Mark approval request as approved. Idempotent: already approved/rejected returns 200.
+    Mark approval request as approved and execute the stored action once (S2.6).
+    Idempotent: already approved/rejected returns 200 without re-execution.
     Requires X-API-Key or Authorization: Bearer. Optional X-Approval-By for audit 'who'.
     """
     from apps.agent.approval_store import approve as store_approve
+    from apps.agent.approval_store import get_request
+    from apps.agent.approval_executor import execute_approved_action
     from apps.agent.audit_log import append_entry as audit_append
 
+    rec_before = get_request(approval_id)
+    if rec_before is None:
+        raise HTTPException(status_code=404, detail="Approval request not found")
+
+    was_pending = rec_before.get("status") == "pending"
     rec = store_approve(approval_id, decided_by=who)
     if rec is None:
         raise HTTPException(status_code=404, detail="Approval request not found")
+
     audit_append(
         trace_id=approval_id,
         incident_id=rec.get("incident_id", ""),
@@ -258,9 +267,32 @@ def approve_request(
         decision="approve",
         outcome="success",
     )
-    return JSONResponse(
-        status_code=200, content={"status": "approved", "approval": rec}
-    )
+
+    execution_result = None
+    if was_pending:
+        execution_result = execute_approved_action(approval_id, rec_before)
+        audit_append(
+            trace_id=approval_id,
+            incident_id=rec.get("incident_id", ""),
+            actor="agent",
+            tool="execute_restricted",
+            args={
+                "approval_id": approval_id,
+                "step_index": rec_before.get("step_index"),
+            },
+            decision="allow",
+            outcome=execution_result.get("outcome", "failure"),
+            error_message=execution_result.get("error_message"),
+        )
+
+    content = {"status": "approved", "approval": rec}
+    if execution_result is not None:
+        content["execution"] = {
+            "outcome": execution_result.get("outcome", "failure"),
+            "result": execution_result.get("result"),
+            "error_message": execution_result.get("error_message"),
+        }
+    return JSONResponse(status_code=200, content=content)
 
 
 @app.post("/approvals/{approval_id}/reject")

@@ -8,8 +8,8 @@
     "safe": false
   },
   "reason": "restricted",
-  "status": "pending",
+  "status": "approved",
   "created_at": "2026-02-28T18:29:31.241879+00:00",
-  "decided_at": null,
-  "decided_by": null
+  "decided_at": "2026-02-28T19:42:16.005923+00:00",
+  "decided_by": "operator1"
 }

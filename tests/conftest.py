@@ -2,9 +2,16 @@
 S1.14 — Shared pytest fixtures: sample NDJSON, API client with isolated data dir.
 Tests do not require Docker or live Postgres/LLM (mocks or tmp paths).
 """
+
 from __future__ import annotations
 
+import os
 from pathlib import Path
+
+# Disable OTLP trace export during tests to avoid "StatusCode.UNAVAILABLE" retries
+# when the collector is unreachable (tests exit before connection succeeds).
+# Tests that need tracing (e.g. test_otel_jaeger) override this explicitly.
+os.environ["OTEL_EXPORTER_OTLP_ENDPOINT"] = ""
 
 import pytest
 
@@ -26,4 +33,5 @@ def api_client(tmp_path: Path, monkeypatch):
     monkeypatch.setattr("apps.api.main.DATA_DIR", tmp_path / "data")
     from fastapi.testclient import TestClient
     from apps.api.main import app
+
     return TestClient(app)

@@ -95,6 +95,16 @@ class Settings(BaseSettings):
         description="Path to append-only audit NDJSON; empty = data/audit.ndjson",
     )
 
+    # S2.5 Approval API: storage and auth
+    approval_store_path: str = Field(
+        default="",
+        description="Directory for approval request JSON files; empty = data/approvals",
+    )
+    approval_api_key: str = Field(
+        default="",
+        description="API key for approve/reject (header X-API-Key or Authorization: Bearer <key>). Required for POST approve/reject.",
+    )
+
     # S1.12 NF6: token/rate limits and timeouts; on limit or timeout → escalation
     agent_run_timeout_seconds: int = Field(
         default=120, description="Max wall-clock time per run; 0 = no limit"

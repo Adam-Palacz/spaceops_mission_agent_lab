@@ -22,7 +22,7 @@ Agent for satellite / ground segment anomaly triage: **ingest ? triage ? investi
 - **Limits and timeouts (S1.12, NF6):** `AGENT_RUN_TIMEOUT_SECONDS` (default 120; 0 = no limit), `AGENT_LLM_CALL_TIMEOUT_SECONDS` (default 30), `AGENT_TOKEN_BUDGET_PER_RUN` (default 50000; 0 = no limit), `AGENT_MAX_LLM_CALLS_PER_RUN` (default 10; 0 = no limit). When exceeded, run escalates to human.
 - **OTel traces (S1.10):** to export traces to the local collector/Jaeger from apps, set `OTEL_EXPORTER_OTLP_ENDPOINT` (e.g. `http://localhost:4317`, matching `infra/docker-compose.yml`).
 - **MCP + GitOps (S2):** MCP URLs can be overridden via `TELEMETRY_MCP_URL`, `KB_MCP_URL`, `TICKET_MCP_URL`, `GITOPS_MCP_URL` (see `.env.example`). For GitOps PR creation, set `GITHUB_TOKEN`, `GITHUB_REPO`, `GITHUB_REPO_BASE_BRANCH`.
-- **OPA policy (S2.4):** OPA endpoint and timeout are configurable via `OPA_URL` and `OPA_TIMEOUT_SECONDS`; by default OPA runs as `opa` service in `infra/docker-compose.yml`.
+- **OPA policy (S2.4):** OPA endpoint and timeout are configurable via `OPA_URL` and `OPA_TIMEOUT_SECONDS`; by default OPA runs as `opa` service in `infra/docker-compose.yml`. **Approval requests (S2.5):** `data/approvals/` is populated only when the agent run produces a **restricted** step (plan with `safe=false`, e.g. `change_config` / `restart_service`) and **OPA is running and allows** that step. If OPA is down or denies → no file is created (fail-closed); set `APPROVAL_API_KEY` for the approval API. To test the approval API without a full run, seed one request: `python scripts/seed_approval_request.py` (then call GET /approvals and POST …/approve or …/reject with the returned id).
 - Do not commit `.env` (in `.gitignore`). All apps load it from repo root via `config.settings`.
 
 ## Quick start
@@ -32,7 +32,7 @@ Agent for satellite / ground segment anomaly triage: **ingest ? triage ? investi
 pip install -r requirements.txt
 
 # Stack (Postgres+pgvector, OTel, Jaeger)
-docker compose -f infra/docker-compose.yml up -d
+docker compose -f infra/docker-compose.yml --project-directory . up -d
 
 # API
 python -m apps.api.main

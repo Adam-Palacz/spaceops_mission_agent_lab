@@ -23,6 +23,7 @@ from apps.agent.mcp_client import (
 )
 from apps.agent.audit_log import append_entry as audit_append
 from apps.agent.opa_client import opa_allow
+from apps.agent.approval_store import create as approval_store_create
 from apps.telemetry import get_tracer
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
@@ -534,8 +535,15 @@ def act(state: AgentState) -> dict:
 
         elif not safe:
             if opa_allow(step, incident_id):
+                request_id = approval_store_create(
+                    incident_id=incident_id,
+                    step_index=i,
+                    step=step,
+                    reason="restricted",
+                )
                 approval_requests.append(
                     {
+                        "id": request_id,
                         "step_index": i,
                         "step": step,
                         "incident_id": incident_id,

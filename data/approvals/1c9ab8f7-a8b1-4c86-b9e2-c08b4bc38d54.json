@@ -1,0 +1,15 @@
+{
+  "id": "1c9ab8f7-a8b1-4c86-b9e2-c08b4bc38d54",
+  "incident_id": "seed-test-incident",
+  "step_index": 0,
+  "step": {
+    "action": "Increase heater setpoint on unit A (test seed)",
+    "action_type": "change_config",
+    "safe": false
+  },
+  "reason": "restricted",
+  "status": "pending",
+  "created_at": "2026-02-28T18:29:31.241879+00:00",
+  "decided_at": null,
+  "decided_by": null
+}

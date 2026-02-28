@@ -1,7 +1,8 @@
 # SpaceOps Mission Agent Lab — local stack
 # Postgres+pgvector, OTel Collector, Jaeger. Single-command run (goals.md §4.5).
-# Run from repo root: docker compose -f infra/docker-compose.yml up -d
-# .env in repo root is loaded automatically; POSTGRES_* and POSTGRES_PORT override defaults below.
+# Run from repo root so that .env (POSTGRES_PASSWORD, etc.) is loaded:
+#   docker compose -f infra/docker-compose.yml --project-directory . up -d
+# Without --project-directory ., Compose uses infra/ as project dir and looks for infra/.env only.
 
 services:
   postgres:
@@ -47,7 +48,7 @@ services:
         condition: service_healthy
 
   opa:
-    image: openpolicyagent/opa:0.64.1-rootless
+    image: openpolicyagent/opa:1.14.0
     container_name: spaceops-opa
     command:
       - "run"

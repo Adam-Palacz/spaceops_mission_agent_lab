@@ -3,6 +3,7 @@ SpaceOps Mission Agent Lab — API
 GET /health, POST /ingest (NDJSON), POST /runs (trigger agent).
 S1.10: OTel request spans; structured logging.
 """
+
 from __future__ import annotations
 
 import json
@@ -10,10 +11,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
+from config import settings
 from apps.telemetry import init_telemetry
 
 # Base path for data (repo root when run from repo)
@@ -30,6 +32,7 @@ app = FastAPI(
 init_telemetry(service_name="spaceops-api")
 try:
     from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+
     FastAPIInstrumentor.instrument_app(app)
 except ImportError:
     pass
@@ -59,9 +62,13 @@ def _validate_ndjson_line(line: str, line_no: int) -> dict[str, Any]:
     try:
         obj = json.loads(line)
     except json.JSONDecodeError as e:
-        raise HTTPException(status_code=400, detail=f"Line {line_no}: invalid JSON — {e}")
+        raise HTTPException(
+            status_code=400, detail=f"Line {line_no}: invalid JSON — {e}"
+        )
     if not isinstance(obj, dict):
-        raise HTTPException(status_code=400, detail=f"Line {line_no}: expected JSON object")
+        raise HTTPException(
+            status_code=400, detail=f"Line {line_no}: expected JSON object"
+        )
     # Minimal schema: at least one key (e.g. timestamp or ts for traceability)
     if not obj:
         raise HTTPException(status_code=400, detail=f"Line {line_no}: empty object")
@@ -122,7 +129,9 @@ class RunTriggerPayload(BaseModel):
     """Payload for triggering an agent run."""
 
     incident_id: str = Field(..., min_length=1, description="Incident identifier")
-    payload: dict[str, Any] = Field(default_factory=dict, description="Incident payload (e.g. telemetry refs)")
+    payload: dict[str, Any] = Field(
+        default_factory=dict, description="Incident payload (e.g. telemetry refs)"
+    )
 
 
 @app.post("/runs")
@@ -134,17 +143,153 @@ def trigger_run(payload: RunTriggerPayload) -> JSONResponse:
 
     runs_dir = DATA_DIR / "incidents"
     runs_dir.mkdir(parents=True, exist_ok=True)
-    run_file = runs_dir / f"run_{payload.incident_id}_{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')}.json"
+    run_file = (
+        runs_dir
+        / f"run_{payload.incident_id}_{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')}.json"
+    )
     try:
         result = run_pipeline(payload.incident_id, payload.payload)
         report = result.get("report") or {}
         with open(run_file, "w", encoding="utf-8") as f:
-            json.dump({"incident_id": payload.incident_id, "payload": payload.payload, "report": report}, f, indent=2, ensure_ascii=False)
-        return JSONResponse(status_code=200, content={"status": "completed", "incident_id": payload.incident_id, "report": report})
+            json.dump(
+                {
+                    "incident_id": payload.incident_id,
+                    "payload": payload.payload,
+                    "report": report,
+                },
+                f,
+                indent=2,
+                ensure_ascii=False,
+            )
+        return JSONResponse(
+            status_code=200,
+            content={
+                "status": "completed",
+                "incident_id": payload.incident_id,
+                "report": report,
+            },
+        )
     except Exception as e:
         with open(run_file, "w", encoding="utf-8") as f:
-            json.dump({"incident_id": payload.incident_id, "payload": payload.payload, "error": str(e)}, f, indent=2, ensure_ascii=False)
+            json.dump(
+                {
+                    "incident_id": payload.incident_id,
+                    "payload": payload.payload,
+                    "error": str(e),
+                },
+                f,
+                indent=2,
+                ensure_ascii=False,
+            )
         raise HTTPException(status_code=500, detail=f"Pipeline failed: {e}")
+
+
+# ---------------------------------------------------------------------------
+# S2.5 Approval API (idempotent, auth, audit)
+# ---------------------------------------------------------------------------
+
+
+def _approval_auth(
+    x_api_key: str | None = Header(None, alias="X-API-Key"),
+    authorization: str | None = Header(None),
+) -> str:
+    """
+    Validate API key for approve/reject; return identity for audit (who).
+    Accepts X-API-Key or Authorization: Bearer <key>. If X-Approval-By is used, that becomes 'who'.
+    """
+    expected = (getattr(settings, "approval_api_key", None) or "").strip()
+    if not expected:
+        raise HTTPException(
+            status_code=501,
+            detail="Approval API key not configured (set APPROVAL_API_KEY)",
+        )
+    token: str | None = None
+    if x_api_key:
+        token = x_api_key.strip()
+    elif authorization and authorization.lower().startswith("bearer "):
+        token = authorization[7:].strip()
+    if not token or token != expected:
+        raise HTTPException(status_code=401, detail="Invalid or missing API key")
+    return "authenticated"
+
+
+def _approval_identity(
+    request: Request,
+    _auth: str = Depends(_approval_auth),
+) -> str:
+    """Return 'who' for audit: X-Approval-By header or fallback to 'authenticated'."""
+    who = request.headers.get("X-Approval-By", "").strip()
+    return who or _auth
+
+
+@app.get("/approvals")
+def list_approvals(
+    status: str | None = Query(None, description="Filter: pending, approved, rejected"),
+    _: str = Depends(_approval_auth),
+) -> JSONResponse:
+    """List approval requests; optional filter by status. Requires API key."""
+    from apps.agent.approval_store import list_requests
+
+    requests = list_requests(status=status)
+    return JSONResponse(status_code=200, content={"approvals": requests})
+
+
+@app.post("/approvals/{approval_id}/approve")
+def approve_request(
+    approval_id: str,
+    who: str = Depends(_approval_identity),
+) -> JSONResponse:
+    """
+    Mark approval request as approved. Idempotent: already approved/rejected returns 200.
+    Requires X-API-Key or Authorization: Bearer. Optional X-Approval-By for audit 'who'.
+    """
+    from apps.agent.approval_store import approve as store_approve
+    from apps.agent.audit_log import append_entry as audit_append
+
+    rec = store_approve(approval_id, decided_by=who)
+    if rec is None:
+        raise HTTPException(status_code=404, detail="Approval request not found")
+    audit_append(
+        trace_id=approval_id,
+        incident_id=rec.get("incident_id", ""),
+        actor="human",
+        tool="approve",
+        args={"approval_id": approval_id, "decided_by": who},
+        decision="approve",
+        outcome="success",
+    )
+    return JSONResponse(
+        status_code=200, content={"status": "approved", "approval": rec}
+    )
+
+
+@app.post("/approvals/{approval_id}/reject")
+def reject_request(
+    approval_id: str,
+    who: str = Depends(_approval_identity),
+) -> JSONResponse:
+    """
+    Mark approval request as rejected. Idempotent: already approved/rejected returns 200.
+    Requires X-API-Key or Authorization: Bearer. Optional X-Approval-By for audit 'who'.
+    """
+    from apps.agent.approval_store import reject as store_reject
+    from apps.agent.audit_log import append_entry as audit_append
+
+    rec = store_reject(approval_id, decided_by=who)
+    if rec is None:
+        raise HTTPException(status_code=404, detail="Approval request not found")
+    audit_append(
+        trace_id=approval_id,
+        incident_id=rec.get("incident_id", ""),
+        actor="human",
+        tool="reject",
+        args={"approval_id": approval_id, "decided_by": who},
+        decision="reject",
+        outcome="success",
+    )
+    return JSONResponse(
+        status_code=200, content={"status": "rejected", "approval": rec}
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -153,4 +298,5 @@ def trigger_run(payload: RunTriggerPayload) -> JSONResponse:
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=8000)

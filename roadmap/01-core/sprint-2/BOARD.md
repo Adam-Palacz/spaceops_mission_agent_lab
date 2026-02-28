@@ -8,7 +8,7 @@
 | S2.4 | OPA (allowlist, fail-closed) | Todo | [S2.4-opa-fail-closed.md](S2.4-opa-fail-closed.md) |
 | S2.5 | Approval API (idempotent, auth) | Todo | [S2.5-approval-api.md](S2.5-approval-api.md) |
 | S2.6 | Execute restricted on approve | Done | [S2.6-execute-restricted.md](S2.6-execute-restricted.md) |
-| S2.7 | Audit approval events | Todo | [S2.7-audit-approvals.md](S2.7-audit-approvals.md) |
+| S2.7 | Audit approval events | Done | [S2.7-audit-approvals.md](S2.7-audit-approvals.md) |
 | S2.8 | Injection suite | Todo | [S2.8-injection-suite.md](S2.8-injection-suite.md) |
 | S2.9 | Prometheus + Grafana | Todo | [S2.9-metrics-dashboard.md](S2.9-metrics-dashboard.md) |
 | S2.10 | OPA unit tests | Todo | [S2.10-opa-tests.md](S2.10-opa-tests.md) |

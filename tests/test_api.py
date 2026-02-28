@@ -5,6 +5,7 @@ No Docker or live services; use TestClient and tmp_path for persistence.
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 # Sample NDJSON for ingest tests (minimal schema: at least one key per line)
@@ -281,6 +282,74 @@ def test_approvals_approve_execution_failure_recorded(
         if ln
     ]
     assert any("execute_restricted" in ln and "failure" in ln for ln in lines)
+
+
+def test_approvals_audit_entries_s27(api_client, tmp_path: Path, monkeypatch):
+    """S2.7: After one approve and one reject, audit log has two human entries with decision/outcome and schema."""
+    monkeypatch.setattr("config.settings.approval_api_key", _API_KEY)
+    monkeypatch.setattr(
+        "config.settings.approval_store_path", str(tmp_path / "approvals")
+    )
+    monkeypatch.setattr(
+        "config.settings.audit_log_path", str(tmp_path / "audit.ndjson")
+    )
+    monkeypatch.setattr(
+        "apps.agent.approval_executor.execute_approved_action",
+        lambda _id, _rec: {"outcome": "success", "result": {}},
+    )
+    from apps.agent.approval_store import create as create_approval
+
+    id_a = create_approval(
+        incident_id="inc-a",
+        step_index=0,
+        step={"action": "Config A", "action_type": "change_config"},
+        reason="restricted",
+    )
+    id_b = create_approval(
+        incident_id="inc-b",
+        step_index=0,
+        step={"action": "Config B", "action_type": "change_config"},
+        reason="restricted",
+    )
+    api_client.post(
+        f"/approvals/{id_a}/approve",
+        headers={"X-API-Key": _API_KEY, "X-Approval-By": "op1"},
+    )
+    api_client.post(
+        f"/approvals/{id_b}/reject",
+        headers={"X-API-Key": _API_KEY, "X-Approval-By": "op2"},
+    )
+    lines = [
+        ln
+        for ln in (tmp_path / "audit.ndjson")
+        .read_text(encoding="utf-8")
+        .strip()
+        .split("\n")
+        if ln
+    ]
+    human_entries = [
+        ln for ln in lines if '"human"' in ln and ("approve" in ln or "reject" in ln)
+    ]
+    assert len(human_entries) >= 2
+    required_keys = {
+        "timestamp",
+        "trace_id",
+        "incident_id",
+        "actor",
+        "tool",
+        "args_hash",
+        "decision",
+        "policy_result",
+        "outcome",
+    }
+    for line in human_entries[:2]:
+        entry = json.loads(line)
+        for key in required_keys:
+            assert key in entry, f"missing {key} in audit entry"
+        assert entry.get("actor") == "human"
+        assert entry.get("outcome") == "success"
+    decisions = {json.loads(ln).get("decision") for ln in human_entries[:2]}
+    assert "approve" in decisions and "reject" in decisions
 
 
 def test_approvals_reject_and_404(api_client, tmp_path: Path, monkeypatch):

@@ -263,8 +263,13 @@ def approve_request(
         incident_id=rec.get("incident_id", ""),
         actor="human",
         tool="approve",
-        args={"approval_id": approval_id, "decided_by": who},
+        args={
+            "approval_id": approval_id,
+            "approval_request_id": approval_id,
+            "decided_by": who,
+        },
         decision="approve",
+        policy_result="n/a",
         outcome="success",
     )
 
@@ -315,8 +320,13 @@ def reject_request(
         incident_id=rec.get("incident_id", ""),
         actor="human",
         tool="reject",
-        args={"approval_id": approval_id, "decided_by": who},
+        args={
+            "approval_id": approval_id,
+            "approval_request_id": approval_id,
+            "decided_by": who,
+        },
         decision="reject",
+        policy_result="n/a",
         outcome="success",
     )
     return JSONResponse(

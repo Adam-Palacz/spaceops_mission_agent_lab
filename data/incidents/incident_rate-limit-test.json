@@ -1,9 +1,0 @@
-{
-  "incident_id": "rate-limit-test",
-  "subsystem": "Payload",
-  "risk": "low",
-  "payload": {
-    "ref": "test"
-  },
-  "triaged_at": "2026-02-23T17:44:12.099298+00:00"
-}

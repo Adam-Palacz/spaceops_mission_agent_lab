@@ -1,9 +1,0 @@
-{
-  "incident_id": "trace-url-test",
-  "subsystem": "Payload",
-  "risk": "low",
-  "payload": {
-    "ref": "test"
-  },
-  "triaged_at": "2026-02-24T12:46:19.620982+00:00"
-}

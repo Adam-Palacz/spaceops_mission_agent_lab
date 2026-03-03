@@ -1,9 +1,0 @@
-{
-  "incident_id": "audit-test-inc",
-  "subsystem": "Payload",
-  "risk": "low",
-  "payload": {
-    "ref": "audit-test"
-  },
-  "triaged_at": "2026-02-24T12:43:07.128304+00:00"
-}

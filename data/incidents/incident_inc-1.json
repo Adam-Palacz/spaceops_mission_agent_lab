@@ -1,9 +1,10 @@
 {
   "incident_id": "inc-1",
-  "subsystem": "Payload",
-  "risk": "low",
+  "subsystem": "Comms",
+  "risk": "medium",
   "payload": {
-    "raw": "{time_range_start:2025-02-14T09:00:00Z,time_range_end:2025-02-14T11:00:00Z}"
+    "time_range_start": "2025-02-14T09:00:00Z",
+    "time_range_end": "2025-02-14T11:00:00Z"
   },
-  "triaged_at": "2026-02-22T18:11:43.339935+00:00"
+  "triaged_at": "2026-03-03T19:22:08.429906+00:00"
 }

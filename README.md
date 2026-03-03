@@ -31,12 +31,13 @@ Agent for satellite / ground segment anomaly triage: **ingest ? triage ? investi
 # Dependencies (Python 3.12)
 pip install -r requirements.txt
 
-# Stack (Postgres+pgvector, OTel, Jaeger)
+# Stack (Postgres+pgvector, OTel, Jaeger, Prometheus, Grafana)
 docker compose -f infra/docker-compose.yml --project-directory . up -d
 
 # API
 python -m apps.api.main
-# ? http://localhost:8000  |  GET /health  |  POST /ingest  |  POST /runs
+# ? http://localhost:8000  |  GET /health  |  GET /metrics  |  POST /ingest  |  POST /runs
+# Prometheus: http://localhost:9090   |  Grafana: http://localhost:3000 (admin/admin)
 ```
 
 **Ingest fixture:**  

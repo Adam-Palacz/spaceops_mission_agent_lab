@@ -10,10 +10,17 @@ import json
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+import time
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel, Field
+from prometheus_client import (
+    CONTENT_TYPE_LATEST,
+    Counter,
+    Histogram,
+    generate_latest,
+)
 
 from config import settings
 from apps.telemetry import init_telemetry
@@ -27,6 +34,32 @@ app = FastAPI(
     description="Ingest, health, and run trigger for anomaly triage pipeline.",
     version="0.1.0",
 )
+
+
+# ---------------------------------------------------------------------------
+# S2.9 — Prometheus metrics (MoP1, MoP2)
+# ---------------------------------------------------------------------------
+
+AGENT_RUNS_TOTAL = Counter(
+    "agent_runs_total",
+    "Total number of agent runs triggered via /runs, labelled by status.",
+    ["status"],
+)
+AGENT_RUN_DURATION_SECONDS = Histogram(
+    "agent_run_duration_seconds",
+    "Duration of agent runs in seconds.",
+)
+AGENT_ERRORS_TOTAL = Counter(
+    "agent_errors_total",
+    "Total number of agent run errors, labelled by error type.",
+    ["type"],
+)
+AGENT_TOOL_CALLS_PER_RUN = Histogram(
+    "agent_tool_calls_per_run",
+    "Number of tool/LLM calls per agent run (llm_calls_used).",
+    buckets=(0, 1, 2, 3, 5, 8, 13, 21, 34),
+)
+
 
 # S1.10: OTel request spans for /health, /ingest, /runs
 init_telemetry(service_name="spaceops-api")
@@ -47,6 +80,13 @@ except ImportError:
 def health() -> dict[str, str]:
     """Service is up. Returns 200."""
     return {"status": "ok", "service": "spaceops-api"}
+
+
+@app.get("/metrics")
+def metrics() -> Response:
+    """Expose Prometheus metrics for API/agent runs (S2.9)."""
+    payload = generate_latest()
+    return Response(content=payload, media_type=CONTENT_TYPE_LATEST)
 
 
 # ---------------------------------------------------------------------------
@@ -147,9 +187,16 @@ def trigger_run(payload: RunTriggerPayload) -> JSONResponse:
         runs_dir
         / f"run_{payload.incident_id}_{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')}.json"
     )
+    started = time.perf_counter()
     try:
         result = run_pipeline(payload.incident_id, payload.payload)
         report = result.get("report") or {}
+        duration = max(0.0, time.perf_counter() - started)
+        AGENT_RUNS_TOTAL.labels(status="success").inc()
+        AGENT_RUN_DURATION_SECONDS.observe(duration)
+        calls = int(result.get("llm_calls_used") or 0)
+        if calls >= 0:
+            AGENT_TOOL_CALLS_PER_RUN.observe(calls)
         with open(run_file, "w", encoding="utf-8") as f:
             json.dump(
                 {
@@ -170,6 +217,10 @@ def trigger_run(payload: RunTriggerPayload) -> JSONResponse:
             },
         )
     except Exception as e:
+        duration = max(0.0, time.perf_counter() - started)
+        AGENT_RUNS_TOTAL.labels(status="error").inc()
+        AGENT_RUN_DURATION_SECONDS.observe(duration)
+        AGENT_ERRORS_TOTAL.labels(type=e.__class__.__name__).inc()
         with open(run_file, "w", encoding="utf-8") as f:
             json.dump(
                 {

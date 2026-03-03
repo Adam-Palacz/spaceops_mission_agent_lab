@@ -25,6 +25,15 @@ def test_health_returns_200_and_body(api_client):
     assert data.get("service") == "spaceops-api"
 
 
+def test_metrics_endpoint_exposes_prometheus_text(api_client):
+    """S2.9: GET /metrics returns Prometheus text format."""
+    response = api_client.get("/metrics")
+    assert response.status_code == 200
+    assert response.headers.get("content-type", "").startswith("text/plain")
+    body = response.text
+    assert "agent_runs_total" in body
+
+
 def test_ingest_accepts_valid_ndjson_and_persists(api_client, tmp_path: Path):
     """POST /ingest with valid NDJSON returns 201 and persists to data/{source}/."""
     response = api_client.post(

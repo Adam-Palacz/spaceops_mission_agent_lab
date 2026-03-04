@@ -19,3 +19,10 @@ repos:
         types: [python]
         args: [-m, apps.agent, -m, apps.api, -m, config, -m, evals, --ignore-missing-imports, --no-error-summary]
         pass_filenames: false
+
+      - id: pytest
+        name: pytest
+        entry: python -m pytest
+        language: system
+        types: [python]
+        pass_filenames: false

@@ -9,12 +9,12 @@ allowed_action_types := {"change_config", "restart_service"}
 # Deny obviously dangerous phrases in free-text actions.
 forbidden_phrase := "restart all"
 
-deny_forbidden_text {
+deny_forbidden_text if {
   lower(input.step.action) != ""
   contains(lower(input.step.action), forbidden_phrase)
 }
 
-allow {
+allow if {
   not deny_forbidden_text
   at := lower(input.step.action_type)
   at != ""

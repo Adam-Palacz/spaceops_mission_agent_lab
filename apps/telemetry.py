@@ -2,6 +2,7 @@
 SpaceOps — OpenTelemetry setup (S1.10): TracerProvider, OTLP export to Collector/Jaeger.
 Structured logging (JSON with trace_id when in span). Call init_telemetry() once at app startup.
 """
+
 from __future__ import annotations
 
 import json
@@ -47,6 +48,7 @@ class JsonTraceFormatter(logging.Formatter):
 
 def _get_endpoint() -> str | None:
     from config import settings
+
     endpoint = (getattr(settings, "otel_exporter_otlp_endpoint", None) or "").strip()
     if not endpoint:
         return None
@@ -75,7 +77,9 @@ def init_telemetry(service_name: str = "spaceops") -> None:
     if not endpoint:
         return
     try:
-        from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+        from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import (
+            OTLPSpanExporter,
+        )
     except ImportError:
         return
     resource = Resource.create({"service.name": service_name})

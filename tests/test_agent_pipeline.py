@@ -2,6 +2,7 @@
 S1.7: Agent pipeline — graph builds and report shape.
 E2E with real MCP/LLM requires OPENAI_API_KEY and MCP servers.
 """
+
 from __future__ import annotations
 
 import pytest
@@ -82,16 +83,31 @@ def test_run_no_evidence_produces_escalation_packet():
     # When MCPs are down or return empty, we get no citations → escalation. When MCPs return data, we may not.
     if result.get("escalated"):
         report = result.get("report") or {}
-        assert "escalation_packet" in report, "Escalated run must include escalation_packet in report"
-        assert report["escalation_packet"].get("reason") in ("no_evidence", "high_risk_no_evidence", "conflicting_signals")
+        assert (
+            "escalation_packet" in report
+        ), "Escalated run must include escalation_packet in report"
+        assert report["escalation_packet"].get("reason") in (
+            "no_evidence",
+            "high_risk_no_evidence",
+            "conflicting_signals",
+        )
 
 
 def test_normal_scenario_no_escalation():
     """S1.8 Test requirement: run with normal scenario does not produce escalation (when we have evidence)."""
     state_with_evidence: AgentState = {
         "incident_id": "e3",
-        "hypotheses": ["Telemetry: 3 samples in range.", "Runbook: power bus voltage procedure."],
-        "citations": [{"doc_id": "power-bus-voltage-anomaly.md", "snippet_id": "runbook_1", "content": "..."}],
+        "hypotheses": [
+            "Telemetry: 3 samples in range.",
+            "Runbook: power bus voltage procedure.",
+        ],
+        "citations": [
+            {
+                "doc_id": "power-bus-voltage-anomaly.md",
+                "snippet_id": "runbook_1",
+                "content": "...",
+            }
+        ],
         "subsystem": "Power",
         "risk": "medium",
     }

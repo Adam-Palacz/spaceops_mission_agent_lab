@@ -64,7 +64,7 @@ services:
       - "/policies"
     working_dir: /policies
     volumes:
-      - ./opa:/policies:ro
+      - ./infra/opa:/policies:ro
     ports:
       - "8181:8181"
 

@@ -5,15 +5,22 @@ Tests do not require Docker or live Postgres/LLM (mocks or tmp paths).
 
 from __future__ import annotations
 
+import pytest
 import os
+import tempfile
 from pathlib import Path
+
+
+# Force audit log and approval store to a session temp dir so tests never write to
+# repo data/audit.ndjson (pre-commit fails when the hook modifies tracked files).
+_test_tmp = tempfile.mkdtemp(prefix="pytest_session_")
+os.environ["AUDIT_LOG_PATH"] = os.path.join(_test_tmp, "audit.ndjson")
+os.environ["APPROVAL_STORE_PATH"] = os.path.join(_test_tmp, "approvals")
 
 # Disable OTLP trace export during tests to avoid "StatusCode.UNAVAILABLE" retries
 # when the collector is unreachable (tests exit before connection succeeds).
 # Tests that need tracing (e.g. test_otel_jaeger) override this explicitly.
 os.environ["OTEL_EXPORTER_OTLP_ENDPOINT"] = ""
-
-import pytest
 
 
 # Sample valid NDJSON lines for ingest tests (minimal schema: at least one key per line)

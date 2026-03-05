@@ -8,6 +8,7 @@ Optional: policy behaviour (allowlist, "restart all" deny) when OPA server is re
 from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
+import os
 
 import httpx
 import pytest
@@ -118,8 +119,8 @@ def test_opa_allow_fail_closed_on_empty_result():
 
 
 @pytest.mark.skipif(
-    True,  # Set to False and run with OPA up to enable: docker compose -f infra/docker-compose.yml up -d opa
-    reason="Integration: requires OPA server on OPA_URL (e.g. docker compose up opa)",
+    not os.getenv("OPA_POLICY_INTEGRATION"),
+    reason="Integration: requires OPA server on OPA_URL (e.g. docker compose -f infra/docker-compose.yml up -d opa) and OPA_POLICY_INTEGRATION=1",
 )
 def test_opa_policy_allowlist_and_restart_all_deny_integration():
     """S2.10: With real OPA, allowlisted tool + valid args → allow; 'restart all' in action → deny."""

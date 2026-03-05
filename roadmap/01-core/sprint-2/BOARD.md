@@ -11,7 +11,7 @@
 | S2.7 | Audit approval events | Done | [S2.7-audit-approvals.md](S2.7-audit-approvals.md) |
 | S2.8 | Injection suite | Done | [S2.8-injection-suite.md](S2.8-injection-suite.md) |
 | S2.9 | Prometheus + Grafana | Done | [S2.9-metrics-dashboard.md](S2.9-metrics-dashboard.md) |
-| S2.10 | OPA unit tests | Todo | [S2.10-opa-tests.md](S2.10-opa-tests.md) |
+| S2.10 | OPA unit tests | Done | [S2.10-opa-tests.md](S2.10-opa-tests.md) |
 | S2.11 | Unit tests in tests/ | Todo | [S2.11-unit-tests.md](S2.11-unit-tests.md) |
 
 **Status key:** Todo | In progress | Done | Blocked

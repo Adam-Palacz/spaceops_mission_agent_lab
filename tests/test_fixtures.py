@@ -2,6 +2,7 @@
 S1.14: Unit tests for fixture loading / schema — NDJSON under data/ (same rules as ingest).
 Deterministic; no Docker or live services.
 """
+
 from __future__ import annotations
 
 import json
@@ -14,7 +15,9 @@ DATA_DIR = REPO_ROOT / "data"
 def _ndjson_lines(path: Path) -> list[dict]:
     """Load NDJSON file; return list of dicts. Raises if any line is invalid or empty object."""
     out = []
-    for i, line in enumerate(path.read_text(encoding="utf-8").strip().split("\n"), start=1):
+    for i, line in enumerate(
+        path.read_text(encoding="utf-8").strip().split("\n"), start=1
+    ):
         line = line.strip()
         if not line:
             continue

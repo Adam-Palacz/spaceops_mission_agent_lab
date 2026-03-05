@@ -2,6 +2,7 @@
 S1.6: query_telemetry — unit test with fixture data.
 Uses repo data/telemetry fixtures; no MCP server required.
 """
+
 from __future__ import annotations
 
 import json

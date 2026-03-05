@@ -4,9 +4,12 @@ S1.11: Evals — case format, scoring logic, must-escalate.
 
 from __future__ import annotations
 
+import os
 import subprocess
 import sys
 from pathlib import Path
+
+import pytest
 
 # Add repo root
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -39,6 +42,10 @@ def test_case_format_has_payload_and_expectations():
         ), f"Case {case.get('id')}: need expected_subsystem or must_escalate"
 
 
+@pytest.mark.skipif(
+    os.environ.get("RUN_EVALS_SCORING") != "1",
+    reason="Full evals.scoring run is slow; run explicitly or in CI.",
+)
 def test_scoring_module_runs_and_outputs_score():
     """S1.11: python -m evals.scoring runs and outputs score/pass per case."""
     result = subprocess.run(

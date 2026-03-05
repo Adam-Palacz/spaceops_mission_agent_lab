@@ -1,6 +1,7 @@
 """
 S1.12 NF6: Token/rate limits and timeouts — escalation on limit or timeout; no hang.
 """
+
 from __future__ import annotations
 
 import sys
@@ -19,7 +20,9 @@ def test_run_exceeds_timeout_produces_escalation_packet(monkeypatch):
     monkeypatch.setattr("config.settings.agent_run_timeout_seconds", 0.1)
     from apps.agent import nodes
 
-    def _slow_chat_completion(prompt: str, model: str = "gpt-4o-mini", temperature: float = 0) -> tuple[str, int]:
+    def _slow_chat_completion(
+        prompt: str, model: str = "gpt-4o-mini", temperature: float = 0
+    ) -> tuple[str, int]:
         time.sleep(0.2)
         return "Power medium", 1
 
@@ -40,7 +43,9 @@ def test_run_exceeds_token_limit_produces_escalation_packet(monkeypatch):
     monkeypatch.setattr("config.settings.agent_token_budget_per_run", 1)
     from apps.agent import nodes
 
-    def _chat_completion_high_usage(prompt: str, model: str = "gpt-4o-mini", temperature: float = 0) -> tuple[str, int]:
+    def _chat_completion_high_usage(
+        prompt: str, model: str = "gpt-4o-mini", temperature: float = 0
+    ) -> tuple[str, int]:
         return "Power medium", 10
 
     monkeypatch.setattr(nodes, "_chat_completion", _chat_completion_high_usage)
@@ -57,6 +62,7 @@ def test_run_exceeds_rate_limit_produces_escalation_packet(monkeypatch):
     monkeypatch.setattr("config.settings.agent_max_llm_calls_per_run", 1)
     from apps.agent.nodes import decide
     from apps.agent.state import AgentState
+
     # State after triage (1 LLM call used) with evidence so check_escalation would not escalate
     state: AgentState = {
         "incident_id": "rate-limit-test",
@@ -79,7 +85,9 @@ def test_normal_run_under_limits_completes_without_false_escalation(monkeypatch)
     monkeypatch.setattr("config.settings.agent_token_budget_per_run", 100_000)
     from apps.agent import nodes
 
-    def _chat_completion_normal(prompt: str, model: str = "gpt-4o-mini", temperature: float = 0) -> tuple[str, int]:
+    def _chat_completion_normal(
+        prompt: str, model: str = "gpt-4o-mini", temperature: float = 0
+    ) -> tuple[str, int]:
         # Reasonable token usage well under the generous budget
         return "Power medium", 50
 
@@ -90,6 +98,9 @@ def test_normal_run_under_limits_completes_without_false_escalation(monkeypatch)
     # May still escalate for no_evidence if MCPs are down; we only assert no run_timeout/token_limit/llm_timeout
     packet = result.get("escalation_packet") or {}
     reason = packet.get("reason") or ""
-    assert reason not in ("run_timeout", "token_limit", "rate_limit", "llm_timeout"), (
-        "Normal run should not escalate due to limit/timeout"
-    )
+    assert reason not in (
+        "run_timeout",
+        "token_limit",
+        "rate_limit",
+        "llm_timeout",
+    ), "Normal run should not escalate due to limit/timeout"

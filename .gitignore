@@ -9,3 +9,4 @@ __pycache__/
 
 data/approvals/
 data/incidents/
+data/llm_runs/

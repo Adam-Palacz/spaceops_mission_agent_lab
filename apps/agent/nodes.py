@@ -24,6 +24,7 @@ from apps.agent.mcp_client import (
 from apps.agent.audit_log import append_entry as audit_append
 from apps.agent.opa_client import opa_allow
 from apps.agent.approval_store import create as approval_store_create
+from apps.llm_observability import start_llm_run, log_llm_call
 from apps.telemetry import get_tracer
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
@@ -97,6 +98,7 @@ def _chat_completion(
 def triage(state: AgentState) -> dict:
     """Classify subsystem and risk; persist incident record. S1.12: token budget, rate limit, LLM timeout → escalate."""
     incident_id = state.get("incident_id") or "unknown"
+    trace_id = state.get("trace_id") or incident_id
     payload = state.get("payload") or {}
     tokens_used = state.get("tokens_used") or 0
     llm_calls_used = state.get("llm_calls_used") or 0
@@ -114,6 +116,12 @@ def triage(state: AgentState) -> dict:
             "rate_limit",
             f"Max LLM calls per run ({max_llm_calls}) already reached before triage.",
         ) | {"tokens_used": tokens_used, "llm_calls_used": llm_calls_used}
+    # S3.0: ensure we have a logical run_id for LLM observability.
+    run_id = start_llm_run(
+        trace_id,
+        incident_id=incident_id,
+        node="triage",
+    )
     prompt = f"""Classify this incident. Payload: {payload}
 Return exactly two words on one line, separated by a space: SUBSYSTEM RISK
 SUBSYSTEM must be one of: {', '.join(_SUBSYSTEMS)}
@@ -133,6 +141,16 @@ Example: Power medium"""
             "token_limit",
             f"Token budget ({token_budget}) exceeded during triage (used {tokens_used}).",
         ) | {"tokens_used": tokens_used, "llm_calls_used": llm_calls_used}
+    # S3.0: record LLM call in observability spine.
+    log_llm_call(
+        run_id,
+        node="triage",
+        model_id="gpt-4o-mini",
+        prompt_id="triage",
+        prompt_version="v1",
+        tags={"subsystems": list(_SUBSYSTEMS)},
+        metrics={"tokens_used": usage},
+    )
     text = content.strip().split()
     subsystem = text[0] if len(text) >= 1 else "Ground"
     risk = text[1] if len(text) >= 2 else "medium"
@@ -371,6 +389,7 @@ def check_escalation(state: AgentState) -> dict:
 def decide(state: AgentState) -> dict:
     """Produce plan; each step must reference at least one doc_id or snippet_id (NF5a). S1.12: token budget, rate limit, timeout."""
     incident_id = state.get("incident_id") or "unknown"
+    trace_id = state.get("trace_id") or incident_id
     tokens_used = state.get("tokens_used") or 0
     llm_calls_used = state.get("llm_calls_used") or 0
     token_budget = max(0, getattr(settings, "agent_token_budget_per_run", 0))
@@ -393,6 +412,12 @@ def decide(state: AgentState) -> dict:
     risk = state.get("risk") or "medium"
     doc_ids = list({c.get("doc_id") for c in citations if c.get("doc_id")})
     snippet_ids = list({c.get("snippet_id") for c in citations if c.get("snippet_id")})
+    # S3.0: attach to same logical run_id for LLM observability.
+    run_id = start_llm_run(
+        trace_id,
+        incident_id=incident_id,
+        node="decide",
+    )
     prompt = f"""Given subsystem={subsystem}, risk={risk}, and investigation:
 {chr(10).join(hypotheses[:5])}
 
@@ -418,6 +443,19 @@ Output only the JSON array, no markdown."""
             "token_limit",
             f"Token budget ({token_budget}) exceeded during decide (used {tokens_used}).",
         ) | {"tokens_used": tokens_used, "llm_calls_used": llm_calls_used}
+    # S3.0: record LLM call in observability spine.
+    log_llm_call(
+        run_id,
+        node="decide",
+        model_id="gpt-4o-mini",
+        prompt_id="decide",
+        prompt_version="v1",
+        tags={
+            "subsystem": subsystem,
+            "risk": risk,
+        },
+        metrics={"tokens_used": usage},
+    )
     text = content.strip()
     if "```" in text:
         text = text.split("```")[1].replace("json", "").strip()

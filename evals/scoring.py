@@ -10,6 +10,8 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+from apps.llm_observability import start_llm_run
+
 REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
@@ -86,6 +88,12 @@ def run_case(case: dict) -> dict:
 
     case_id = case.get("id") or "unknown"
     payload = case.get("payload") or {}
+    # S3.0: record eval run in observability spine (no change to pipeline logic).
+    start_llm_run(
+        case_id,
+        eval_case_id=case_id,
+        kind="standard_eval",
+    )
     result = run_pipeline(case_id, payload)
     return result
 
@@ -114,6 +122,13 @@ def run_injection_case(case: dict) -> dict:
         injection_text = doc_path.read_text(encoding="utf-8").strip()
         base_msg = payload.get("message") or "incident"
         payload["message"] = f"{injection_text}\n\n---\nIncident: {base_msg}"
+    # S3.0: record injection eval run in observability spine.
+    start_llm_run(
+        case_id,
+        eval_case_id=case_id,
+        injection_case_id=doc_name or None,
+        kind="injection_eval",
+    )
     result = run_pipeline(case_id, payload)
     return result
 

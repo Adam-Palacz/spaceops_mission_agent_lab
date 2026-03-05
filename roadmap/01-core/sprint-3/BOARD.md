@@ -2,6 +2,7 @@
 
 | Task | Title | Status | Task file |
 |------|--------|--------|-----------|
+| S3.0 | LLM observability spine (Langfuse-compatible) | Done | [S3.0-llm-observability-spine.md](S3.0-llm-observability-spine.md) |
 | S3.1 | Model upgrade / shadow-testing pipeline | Todo | [S3.1-model-upgrade-shadow-testing.md](S3.1-model-upgrade-shadow-testing.md) |
 | S3.2 | Prompt registry & versioning | Todo | [S3.2-prompt-registry-versioning.md](S3.2-prompt-registry-versioning.md) |
 | S3.3 | Context window & memory compaction | Todo | [S3.3-context-window-compaction.md](S3.3-context-window-compaction.md) |

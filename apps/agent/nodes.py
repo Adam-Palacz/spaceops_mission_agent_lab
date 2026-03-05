@@ -66,14 +66,17 @@ def _safe_error_message(exc: Exception, max_length: int = 200) -> str:
 
 
 def _chat_completion(
-    prompt: str, model: str = "gpt-4o-mini", temperature: float = 0
+    prompt: str, model: str | None = None, temperature: float = 0
 ) -> tuple[str, int]:
     """
     Call OpenAI Chat Completions API. Return (content, total_tokens).
     S1.12: uses agent_llm_call_timeout_seconds; raises httpx.TimeoutException on timeout.
     """
+    from apps.model_selection import get_current_model_id
+
     if not settings.openai_api_key:
         raise RuntimeError("OPENAI_API_KEY required for agent; set in .env")
+    model_id = model or get_current_model_id()
     timeout = max(1, getattr(settings, "agent_llm_call_timeout_seconds", 30))
     with httpx.Client(timeout=float(timeout)) as client:
         r = client.post(
@@ -83,7 +86,7 @@ def _chat_completion(
                 "Content-Type": "application/json",
             },
             json={
-                "model": model,
+                "model": model_id,
                 "temperature": temperature,
                 "messages": [{"role": "user", "content": prompt}],
             },

@@ -119,6 +119,16 @@ class Settings(BaseSettings):
         default=10, description="Max LLM calls per run; 0 = no limit (rate limit NF6)"
     )
 
+    # S3.1: model lifecycle / shadow-testing
+    agent_model_id: str = Field(
+        default="gpt-4o-mini",
+        description="Current production model identifier for agent triage/decide/report.",
+    )
+    agent_candidate_model_ids: str = Field(
+        default="",
+        description="Comma-separated candidate model identifiers for shadow-testing.",
+    )
+
     @property
     def postgres_dsn(self) -> str:
         """Connection string when DATABASE_URL is not set."""

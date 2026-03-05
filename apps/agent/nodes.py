@@ -26,6 +26,11 @@ from apps.agent.opa_client import opa_allow
 from apps.agent.approval_store import create as approval_store_create
 from apps.llm_observability import start_llm_run, log_llm_call
 from apps.telemetry import get_tracer
+from prompts.registry import (
+    DECIDE_PROMPT_ID,
+    TRIAGE_PROMPT_ID,
+    get_prompt,
+)
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 DATA_INCIDENTS = REPO_ROOT / "data" / "incidents"
@@ -125,11 +130,11 @@ def triage(state: AgentState) -> dict:
         incident_id=incident_id,
         node="triage",
     )
-    prompt = f"""Classify this incident. Payload: {payload}
-Return exactly two words on one line, separated by a space: SUBSYSTEM RISK
-SUBSYSTEM must be one of: {', '.join(_SUBSYSTEMS)}
-RISK must be one of: low, medium, high
-Example: Power medium"""
+    triage_prompt = get_prompt(TRIAGE_PROMPT_ID)
+    prompt = triage_prompt.text.format(
+        payload=payload,
+        subsystems=", ".join(_SUBSYSTEMS),
+    )
     try:
         content, usage = _chat_completion(prompt)
     except httpx.TimeoutException:
@@ -149,8 +154,8 @@ Example: Power medium"""
         run_id,
         node="triage",
         model_id="gpt-4o-mini",
-        prompt_id="triage",
-        prompt_version="v1",
+        prompt_id=triage_prompt.id,
+        prompt_version=triage_prompt.version,
         tags={"subsystems": list(_SUBSYSTEMS)},
         metrics={"tokens_used": usage},
     )
@@ -421,17 +426,15 @@ def decide(state: AgentState) -> dict:
         incident_id=incident_id,
         node="decide",
     )
-    prompt = f"""Given subsystem={subsystem}, risk={risk}, and investigation:
-{chr(10).join(hypotheses[:5])}
-
-Produce a short action plan. Each step MUST cite at least one of these doc_ids or snippet_ids:
-doc_ids: {doc_ids}
-snippet_ids: {snippet_ids[:10]}
-
-Return a JSON array of steps. Each step: {{"action": "...", "safe": true|false, "action_type": "create_ticket"|"create_pr"|"change_config"|"report", "doc_ids": ["..."], "snippet_ids": ["..."]}}
-- safe=true for ticket, report, extra query; safe=false for config change/restart (restricted).
-- action_type: use "create_ticket" for creating a ticket, "create_pr" for proposing a config/PR change, "change_config" for restricted config changes, "report" for documentation-only.
-Output only the JSON array, no markdown."""
+    decide_prompt = get_prompt(DECIDE_PROMPT_ID)
+    investigation_notes = "\n".join(hypotheses[:5])
+    prompt = decide_prompt.text.format(
+        subsystem=subsystem,
+        risk=risk,
+        investigation_notes=investigation_notes,
+        doc_ids=doc_ids,
+        snippet_ids=snippet_ids[:10],
+    )
     try:
         content, usage = _chat_completion(prompt)
     except httpx.TimeoutException:
@@ -451,8 +454,8 @@ Output only the JSON array, no markdown."""
         run_id,
         node="decide",
         model_id="gpt-4o-mini",
-        prompt_id="decide",
-        prompt_version="v1",
+        prompt_id=decide_prompt.id,
+        prompt_version=decide_prompt.version,
         tags={
             "subsystem": subsystem,
             "risk": risk,

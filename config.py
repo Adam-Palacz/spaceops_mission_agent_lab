@@ -129,6 +129,20 @@ class Settings(BaseSettings):
         description="Comma-separated candidate model identifiers for shadow-testing.",
     )
 
+    # S3.3: context window & history compaction
+    agent_max_hypotheses: int = Field(
+        default=32,
+        description="Max number of hypotheses to keep in agent state; 0 = no compaction.",
+    )
+    agent_max_citations: int = Field(
+        default=128,
+        description="Max number of citations to keep in agent state; 0 = no compaction.",
+    )
+    agent_history_compaction_debug: bool = Field(
+        default=False,
+        description="When true, log when context history is compacted and by how much.",
+    )
+
     @property
     def postgres_dsn(self) -> str:
         """Connection string when DATABASE_URL is not set."""

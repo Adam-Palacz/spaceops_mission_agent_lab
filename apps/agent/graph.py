@@ -11,7 +11,7 @@ from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeou
 from langgraph.graph import END, StateGraph
 
 from config import settings
-from apps.agent.state import AgentState
+from apps.agent.state import AgentState, compact_history
 from apps.agent.nodes import (
     act,
     check_escalation,
@@ -24,13 +24,19 @@ from apps.telemetry import get_tracer, get_current_trace_id_hex, init_telemetry
 
 
 def _wrap_node(span_name: str, node_fn):
-    """S1.10: run node under a span; set incident_id attribute."""
+    """S1.10: run node under a span; S3.3: compact history after node."""
 
     def wrapped(state: AgentState) -> dict:
         tracer = get_tracer("apps.agent")
         with tracer.start_as_current_span(span_name) as span:
             span.set_attribute("incident_id", state.get("incident_id") or "unknown")
-            return node_fn(state)
+            out = node_fn(state)
+        # S3.3: context window / history compaction based on updated state snapshot.
+        merged: AgentState = {**state, **out}
+        delta = compact_history(merged)
+        if delta:
+            out = {**out, **delta}
+        return out
 
     return wrapped
 

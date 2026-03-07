@@ -3,6 +3,7 @@ S2.3/S2.4 — OPA client for restricted-action policy.
 
 S2.4: Call OPA /v1/data/agent/allow with input {incident_id, step}.
 Fail-closed: on network error, timeout, non-200, or malformed response → deny.
+S3.4: Retry with backoff and circuit breaker; circuit open → deny.
 """
 
 from __future__ import annotations
@@ -12,6 +13,7 @@ from typing import Any
 import httpx
 
 from config import settings
+from apps.common.http_resilience import CircuitOpenError, with_retry_sync
 
 
 def _build_opa_input(step: dict, incident_id: str) -> dict:
@@ -22,12 +24,21 @@ def _build_opa_input(step: dict, incident_id: str) -> dict:
     }
 
 
+def _opa_post(url: str, timeout: float, payload: dict) -> dict[str, Any]:
+    """Single OPA POST; used inside retry loop."""
+    with httpx.Client(timeout=timeout) as client:
+        resp = client.post(url, json=payload)
+        resp.raise_for_status()
+        return resp.json()
+
+
 def opa_allow(step: dict, incident_id: str) -> bool:
     """
     Check whether OPA allows the given restricted step.
 
     - Input: full plan step dict + incident_id.
     - Output: bool. Any error or unexpected shape → False (fail-closed, NF8).
+    - S3.4: Retries on transient errors; circuit open → False.
     """
     url = getattr(
         settings,
@@ -38,12 +49,15 @@ def opa_allow(step: dict, incident_id: str) -> bool:
     payload = {"input": _build_opa_input(step, incident_id)}
 
     try:
-        with httpx.Client(timeout=float(timeout)) as client:
-            resp = client.post(url, json=payload)
-            resp.raise_for_status()
-            data: dict[str, Any] = resp.json()
-    except Exception:
-        # Fail-closed: unreachable / timeout / non-JSON → deny.
+        data = with_retry_sync(
+            _opa_post,
+            url,
+            float(timeout),
+            payload,
+            circuit_key="opa",
+        )
+    except (CircuitOpenError, Exception):
+        # Fail-closed: unreachable / timeout / circuit open / non-JSON → deny.
         return False
 
     # Fast path: result is a bare bool

@@ -124,6 +124,11 @@ def test_opa_allow_fail_closed_on_empty_result():
 )
 def test_opa_policy_allowlist_and_restart_all_deny_integration():
     """S2.10: With real OPA, allowlisted tool + valid args → allow; 'restart all' in action → deny."""
+    from apps.common.http_resilience import reset_circuit
+
+    reset_circuit(
+        "opa"
+    )  # avoid open circuit from other tests (e.g. test_opa_fail_closed_on_circuit_open)
     # Allowed: change_config, valid action text
     assert (
         opa_allow(

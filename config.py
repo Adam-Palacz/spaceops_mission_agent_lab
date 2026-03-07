@@ -143,6 +143,24 @@ class Settings(BaseSettings):
         description="When true, log when context history is compacted and by how much.",
     )
 
+    # S3.4: HTTP/MCP retry and circuit breaker
+    http_resilience_max_retries: int = Field(
+        default=3,
+        description="Max retries for transient HTTP/MCP failures (0 = no retries).",
+    )
+    http_resilience_backoff_base_seconds: float = Field(
+        default=1.0,
+        description="Base delay for exponential backoff between retries.",
+    )
+    http_resilience_circuit_breaker_failures: int = Field(
+        default=5,
+        description="Failures before opening circuit (0 = disable circuit breaker).",
+    )
+    http_resilience_circuit_breaker_reset_seconds: float = Field(
+        default=60.0,
+        description="Seconds before circuit moves from open to half-open.",
+    )
+
     @property
     def postgres_dsn(self) -> str:
         """Connection string when DATABASE_URL is not set."""

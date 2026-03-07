@@ -1,5 +1,6 @@
 """
 SpaceOps Agent — MCP client helpers to call Telemetry and KB servers (S1.7).
+S3.4: Retry and circuit breaker for MCP HTTP calls.
 """
 
 from __future__ import annotations
@@ -8,6 +9,7 @@ import asyncio
 import json
 
 from config import settings
+from apps.common.http_resilience import with_retry_async
 
 # Optional MCP client imports
 try:
@@ -24,8 +26,9 @@ async def _call_telemetry_mcp(
 ) -> list[dict]:
     if not _MCP_AVAILABLE:
         return []
-    url = settings.telemetry_mcp_url
-    try:
+
+    async def _do() -> list[dict]:
+        url = settings.telemetry_mcp_url
         async with streamable_http_client(url) as (read_stream, write_stream, _):
             async with ClientSession(read_stream, write_stream) as session:
                 await session.initialize()
@@ -101,16 +104,20 @@ async def _call_telemetry_mcp(
                         if isinstance(inner, list):
                             return inner
                     return collected
+        return []
+
+    try:
+        return await with_retry_async(_do, circuit_key="mcp_telemetry")
     except Exception:
         return []
-    return []
 
 
 async def _call_kb_runbooks_mcp(query: str, limit: int = 5) -> list[dict]:
     if not _MCP_AVAILABLE:
         return []
-    url = settings.kb_mcp_url
-    try:
+
+    async def _do() -> list[dict]:
+        url = settings.kb_mcp_url
         async with streamable_http_client(url) as (read_stream, write_stream, _):
             async with ClientSession(read_stream, write_stream) as session:
                 await session.initialize()
@@ -179,16 +186,20 @@ async def _call_kb_runbooks_mcp(query: str, limit: int = 5) -> list[dict]:
                         if isinstance(inner, list):
                             return inner
                     return collected
+        return []
+
+    try:
+        return await with_retry_async(_do, circuit_key="mcp_kb_runbooks")
     except Exception:
         return []
-    return []
 
 
 async def _call_kb_postmortems_mcp(signature: str, limit: int = 5) -> list[dict]:
     if not _MCP_AVAILABLE:
         return []
-    url = settings.kb_mcp_url
-    try:
+
+    async def _do() -> list[dict]:
+        url = settings.kb_mcp_url
         async with streamable_http_client(url) as (read_stream, write_stream, _):
             async with ClientSession(read_stream, write_stream) as session:
                 await session.initialize()
@@ -258,9 +269,12 @@ async def _call_kb_postmortems_mcp(signature: str, limit: int = 5) -> list[dict]
                         if isinstance(inner, list):
                             return inner
                     return collected
+        return []
+
+    try:
+        return await with_retry_async(_do, circuit_key="mcp_kb_postmortems")
     except Exception:
         return []
-    return []
 
 
 def _decode_single_result(result, *, content_attr: str = "content") -> dict | None:
@@ -296,8 +310,9 @@ def _decode_single_result(result, *, content_attr: str = "content") -> dict | No
 async def _call_ticket_mcp(title: str, body: str) -> dict | None:
     if not _MCP_AVAILABLE:
         return None
-    url = getattr(settings, "ticket_mcp_url", "http://localhost:8003/mcp")
-    try:
+
+    async def _do() -> dict | None:
+        url = getattr(settings, "ticket_mcp_url", "http://localhost:8003/mcp")
         async with streamable_http_client(url) as (read_stream, write_stream, _):
             async with ClientSession(read_stream, write_stream) as session:
                 await session.initialize()
@@ -305,6 +320,9 @@ async def _call_ticket_mcp(title: str, body: str) -> dict | None:
                     "create_ticket", arguments={"title": title, "body": body}
                 )
                 return _decode_single_result(result)
+
+    try:
+        return await with_retry_async(_do, circuit_key="mcp_ticket")
     except Exception:
         return None
 
@@ -314,8 +332,9 @@ async def _call_gitops_mcp(
 ) -> dict | None:
     if not _MCP_AVAILABLE:
         return None
-    url = getattr(settings, "gitops_mcp_url", "http://localhost:8004/mcp")
-    try:
+
+    async def _do() -> dict | None:
+        url = getattr(settings, "gitops_mcp_url", "http://localhost:8004/mcp")
         async with streamable_http_client(url) as (read_stream, write_stream, _):
             async with ClientSession(read_stream, write_stream) as session:
                 await session.initialize()
@@ -328,6 +347,9 @@ async def _call_gitops_mcp(
                     },
                 )
                 return _decode_single_result(result)
+
+    try:
+        return await with_retry_async(_do, circuit_key="mcp_gitops")
     except Exception:
         return None
 

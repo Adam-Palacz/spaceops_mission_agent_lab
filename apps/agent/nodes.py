@@ -394,6 +394,23 @@ def check_escalation(state: AgentState) -> dict:
     return {"escalated": True, "escalation_packet": packet}
 
 
+def _normalize_plan_steps(
+    plan: list,
+    default_doc_ids: list[str] | None = None,
+    default_snippet_ids: list[str] | None = None,
+) -> None:
+    """Ensure every plan step dict has action, action_type, doc_ids, snippet_ids (avoids KeyError in evals/CI)."""
+    doc_ids = default_doc_ids or []
+    snippet_ids = default_snippet_ids or []
+    for step in plan:
+        if isinstance(step, dict):
+            step["action"] = step.get("action") or ""
+            step["action_type"] = step.get("action_type") or "report"
+            if not step.get("doc_ids") and not step.get("snippet_ids"):
+                step["doc_ids"] = doc_ids[:1] if doc_ids else []
+                step["snippet_ids"] = snippet_ids[:1] if snippet_ids else []
+
+
 def decide(state: AgentState) -> dict:
     """Produce plan; each step must reference at least one doc_id or snippet_id (NF5a). S1.12: token budget, rate limit, timeout."""
     incident_id = state.get("incident_id") or "unknown"
@@ -478,15 +495,7 @@ def decide(state: AgentState) -> dict:
         ]
     if not isinstance(plan, list):
         plan = [plan]
-    # Ensure each step has citation refs, action_type, and action (CI evals expect "action" key)
-    for step in plan:
-        if isinstance(step, dict):
-            if not step.get("doc_ids") and not step.get("snippet_ids"):
-                step["doc_ids"] = doc_ids[:1] if doc_ids else []
-                step["snippet_ids"] = snippet_ids[:1] if snippet_ids else []
-            if not step.get("action_type"):
-                step["action_type"] = "report"
-            step["action"] = step.get("action") or ""
+    _normalize_plan_steps(plan, doc_ids, snippet_ids)
     return {"plan": plan, "tokens_used": tokens_used, "llm_calls_used": llm_calls_used}
 
 
@@ -497,7 +506,8 @@ def act(state: AgentState) -> dict:
     """
     incident_id = state.get("incident_id") or "unknown"
     trace_id = state.get("trace_id") or incident_id
-    plan = state.get("plan") or []
+    plan = list(state.get("plan") or [])
+    _normalize_plan_steps(plan)  # ensure "action" etc. present (CI/evals KeyError fix)
     act_results: list[dict] = []
     approval_requests: list[dict] = []
     tracer = get_tracer("apps.agent")

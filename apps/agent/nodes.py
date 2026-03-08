@@ -478,7 +478,7 @@ def decide(state: AgentState) -> dict:
         ]
     if not isinstance(plan, list):
         plan = [plan]
-    # Ensure each step has at least one citation and action_type
+    # Ensure each step has citation refs, action_type, and action (CI evals expect "action" key)
     for step in plan:
         if isinstance(step, dict):
             if not step.get("doc_ids") and not step.get("snippet_ids"):
@@ -486,6 +486,7 @@ def decide(state: AgentState) -> dict:
                 step["snippet_ids"] = snippet_ids[:1] if snippet_ids else []
             if not step.get("action_type"):
                 step["action_type"] = "report"
+            step["action"] = step.get("action") or ""
     return {"plan": plan, "tokens_used": tokens_used, "llm_calls_used": llm_calls_used}
 
 

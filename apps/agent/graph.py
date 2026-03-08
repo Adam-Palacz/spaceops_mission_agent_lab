@@ -13,6 +13,7 @@ from langgraph.graph import END, StateGraph
 from config import settings
 from apps.agent.state import AgentState, compact_history
 from apps.agent.nodes import (
+    _normalize_plan_steps,
     act,
     check_escalation,
     decide,
@@ -133,4 +134,6 @@ def run_pipeline(incident_id: str, payload: dict | None = None) -> dict:
                     return _run_timeout_escalation_result(incident_id, trace_id)
         else:
             result = graph.invoke(initial)
+        # Guarantee plan steps have "action" so evals/consumers never see KeyError
+        _normalize_plan_steps(result.get("plan") or [])
     return result

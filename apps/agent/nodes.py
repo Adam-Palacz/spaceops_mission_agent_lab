@@ -652,6 +652,8 @@ def act(state: AgentState) -> dict:
 
 def report(state: AgentState) -> dict:
     """Format summary, evidence, actions, rollback, trace link. Include escalation packet when escalated (F10)."""
+    # Ensure plan steps have "action" (avoids KeyError in downstream/CI)
+    _normalize_plan_steps(state.get("plan") or [])
     incident_id = state.get("incident_id") or "unknown"
     subsystem = state.get("subsystem") or ""
     risk = state.get("risk") or ""

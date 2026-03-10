@@ -8,7 +8,7 @@
 | S3.3 | Context window & memory compaction | Done | [S3.3-context-window-compaction.md](S3.3-context-window-compaction.md) |
 | S3.4 | MCP/HTTP retry & circuit breaker layer | Done | [S3.4-retry-circuit-breaker.md](S3.4-retry-circuit-breaker.md) |
 | S3.5 | Chaos / degradation test harness | Done | [S3.5-chaos-degradation-tests.md](S3.5-chaos-degradation-tests.md) |
-| S3.6 | Automated dependency updates (Dependabot/Renovate) | Todo | [S3.6-automated-dependency-updates.md](S3.6-automated-dependency-updates.md) |
+| S3.6 | Automated dependency updates (Dependabot/Renovate) | Done | [S3.6-automated-dependency-updates.md](S3.6-automated-dependency-updates.md) |
 | S3.7 | Secrets management plan & integration path | Todo | [S3.7-secrets-management-plan.md](S3.7-secrets-management-plan.md) |
 | S3.8 | Tech-debt budget process & documentation | Todo | [S3.8-tech-debt-budget-process.md](S3.8-tech-debt-budget-process.md) |
 

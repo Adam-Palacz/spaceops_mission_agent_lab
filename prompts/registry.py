@@ -45,9 +45,9 @@ _PROMPTS: Dict[str, Prompt] = {
             "doc_ids: {doc_ids}\n"
             "snippet_ids: {snippet_ids}\n\n"
             "Return a JSON array of steps. Each step: "
-            '{"action": "...", "safe": true|false, '
+            '{{"action": "...", "safe": true|false, '
             '"action_type": "create_ticket"|"create_pr"|"change_config"|"report", '
-            '"doc_ids": ["..."], "snippet_ids": ["..."]}\n'
+            '"doc_ids": ["..."], "snippet_ids": ["..."]}}\n'
             "- safe=true for ticket, report, extra query; safe=false for config change/restart (restricted).\n"
             '- action_type: use "create_ticket" for creating a ticket, "create_pr" for proposing a config/PR '
             'change, "change_config" for restricted config changes, "report" for documentation-only.\n'

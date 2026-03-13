@@ -12,6 +12,9 @@ from dotenv import load_dotenv
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+# S3.7: secrets management stub — future backends can plug in here
+from apps.common.secrets import get_secret
+
 _REPO_ROOT = Path(__file__).resolve().parent
 load_dotenv(_REPO_ROOT / ".env", override=False)
 
@@ -27,7 +30,8 @@ class Settings(BaseSettings):
 
     # OpenAI (KB embedding + agent)
     openai_api_key: str = Field(
-        default="", description="OpenAI API key; required for KB and agent."
+        default_factory=lambda: get_secret("OPENAI_API_KEY", ""),
+        description="OpenAI API key; required for KB and agent.",
     )
 
     # Postgres (RAG, KB)
@@ -39,7 +43,7 @@ class Settings(BaseSettings):
     postgres_user: str = Field(default="spaceops")
     # Optional for core app (API/agent without KB); required when using KB server or indexer.
     postgres_password: str = Field(
-        default="",
+        default_factory=lambda: get_secret("POSTGRES_PASSWORD", ""),
         description="Postgres password; required for KB/RAG, optional otherwise.",
     )
     postgres_db: str = Field(default="spaceops")
@@ -68,7 +72,7 @@ class Settings(BaseSettings):
 
     # GitOps: push branch + create PR (S2.2). Empty = only write files locally.
     github_token: str = Field(
-        default="",
+        default_factory=lambda: get_secret("GITHUB_TOKEN", ""),
         description="GitHub token (repo scope) for push and Create PR; empty = no push/PR.",
     )
     github_repo: str = Field(
@@ -101,7 +105,7 @@ class Settings(BaseSettings):
         description="Directory for approval request JSON files; empty = data/approvals",
     )
     approval_api_key: str = Field(
-        default="",
+        default_factory=lambda: get_secret("APPROVAL_API_KEY", ""),
         description="API key for approve/reject (header X-API-Key or Authorization: Bearer <key>). Required for POST approve/reject.",
     )
 

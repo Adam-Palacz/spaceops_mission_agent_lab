@@ -9,7 +9,7 @@ prometheus-client==0.24.1
 
 # Agent / LangGraph
 langgraph==0.2.45
-langchain-core==0.3.21
+langchain-core==1.2.19
 langchain-openai==0.2.9
 
 # Postgres + pgvector (RAG, KB)

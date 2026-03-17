@@ -6,7 +6,7 @@ Agent for satellite / ground segment anomaly triage: **ingest ? triage ? investi
 
 | Doc | Description |
 |-----|-------------|
-| [**roadmap/goals.md**](./roadmap/goals.md) | Goals, assumptions, requirements (F1?F10, NF1?NF9), policy, MoE/MoP, production-ready criteria, audit log schema (?4.6). |
+| [**roadmap/goals.md**](./roadmap/goals.md) | Goals, assumptions, requirements (F1–F10, NF1–NF9), policy, MoE/MoP, production-ready criteria, audit log schema (§4.6). |
 | [**roadmap/base-roadmap.md**](./roadmap/base-roadmap.md) | Sprints (S1, S2, S3), Phase 4 hardening, tech-debt sprint, task list. |
 | [**roadmap/01-foundation-mvp.md**](./roadmap/01-foundation-mvp.md) | Foundation/MVP storyline: core agent, MCPs, evals, and escalation. |
 | [**roadmap/02-production-scale.md**](./roadmap/02-production-scale.md) | Post-MVP productionisation: streaming, safety gates, LLM backends, K8s/cloud. |
@@ -14,6 +14,7 @@ Agent for satellite / ground segment anomaly triage: **ingest ? triage ? investi
 | [**roadmap/03-next-gen-autonomy.md**](./roadmap/03-next-gen-autonomy.md) | Next-gen autonomy (L3/L4): Flight Director multi-agent pattern, collaborative planning, compliance gateway, edge SLMs, GraphRAG. |
 | [**roadmap/README.md**](./roadmap/README.md) | Execution plan: phases, sprints, task specs. |
 | [**docs/README.md**](./docs/README.md) | Index of Mermaid diagrams (pipeline, architecture, state flow, Act flow, repo structure). |
+| [**docs/process.md**](./docs/process.md) | Process docs, including the tech-debt budget (S3.8) and how to apply it in sprints. |
 | [**roadmap/01-core/README.md**](./roadmap/01-core/README.md) | Sprint boards and task specs (S1.x, S2.x, S3.x). |
 
 ## Environment

@@ -18,3 +18,6 @@
 
 *Update status when starting or finishing a task.*
 
+> Tech-debt budget: aim for ~20% of sprint capacity on debt items.
+> For this sprint, the following tasks count as tech-debt: S3.4, S3.5, S3.6, S3.7, S3.8.
+

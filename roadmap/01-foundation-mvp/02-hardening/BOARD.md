@@ -9,6 +9,7 @@
 | P4.5 | Optional Next.js UI | Todo | [P4.5-nextjs-ui.md](P4.5-nextjs-ui.md) |
 | P4.6 | Expand eval suite (20–30 cases) | Todo | [P4.6-expand-evals.md](P4.6-expand-evals.md) |
 | P4.7 | Post-incident loop | Todo | [P4.7-post-incident-loop.md](P4.7-post-incident-loop.md) |
+| P4.8 | Model upgrade / shadow-testing rollout | Todo | [P4.8-model-upgrade-shadow-rollout.md](P4.8-model-upgrade-shadow-rollout.md) |
 
 **Status key:** Todo | In progress | Done | Blocked
 

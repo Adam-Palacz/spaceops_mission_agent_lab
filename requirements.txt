@@ -8,7 +8,7 @@ uvicorn[standard]==0.41.0
 prometheus-client==0.24.1
 
 # Agent / LangGraph
-langgraph==0.2.45
+langgraph==1.1.2
 langchain-core==0.3.21
 langchain-openai==1.1.11
 

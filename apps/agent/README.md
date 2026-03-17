@@ -1,18 +1,22 @@
-# SpaceOps Agent — LangGraph pipeline (S1.7)
+# SpaceOps Agent — LangGraph pipeline (S1.7–S2.x)
 
-Pipeline: **Triage** → **Investigate** → **Decide** → **Report** (no Act node yet). LLM calls use the OpenAI Chat Completions API via httpx.
+Pipeline: **Triage** → **Investigate** → **Decide** → **Act** → **Report**. LLM calls use the OpenAI Chat Completions API via `httpx`; restricted actions are guarded by OPA and an approval API.
 
 ## Nodes
 
 - **Triage** — Classify subsystem (ADCS/Power/Thermal/Comms/Payload/Ground) and risk; persist incident to `data/incidents/`.
-- **Investigate** — Call Telemetry MCP (`query_telemetry`) and KB MCP (`search_runbooks`, `search_postmortems`); attach hypotheses and citations. If MCP servers are down, returns empty hypotheses/citations and continues.
-- **Decide** — LLM produces an action plan; each step must reference at least one `doc_id` or `snippet_id` (NF5a citation grounding).
-- **Report** — Executive summary, evidence, proposed actions, rollback note, trace link (Jaeger UI URL placeholder).
+- **Investigate** — Call Telemetry MCP (`query_telemetry`) and KB MCP (`search_runbooks`, `search_postmortems`); attach hypotheses and citations. If MCP servers are down, returns fallback hypotheses and continues.
+- **Decide** — LLM produces a citation-grounded action plan; each step includes `safe` and `action_type` (`create_ticket`, `create_pr`, `change_config`, `report`) and must reference at least one `doc_id` or `snippet_id` (NF5a).
+- **Act** — Executes **safe** steps immediately via Ticketing/GitOps MCP; for **restricted** steps (`safe=false`), calls OPA (`opa_allow`) and, on allow, creates approval requests instead of executing. On deny/error/timeout → **fail-closed** escalation with `reason="policy_deny"`, no execution.
+- **Report** — Executive summary, evidence, citation refs, proposed actions, rollback note, trace link to Jaeger, and (when escalated) the escalation packet from Decide/Act.
 
 ## Prerequisites
 
 - **.env** with `OPENAI_API_KEY` (required for Triage and Decide).
-- **Optional:** MCP Telemetry at `TELEMETRY_MCP_URL` (default `http://localhost:8001/mcp`), MCP KB at `KB_MCP_URL` (default `http://localhost:8002/mcp`) with KB indexed — for richer Investigate results.
+- **Optional but recommended for full flow:**
+  - MCP Telemetry at `TELEMETRY_MCP_URL` and MCP KB at `KB_MCP_URL` — for richer Investigate results.
+  - OPA server on `OPA_URL` (default from `config.py`) with `infra/opa/agent_policy.rego` loaded.
+  - Approval API key (`APPROVAL_API_KEY`) for `/approvals` endpoints.
 
 ## Run from CLI
 

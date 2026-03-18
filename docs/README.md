@@ -32,6 +32,7 @@ The **docs/** directory holds project documentation that supports both humans an
 | **[planning/](planning/)** | Delivery plan | Sprint 1 (pipeline to Report + evals + OTel), Sprint 2 (Act + OPA + approvals + injection suite), Phase 4 (docs, runbooks, expanded evals). |
 | **[requirements/](requirements/)** | Goals and measures | Functional (F1–F10), Non-functional (NF1–NF9), Policy (P1–P6); MoE (triage accuracy, citation precision, unsafe=0, escalation); MoP (latency, tool-call count). |
 | **[data/](data/)** | Audit and schema | Audit log: timestamp, trace_id, incident_id, actor, tool, args_hash, decision, policy_result, outcome; append-only, no in-place edits. |
+| **[runbooks/](runbooks/)** | Operator & maintainer runbooks | How to add a new MCP, how to operate the agent, future playbooks. |
 
 ---
 

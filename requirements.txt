@@ -13,7 +13,7 @@ langchain-core==1.2.19
 langchain-openai==1.1.11
 
 # Postgres + pgvector (RAG, KB)
-psycopg2-binary==2.9.10
+psycopg2-binary==2.9.11
 pgvector==0.3.6
 
 # OTel (traces — S1.10)

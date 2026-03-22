@@ -17,7 +17,7 @@ psycopg2-binary==2.9.10
 pgvector==0.3.6
 
 # OTel (traces — S1.10)
-opentelemetry-api==1.28.0
+opentelemetry-api==1.40.0
 opentelemetry-sdk==1.28.0
 opentelemetry-exporter-otlp-proto-grpc==1.28.0
 opentelemetry-instrumentation-fastapi==0.61b0

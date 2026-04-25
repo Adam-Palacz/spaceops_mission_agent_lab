@@ -165,6 +165,24 @@ class Settings(BaseSettings):
         description="Seconds before circuit moves from open to half-open.",
     )
 
+    # P4.4 / NF5: Reranker for KB RAG citation quality
+    kb_reranker_enabled: bool = Field(
+        default=False,
+        description="Enable reranking of retrieved KB chunks (lexical or llm).",
+    )
+    kb_reranker_mode: str = Field(
+        default="lexical",
+        description="Reranker mode: 'lexical' (dependency-free) or 'llm' (OpenAI scoring).",
+    )
+    kb_reranker_retrieve_k: int = Field(
+        default=10,
+        description="Candidate pool size to rerank in KB search (returned list is still top-N = tool limit).",
+    )
+    kb_reranker_llm_model: str = Field(
+        default="gpt-4o-mini",
+        description="OpenAI model used for LLM reranking (only when kb_reranker_mode='llm').",
+    )
+
     @property
     def postgres_dsn(self) -> str:
         """Connection string when DATABASE_URL is not set."""

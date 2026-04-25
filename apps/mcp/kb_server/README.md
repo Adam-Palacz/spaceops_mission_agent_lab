@@ -14,6 +14,18 @@ Exposes **search_runbooks** and **search_postmortems** over MCP (Streamable HTTP
 3. Index KB: `OPENAI_API_KEY=sk-... python -m apps.mcp.kb_server.index_kb` (from repo root).
 4. Env: `OPENAI_API_KEY` (for embedding queries at runtime).
 
+## Optional: KB reranker (NF5)
+
+The KB server can optionally rerank retrieved chunks before returning citations.
+This is controlled via config values in `config.py` (overridable via env vars):
+
+- `KB_RERANKER_ENABLED` (default: `0` / disabled)
+- `KB_RERANKER_MODE` (`lexical` or `llm`; default: `lexical`)
+- `KB_RERANKER_RETRIEVE_K` (default: `10`)
+- `KB_RERANKER_LLM_MODEL` (used only when mode=`llm`)
+
+When disabled, the server returns the original pgvector top-k ordering.
+
 ## Run
 
 From repo root:

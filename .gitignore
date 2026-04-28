@@ -11,3 +11,7 @@ data/approvals/
 data/incidents/
 data/llm_runs/
 data/audit.ndjson
+
+apps/ui/node_modules/
+apps/ui/.next/
+apps/ui/.env.local

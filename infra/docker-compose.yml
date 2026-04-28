@@ -11,6 +11,25 @@
 # then again: ... --project-directory . up -d
 
 services:
+  api:
+    build:
+      context: .
+      dockerfile: ./apps/api/Dockerfile
+    container_name: spaceops-api
+    env_file:
+      - ./.env
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+      opa:
+        condition: service_started
+    profiles:
+      - ui
+
   postgres:
     image: pgvector/pgvector:pg15
     container_name: spaceops-postgres
@@ -90,6 +109,24 @@ services:
       - ./infra/grafana/provisioning:/etc/grafana/provisioning:ro
     depends_on:
       - prometheus
+
+  ui:
+    build:
+      context: ./apps/ui
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_BASE_URL: ${UI_API_BASE_URL:-http://localhost:8000}
+        NEXT_PUBLIC_APPROVAL_API_KEY: ${APPROVAL_API_KEY}
+    container_name: spaceops-ui
+    ports:
+      - "3001:3001"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      api:
+        condition: service_started
+    profiles:
+      - ui
 
 volumes:
   postgres_data:

@@ -14,6 +14,7 @@ import psycopg2
 from pgvector.psycopg2 import register_vector
 
 from config import settings
+from apps.common.reranker import rerank_chunks
 
 EMBEDDING_DIM = 1536
 
@@ -87,7 +88,21 @@ def search_runbooks(query: str, limit: int = 5) -> list[ChunkResult]:
     if not query or not query.strip():
         return []
     vec = _get_embeddings().embed_query(query.strip())
-    return _search(vec, "runbook", limit=limit)
+    # Optional reranking:
+    # - retrieve more candidates,
+    # - rerank locally (dependency-free) or via LLM (if configured),
+    # - return top-N as requested by `limit`.
+    retrieve_k = max(
+        int(limit), int(getattr(settings, "kb_reranker_retrieve_k", limit))
+    )
+    candidates = _search(vec, "runbook", limit=retrieve_k)
+    if getattr(settings, "kb_reranker_enabled", False):
+        mode = str(getattr(settings, "kb_reranker_mode", "lexical")).strip()
+        # Reranker expects dicts; ChunkResult is a TypedDict (runtime dict).
+        ranked = rerank_chunks(query, list(candidates), mode=mode)
+        ranked = ranked[:limit]
+        return [ChunkResult(content=r["content"], doc_id=r["doc_id"]) for r in ranked]
+    return candidates[:limit]
 
 
 @mcp.tool()
@@ -99,7 +114,16 @@ def search_postmortems(signature: str, limit: int = 5) -> list[ChunkResult]:
     if not signature or not signature.strip():
         return []
     vec = _get_embeddings().embed_query(signature.strip())
-    return _search(vec, "postmortem", limit=limit)
+    retrieve_k = max(
+        int(limit), int(getattr(settings, "kb_reranker_retrieve_k", limit))
+    )
+    candidates = _search(vec, "postmortem", limit=retrieve_k)
+    if getattr(settings, "kb_reranker_enabled", False):
+        mode = str(getattr(settings, "kb_reranker_mode", "lexical")).strip()
+        ranked = rerank_chunks(signature, list(candidates), mode=mode)
+        ranked = ranked[:limit]
+        return [ChunkResult(content=r["content"], doc_id=r["doc_id"]) for r in ranked]
+    return candidates[:limit]
 
 
 if __name__ == "__main__":

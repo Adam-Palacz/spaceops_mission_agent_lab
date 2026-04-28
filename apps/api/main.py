@@ -13,6 +13,7 @@ from typing import Any
 import time
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel, Field
 from prometheus_client import (
@@ -33,6 +34,18 @@ app = FastAPI(
     title="SpaceOps Mission Agent Lab API",
     description="Ingest, health, and run trigger for anomaly triage pipeline.",
     version="0.1.0",
+)
+
+# P4.5 UI: allow browser calls from local Next.js app.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:3001",
+        "http://127.0.0.1:3001",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
@@ -233,6 +246,55 @@ def trigger_run(payload: RunTriggerPayload) -> JSONResponse:
                 ensure_ascii=False,
             )
         raise HTTPException(status_code=500, detail=f"Pipeline failed: {e}")
+
+
+@app.get("/runs")
+def list_runs(limit: int = Query(20, ge=1, le=200)) -> JSONResponse:
+    """
+    List recent incident runs persisted by POST /runs.
+
+    Returns lightweight metadata for UI usage (P4.5):
+    - incident_id
+    - status (completed/error)
+    - created_at (from file mtime)
+    - report summary or error message when available
+    """
+    runs_dir = DATA_DIR / "incidents"
+    if not runs_dir.exists():
+        return JSONResponse(status_code=200, content={"runs": []})
+
+    out: list[dict[str, Any]] = []
+    files = sorted(
+        runs_dir.glob("run_*.json"),
+        key=lambda p: p.stat().st_mtime,
+        reverse=True,
+    )
+    for path in files[:limit]:
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except Exception:
+            # Keep endpoint robust even if one run file is malformed.
+            continue
+        report = payload.get("report")
+        error = payload.get("error")
+        if isinstance(report, dict):
+            summary = report.get("summary")
+        else:
+            summary = None
+        created_at = datetime.fromtimestamp(
+            path.stat().st_mtime, tz=timezone.utc
+        ).isoformat()
+        out.append(
+            {
+                "id": path.stem,
+                "incident_id": payload.get("incident_id", ""),
+                "status": "completed" if error is None else "error",
+                "created_at": created_at,
+                "summary": summary,
+                "error": error,
+            }
+        )
+    return JSONResponse(status_code=200, content={"runs": out})
 
 
 # ---------------------------------------------------------------------------

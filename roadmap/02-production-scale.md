@@ -219,6 +219,17 @@
 ## Phase 6 — Kubernetes + GitOps (After MVP is Stable)
 **Goal:** demonstrate operational maturity: rollout, policies, scaling, secrets.
 
+### Environment strategy (production-ready with pragmatic costs)
+- [ ] Define environments: `dev`, `stage`, `prod` with separate configs, secrets, and promotion flow.
+- [ ] Start with **shared cluster compute** (cost-efficient), but enforce logical isolation:
+  - [ ] separate namespaces per environment
+  - [ ] separate service accounts/RBAC per environment
+  - [ ] separate secrets and KMS/secret paths per environment
+  - [ ] ResourceQuota/LimitRange per environment
+  - [ ] NetworkPolicy isolation between environment namespaces
+- [ ] Keep workloads Helm/kustomize portable so environments can be moved to separate clusters later without app refactor.
+- [ ] Define clear upgrade path from shared compute to dedicated compute per env.
+
 ### K8s Local Proof
 - [ ] kind/k3d cluster
 - [ ] Helm/kustomize: API, workers, Postgres, OTel collector, Jaeger
@@ -238,30 +249,45 @@
 
 ### Exit criteria
 - [ ] Safe rollout + rollback documented and demonstrated locally
+- [ ] `dev -> stage -> prod` promotion is documented and reproducible in GitOps
+- [ ] Shared-cluster isolation controls are verified (RBAC, secrets, network, quotas)
 
 ---
 
-## Phase 7 — Cloud Deployment (GCP-First, Sensible Costs)
-**Goal:** cloud “showcase” without burning money.
+## Phase 7 — Cloud Deployment (GCP-First, K8s-Portable)
+**Goal:** deploy in cloud with low cost while preserving vendor portability.
 
-### CPU stack on GCP (cheap/free-ish)
-- [ ] Cloud Run for API + UI
+### K8s-first stack on GCP (portable baseline)
+- [ ] GKE (small baseline cluster) for API + workers + UI workloads
 - [ ] Artifact Registry
-- [ ] Terraform minimal (project, SA, deploy)
+- [ ] Terraform minimal (project, SA, cluster + deploy)
+- [ ] Helm/kustomize manifests remain vendor-neutral (no cloud lock-in in app layer)
 - [ ] End-to-end observability preserved (OTel)
 
+### Optional Cloud Run path (showcase / fallback)
+- [ ] Keep Cloud Run deployment as optional demo path for selected stateless components
+- [ ] Ensure runbooks document Cloud Run-specific constraints vs K8s baseline
+
 ### GPU on-demand
-- [ ] Option A: Cloud Run GPU (scale-to-zero) if available
+- [ ] Option A: GCP GPU node pool (ephemeral/autoscaled) attached to K8s cluster
 - [ ] Option B: external GPU provider for inference only
-- [ ] Gateway routes by feature flag
+- [ ] Gateway routes by feature flag (`LLM_BACKEND`) and backend health
+- [ ] Keep interface compatible with future multi-cloud burst patterns
 
 ### Billing hygiene
 - [ ] budgets + alerts
 - [ ] hard monthly cap where possible
 - [ ] auto shutdown routines
 
+### Migration path (shared -> dedicated -> multi-cloud)
+- [ ] Stage 1 (default): shared cluster, isolated namespaces (`dev/stage/prod`)
+- [ ] Stage 2: dedicated node pools for critical/prod workloads and GPU paths
+- [ ] Stage 3: dedicated clusters/projects per environment when scale/compliance requires it
+- [ ] Stage 4 (optional): multi-cloud burst capacity (e.g. GPU on cloud B), with policy-based routing and kill-switches
+
 ### Exit criteria
 - [ ] Demo scenarios run in cloud with traces + evidence + replay
+- [ ] Team can explain when to stay shared vs when to split compute (cost/security/SLA triggers)
 
 ---
 

@@ -74,6 +74,12 @@ The **docs/** directory holds project documentation that supports both humans an
 |---------|------|----------|
 | Audit log event schema | [data/audit_log_schema.mmd](data/audit_log_schema.mmd) | Defining or implementing the audit log format (goals.md §4.6). |
 
+---
+
+## UI
+
+- Next.js operator UI (Phase 4 P4.5): [../apps/ui/README.md](../apps/ui/README.md)
+
 *Ścieżki do plików .mmd są względem katalogu `docs/` (np. `workflow/end_to_end_pipeline.mmd` = `docs/workflow/end_to_end_pipeline.mmd` w repo).*
 
 ---

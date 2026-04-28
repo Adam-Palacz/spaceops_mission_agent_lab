@@ -123,6 +123,51 @@ def test_ingest_events_source_persists(api_client, tmp_path: Path):
     assert response.json().get("source") == "events"
 
 
+def test_runs_get_empty_when_no_runs(api_client):
+    """GET /runs returns empty list when no run files exist."""
+    response = api_client.get("/runs")
+    assert response.status_code == 200
+    assert response.json() == {"runs": []}
+
+
+def test_runs_get_lists_recent_runs(api_client, tmp_path: Path):
+    """GET /runs returns recent run metadata for UI list page (P4.5)."""
+    runs_dir = tmp_path / "data" / "incidents"
+    runs_dir.mkdir(parents=True, exist_ok=True)
+    run1 = runs_dir / "run_inc-1_20260101T010101Z.json"
+    run2 = runs_dir / "run_inc-2_20260101T010102Z.json"
+    run1.write_text(
+        json.dumps(
+            {
+                "incident_id": "inc-1",
+                "report": {"summary": "Power anomaly handled"},
+            }
+        ),
+        encoding="utf-8",
+    )
+    run2.write_text(
+        json.dumps(
+            {
+                "incident_id": "inc-2",
+                "error": "Pipeline failed",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    response = api_client.get("/runs?limit=5")
+    assert response.status_code == 200
+    runs = response.json().get("runs", [])
+    assert len(runs) == 2
+    incident_ids = {r.get("incident_id") for r in runs}
+    assert {"inc-1", "inc-2"} == incident_ids
+    by_incident = {r["incident_id"]: r for r in runs}
+    assert by_incident["inc-1"]["status"] == "completed"
+    assert by_incident["inc-1"]["summary"] == "Power anomaly handled"
+    assert by_incident["inc-2"]["status"] == "error"
+    assert by_incident["inc-2"]["error"] == "Pipeline failed"
+
+
 # ---------------------------------------------------------------------------
 # S2.5 Approval API
 # ---------------------------------------------------------------------------

@@ -49,6 +49,8 @@ Fields:
 - `expected_subsystem_top_k` — how many of the top N options are acceptable (1 = strict top-1).
 - `require_citations` — if true, the run must produce at least one citation or citation_ref,
   unless it escalates.
+- `require_citation_precision` — optional (P4.6). If true, each actionable plan step must
+  reference `doc_ids`/`snippet_ids` supported by retrieved citations.
 - `must_escalate` — if true, the agent **must** escalate (escalation packet present).
 
 Scoring logic for these fields lives in `score_case` in `evals/scoring.py`.
@@ -100,6 +102,8 @@ Scoring logic for these fields lives in `score_case` in `evals/scoring.py`.
   - `score_case(case, result)`:
     - checks triage (subsystem in top_k of `expected_subsystem`),
     - applies `must_escalate` and `require_citations` rules,
+    - when `require_citation_precision=true`, checks that each actionable plan step is
+      grounded in retrieved citation IDs,
     - returns `(passed: bool, failures: list[str])`.
 - The main `python -m evals.scoring` entrypoint:
   - prints `PASS/FAIL` per case with reasons,

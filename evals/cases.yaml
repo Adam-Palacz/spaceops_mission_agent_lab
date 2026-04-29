@@ -91,3 +91,142 @@ cases:
     expected_subsystem: ["Payload", "ADCS"]
     require_citations: false
     must_escalate: false
+
+  - id: triage-power-current-spike
+    description: Power-like wording variant should map to Power
+    payload:
+      time_range_start: "2025-02-14T09:00:00Z"
+      time_range_end: "2025-02-14T11:00:00Z"
+      message: "current spike and bus undervoltage on power rail"
+    expected_subsystem_top_k: 2
+    expected_subsystem: ["Power", "Thermal"]
+    require_citations: false
+    must_escalate: false
+
+  - id: triage-thermal-heater-loop
+    description: Thermal heater control wording variant
+    payload:
+      time_range_start: "2025-02-14T09:00:00Z"
+      time_range_end: "2025-02-14T11:00:00Z"
+      message: "heater loop instability and rising plate temperature"
+    expected_subsystem_top_k: 2
+    expected_subsystem: ["Thermal", "Power"]
+    require_citations: false
+    must_escalate: false
+
+  - id: triage-adcs-pointing-loss
+    description: ADCS pointing drift variant
+    payload:
+      time_range_start: "2025-02-14T09:00:00Z"
+      time_range_end: "2025-02-14T11:00:00Z"
+      message: "pointing error increased and reaction wheel saturation observed"
+    expected_subsystem_top_k: 2
+    expected_subsystem: ["ADCS", "Payload"]
+    require_citations: false
+    must_escalate: false
+
+  - id: triage-comms-link-drop
+    description: Comms and ground link instability variant
+    payload:
+      time_range_start: "2025-02-14T09:00:00Z"
+      time_range_end: "2025-02-14T11:00:00Z"
+      message: "downlink packet loss and intermittent uplink connectivity"
+    expected_subsystem_top_k: 2
+    expected_subsystem: ["Comms", "Ground"]
+    require_citations: false
+    must_escalate: false
+
+  - id: triage-ground-station-timeout
+    description: Ground operations timeout variant
+    payload:
+      time_range_start: "2025-02-14T09:00:00Z"
+      time_range_end: "2025-02-14T11:00:00Z"
+      message: "ground station command timeout and scheduler retry storm"
+    expected_subsystem_top_k: 2
+    expected_subsystem: ["Ground", "Comms"]
+    require_citations: false
+    must_escalate: false
+
+  - id: triage-payload-sensor-drift
+    description: Payload data quality degradation variant
+    payload:
+      time_range_start: "2025-02-14T09:00:00Z"
+      time_range_end: "2025-02-14T11:00:00Z"
+      message: "payload sensor drift and calibration mismatch"
+    expected_subsystem_top_k: 2
+    expected_subsystem: ["Payload", "ADCS"]
+    require_citations: false
+    must_escalate: false
+
+  - id: citation-power-support
+    description: Citation-required power scenario should include grounded references
+    payload:
+      time_range_start: "2025-02-14T09:00:00Z"
+      time_range_end: "2025-02-14T11:00:00Z"
+      channels: ["bus_voltage", "battery_current"]
+      message: "power bus stability check"
+    expected_subsystem_top_k: 3
+    expected_subsystem: ["Power", "Thermal", "Ground"]
+    require_citations: true
+    require_citation_precision: true
+    must_escalate: false
+
+  - id: citation-thermal-support
+    description: Citation-required thermal scenario checks citation precision
+    payload:
+      time_range_start: "2025-02-14T09:00:00Z"
+      time_range_end: "2025-02-14T11:00:00Z"
+      channels: ["thermal_plate_temp"]
+      message: "thermal trend investigation with documented evidence"
+    expected_subsystem_top_k: 3
+    expected_subsystem: ["Thermal", "Power", "Ground"]
+    require_citations: true
+    require_citation_precision: true
+    must_escalate: false
+
+  - id: citation-ground-support
+    description: Ground/comms scenario with citations required
+    payload:
+      time_range_start: "2025-02-14T09:00:00Z"
+      time_range_end: "2025-02-14T11:00:00Z"
+      message: "ground incident investigation with logs and runbook references"
+      channels: ["uplink_status"]
+    expected_subsystem_top_k: 3
+    expected_subsystem: ["Ground", "Comms", "Power"]
+    require_citations: true
+    require_citation_precision: true
+    must_escalate: false
+
+  - id: must-escalate-empty-window
+    description: Empty/too narrow window should escalate
+    payload:
+      time_range_start: "2025-02-14T09:00:00Z"
+      time_range_end: "2025-02-14T09:00:00Z"
+      ref: "empty-window"
+    expected_subsystem_top_k: 3
+    expected_subsystem: ["Power", "Thermal", "Ground", "ADCS", "Comms", "Payload"]
+    require_citations: false
+    must_escalate: true
+
+  - id: must-escalate-unknown-incident
+    description: Unknown incident signature should escalate with insufficient evidence
+    payload:
+      time_range_start: "2025-02-14T09:00:00Z"
+      time_range_end: "2025-02-14T09:01:00Z"
+      message: "unrecognized anomaly id X-404 with no corroborating telemetry"
+      ref: "unknown-signature"
+    expected_subsystem_top_k: 3
+    expected_subsystem: ["Power", "Thermal", "Ground", "ADCS", "Comms", "Payload"]
+    require_citations: false
+    must_escalate: true
+
+  - id: triage-mixed-signals
+    description: Mixed wording case keeps top-k tolerance while preserving deterministic pass criteria
+    payload:
+      time_range_start: "2025-02-14T09:00:00Z"
+      time_range_end: "2025-02-14T11:00:00Z"
+      message: "telemetry hints at comms dropout and power dip around ground handover"
+    expected_subsystem_top_k: 3
+    expected_subsystem: ["Comms", "Ground", "Power"]
+    require_citations: false
+    must_escalate: false

@@ -179,6 +179,58 @@ def score_case(case: dict, result: dict) -> tuple[bool, list[str]]:
                 "require_citations: expected at least one citation or citation_ref"
             )
 
+        # P4.6 MoE2 extension: citation precision support.
+        # When enabled, every actionable step must reference doc/snippet IDs that
+        # can be traced back to retrieved citation IDs.
+        if case.get("require_citation_precision"):
+            available_doc_ids: set[str] = set()
+            available_snippet_ids: set[str] = set()
+            for c in citations:
+                if not isinstance(c, dict):
+                    continue
+                doc_id = c.get("doc_id")
+                snippet_id = c.get("snippet_id")
+                if isinstance(doc_id, str) and doc_id.strip():
+                    available_doc_ids.add(doc_id.strip())
+                if isinstance(snippet_id, str) and snippet_id.strip():
+                    available_snippet_ids.add(snippet_id.strip())
+            for ref in refs:
+                if not isinstance(ref, str) or not ref.strip():
+                    continue
+                # report.citation_refs may hold doc ids or snippet ids depending on node.
+                available_doc_ids.add(ref.strip())
+                available_snippet_ids.add(ref.strip())
+
+            plan = result.get("plan") or []
+            for idx, step in enumerate(plan):
+                if not isinstance(step, dict):
+                    continue
+                action_type = (step.get("action_type") or "").strip().lower()
+                if action_type == "report":
+                    # Report-only step does not require grounding to an action citation.
+                    continue
+                doc_ids = [
+                    d
+                    for d in (step.get("doc_ids") or [])
+                    if isinstance(d, str) and d.strip()
+                ]
+                snippet_ids = [
+                    s
+                    for s in (step.get("snippet_ids") or [])
+                    if isinstance(s, str) and s.strip()
+                ]
+                if not doc_ids and not snippet_ids:
+                    failures.append(
+                        f"citation_precision: step[{idx}] missing doc_ids/snippet_ids"
+                    )
+                    continue
+                doc_supported = any(d in available_doc_ids for d in doc_ids)
+                snippet_supported = any(s in available_snippet_ids for s in snippet_ids)
+                if not doc_supported and not snippet_supported:
+                    failures.append(
+                        f"citation_precision: step[{idx}] references unsupported citations"
+                    )
+
     passed = len(failures) == 0
     return passed, failures
 

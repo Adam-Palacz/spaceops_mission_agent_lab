@@ -19,7 +19,10 @@ Agent for satellite / ground segment anomaly triage: **ingest ? triage ? investi
 
 ## Environment
 
-- Copy **.env.example** to **.env** and set `OPENAI_API_KEY` (required for agent). Optional: `POSTGRES_*` if not using defaults.
+- Copy **.env.example** to **.env** and set LLM provider creds:
+  - `LLM_PROVIDER=openai` + `OPENAI_API_KEY`, or
+  - `LLM_PROVIDER=cursor_sh` + `CURSOR_SH_API_KEY` (optional endpoint override: `CURSOR_SH_BASE_URL`).
+  Optional: `POSTGRES_*` if not using defaults.
 - **Limits and timeouts (S1.12, NF6):** `AGENT_RUN_TIMEOUT_SECONDS` (default 120; 0 = no limit), `AGENT_LLM_CALL_TIMEOUT_SECONDS` (default 30), `AGENT_TOKEN_BUDGET_PER_RUN` (default 50000; 0 = no limit), `AGENT_MAX_LLM_CALLS_PER_RUN` (default 10; 0 = no limit). When exceeded, run escalates to human.
 - **OTel traces (S1.10):** to export traces to the local collector/Jaeger from apps, set `OTEL_EXPORTER_OTLP_ENDPOINT` (e.g. `http://localhost:4317`, matching `infra/docker-compose.yml`).
 - **MCP + GitOps (S2):** MCP URLs can be overridden via `TELEMETRY_MCP_URL`, `KB_MCP_URL`, `TICKET_MCP_URL`, `GITOPS_MCP_URL` (see `.env.example`). For GitOps PR creation, set `GITHUB_TOKEN`, `GITHUB_REPO`, `GITHUB_REPO_BASE_BRANCH`.
@@ -65,7 +68,7 @@ pytest tests/ -v
 python -m ruff format .
 ```
 
-**Evals (S1.11):** `python -m evals.scoring` (requires `OPENAI_API_KEY`). See [evals/README.md](evals/README.md).
+**Evals (S1.11):** `python -m evals.scoring` (requires configured LLM provider credentials). See [evals/README.md](evals/README.md).
 
 **Pre-commit:** Install hooks with `pip install pre-commit && pre-commit install`. Run manually: `pre-commit run --all-files` (ruff, ruff-format, mypy). CI runs ruff, mypy, pytest, and evals on push/PR (S1.13).
 

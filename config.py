@@ -33,6 +33,18 @@ class Settings(BaseSettings):
         default_factory=lambda: get_secret("OPENAI_API_KEY", ""),
         description="OpenAI API key; required for KB and agent.",
     )
+    llm_provider: str = Field(
+        default="openai",
+        description="LLM provider for agent calls: 'openai' or 'cursor_sh'.",
+    )
+    cursor_sh_api_key: str = Field(
+        default_factory=lambda: get_secret("CURSOR_SH_API_KEY", ""),
+        description="Cursor.sh API key for agent chat completions when llm_provider='cursor_sh'.",
+    )
+    cursor_sh_base_url: str = Field(
+        default="https://api.cursor.sh/v1/chat/completions",
+        description="Cursor.sh chat completions endpoint (OpenAI-compatible payload).",
+    )
 
     # Postgres (RAG, KB)
     database_url: str = Field(

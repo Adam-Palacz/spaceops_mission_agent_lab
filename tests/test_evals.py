@@ -149,6 +149,56 @@ def test_score_case_require_citations_fails_when_escalated():
     assert passed, failures
 
 
+def test_score_case_citation_precision_step_requires_supported_refs():
+    """P4.6: require_citation_precision enforces step evidence support via doc/snippet IDs."""
+    from evals.scoring import score_case
+
+    case = {
+        "require_citations": True,
+        "require_citation_precision": True,
+        "must_escalate": False,
+        "expected_subsystem": ["Power"],
+        "expected_subsystem_top_k": 1,
+    }
+
+    result_ok = {
+        "subsystem": "Power",
+        "escalated": False,
+        "citations": [{"doc_id": "rb-1", "snippet_id": "sn-1"}],
+        "report": {"citation_refs": ["rb-1"]},
+        "plan": [
+            {"action_type": "change_config", "doc_ids": ["rb-1"], "snippet_ids": []},
+            {"action_type": "report", "doc_ids": [], "snippet_ids": []},
+        ],
+    }
+    passed, failures = score_case(case, result_ok)
+    assert passed, failures
+
+    result_missing_refs = {
+        "subsystem": "Power",
+        "escalated": False,
+        "citations": [{"doc_id": "rb-1", "snippet_id": "sn-1"}],
+        "report": {"citation_refs": ["rb-1"]},
+        "plan": [{"action_type": "change_config", "doc_ids": [], "snippet_ids": []}],
+    }
+    passed, failures = score_case(case, result_missing_refs)
+    assert not passed
+    assert any("missing doc_ids/snippet_ids" in f for f in failures)
+
+    result_unsupported_refs = {
+        "subsystem": "Power",
+        "escalated": False,
+        "citations": [{"doc_id": "rb-1", "snippet_id": "sn-1"}],
+        "report": {"citation_refs": ["rb-1"]},
+        "plan": [
+            {"action_type": "change_config", "doc_ids": ["rb-x"], "snippet_ids": []}
+        ],
+    }
+    passed, failures = score_case(case, result_unsupported_refs)
+    assert not passed
+    assert any("unsupported citations" in f for f in failures)
+
+
 # --- S2.8 injection suite: unsafe_action_performed ---
 
 

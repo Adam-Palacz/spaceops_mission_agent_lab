@@ -40,6 +40,34 @@ _SUBSYSTEMS = ("ADCS", "Power", "Thermal", "Comms", "Payload", "Ground")
 OPENAI_CHAT_URL = "https://api.openai.com/v1/chat/completions"
 
 
+def _llm_provider_config() -> tuple[str, str]:
+    """
+    Resolve provider endpoint and API key for agent LLM calls.
+
+    Supported providers:
+    - openai
+    - cursor_sh (OpenAI-compatible chat completions payload)
+    """
+    provider = (getattr(settings, "llm_provider", "openai") or "openai").strip().lower()
+    if provider == "cursor_sh":
+        api_key = (getattr(settings, "cursor_sh_api_key", "") or "").strip()
+        url = (
+            getattr(settings, "cursor_sh_base_url", "")
+            or "https://api.cursor.sh/v1/chat/completions"
+        ).strip()
+        if not api_key:
+            raise RuntimeError(
+                "CURSOR_SH_API_KEY required when LLM_PROVIDER=cursor_sh; set it in .env"
+            )
+        return url, api_key
+
+    # Default: openai
+    api_key = (getattr(settings, "openai_api_key", "") or "").strip()
+    if not api_key:
+        raise RuntimeError("OPENAI_API_KEY required for agent; set in .env")
+    return OPENAI_CHAT_URL, api_key
+
+
 def _escalation_for_limit_or_timeout(
     incident_id: str, reason: str, detail: str
 ) -> dict:
@@ -79,15 +107,14 @@ def _chat_completion(
     """
     from apps.model_selection import get_current_model_id
 
-    if not settings.openai_api_key:
-        raise RuntimeError("OPENAI_API_KEY required for agent; set in .env")
     model_id = model or get_current_model_id()
+    endpoint, api_key = _llm_provider_config()
     timeout = max(1, getattr(settings, "agent_llm_call_timeout_seconds", 30))
     with httpx.Client(timeout=float(timeout)) as client:
         r = client.post(
-            OPENAI_CHAT_URL,
+            endpoint,
             headers={
-                "Authorization": f"Bearer {settings.openai_api_key}",
+                "Authorization": f"Bearer {api_key}",
                 "Content-Type": "application/json",
             },
             json={
@@ -136,7 +163,10 @@ def triage(state: AgentState) -> dict:
         subsystems=", ".join(_SUBSYSTEMS),
     )
     try:
-        content, usage = _chat_completion(prompt)
+        from apps.model_selection import get_current_model_id
+
+        model_id = get_current_model_id()
+        content, usage = _chat_completion(prompt, model=model_id)
     except httpx.TimeoutException:
         return _escalation_for_limit_or_timeout(
             incident_id, "llm_timeout", "LLM call timed out during triage."
@@ -153,7 +183,7 @@ def triage(state: AgentState) -> dict:
     log_llm_call(
         run_id,
         node="triage",
-        model_id="gpt-4o-mini",
+        model_id=model_id,
         prompt_id=triage_prompt.id,
         prompt_version=triage_prompt.version,
         tags={"subsystems": list(_SUBSYSTEMS)},
@@ -453,7 +483,10 @@ def decide(state: AgentState) -> dict:
         snippet_ids=snippet_ids[:10],
     )
     try:
-        content, usage = _chat_completion(prompt)
+        from apps.model_selection import get_current_model_id
+
+        model_id = get_current_model_id()
+        content, usage = _chat_completion(prompt, model=model_id)
     except httpx.TimeoutException:
         return _escalation_for_limit_or_timeout(
             incident_id, "llm_timeout", "LLM call timed out during decide."
@@ -470,7 +503,7 @@ def decide(state: AgentState) -> dict:
     log_llm_call(
         run_id,
         node="decide",
-        model_id="gpt-4o-mini",
+        model_id=model_id,
         prompt_id=decide_prompt.id,
         prompt_version=decide_prompt.version,
         tags={

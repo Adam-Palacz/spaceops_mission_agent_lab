@@ -79,6 +79,7 @@ The **docs/** directory holds project documentation that supports both humans an
 ## UI
 
 - Next.js operator UI (Phase 4 P4.5): [../apps/ui/README.md](../apps/ui/README.md)
+- Post-incident learning loop (Phase 4 P4.7): [runbooks/post_incident_loop.md](runbooks/post_incident_loop.md)
 
 *Ścieżki do plików .mmd są względem katalogu `docs/` (np. `workflow/end_to_end_pipeline.mmd` = `docs/workflow/end_to_end_pipeline.mmd` w repo).*
 

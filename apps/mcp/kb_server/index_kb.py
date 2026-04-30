@@ -94,8 +94,9 @@ def main() -> None:
     if not settings.openai_api_key:
         raise SystemExit("OPENAI_API_KEY is required for embedding; set it in .env")
     conn = get_connection()
-    register_vector(conn)
     ensure_schema(conn)
+    # Register pgvector adapters only after extension/table setup exists.
+    register_vector(conn)
 
     embeddings = OpenAIEmbeddings(
         model="text-embedding-3-small",

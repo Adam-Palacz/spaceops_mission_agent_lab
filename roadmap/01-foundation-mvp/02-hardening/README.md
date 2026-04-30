@@ -9,6 +9,15 @@ Post–Sprint 2: documentation, runbooks, expanded evals, optional UI. Backlog; 
 - **BOARD.md** — Status of hardening tasks (backlog).
 - **`P4.x-name.md`** — One file per hardening task (docs, runbooks, reranker, UI, evals, post-incident loop).
 
+## Recurring (P4.7)
+
+After each significant closed incident:
+
+1. Add/update postmortem in `kb/postmortems/` (use `_template.md`).
+2. Re-index KB: `python -m scripts.reindex_kb`.
+3. Add at least one eval case (`docs/runbooks/add_eval_case.md`).
+4. Run `python -m evals.scoring` and push so CI validates.
+
 ---
 
 ## Instructions for AI

@@ -134,6 +134,7 @@ def triage(state: AgentState) -> dict:
     """Classify subsystem and risk; persist incident record. S1.12: token budget, rate limit, LLM timeout → escalate."""
     incident_id = state.get("incident_id") or "unknown"
     trace_id = state.get("trace_id") or incident_id
+    run_id = state.get("run_id") or trace_id
     payload = state.get("payload") or {}
     tokens_used = state.get("tokens_used") or 0
     llm_calls_used = state.get("llm_calls_used") or 0
@@ -153,7 +154,7 @@ def triage(state: AgentState) -> dict:
         ) | {"tokens_used": tokens_used, "llm_calls_used": llm_calls_used}
     # S3.0: ensure we have a logical run_id for LLM observability.
     run_id = start_llm_run(
-        trace_id,
+        run_id,
         incident_id=incident_id,
         node="triage",
     )
@@ -445,6 +446,7 @@ def decide(state: AgentState) -> dict:
     """Produce plan; each step must reference at least one doc_id or snippet_id (NF5a). S1.12: token budget, rate limit, timeout."""
     incident_id = state.get("incident_id") or "unknown"
     trace_id = state.get("trace_id") or incident_id
+    run_id = state.get("run_id") or trace_id
     tokens_used = state.get("tokens_used") or 0
     llm_calls_used = state.get("llm_calls_used") or 0
     token_budget = max(0, getattr(settings, "agent_token_budget_per_run", 0))
@@ -469,7 +471,7 @@ def decide(state: AgentState) -> dict:
     snippet_ids = list({c.get("snippet_id") for c in citations if c.get("snippet_id")})
     # S3.0: attach to same logical run_id for LLM observability.
     run_id = start_llm_run(
-        trace_id,
+        run_id,
         incident_id=incident_id,
         node="decide",
     )

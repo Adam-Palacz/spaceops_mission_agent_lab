@@ -3,7 +3,7 @@
 | Field | Value |
 |-------|--------|
 | **Task ID** | PS1.4 |
-| **Status** | Todo |
+| **Status** | Done |
 
 ---
 
@@ -16,26 +16,26 @@ code/model revisions. This is the foundation for golden runs and regression tria
 
 ## Requirements
 
-- [ ] Persist replay metadata for each run (`run_id`, payload hash, input refs/event IDs).
-- [ ] Persist model/prompt/runtime metadata required for reproducibility.
-- [ ] Replay metadata links to audit and trace IDs.
-- [ ] Capture is automatic for API and eval-triggered runs.
-- [ ] Metadata schema is documented and versioned.
+- [x] Persist replay metadata for each run (`run_id`, payload hash, input refs/event IDs).
+- [x] Persist model/prompt/runtime metadata required for reproducibility.
+- [x] Replay metadata links to audit and trace IDs.
+- [x] Capture is automatic for API and eval-triggered runs.
+- [x] Metadata schema is documented and versioned.
 
 ---
 
 ## Checklist
 
-- [ ] Define replay metadata structure.
-- [ ] Add write path during run creation/completion.
-- [ ] Add read API/helper for replay retrieval by `run_id`.
-- [ ] Extend docs with replay assumptions and known non-determinism.
-- [ ] Add tests for metadata presence/completeness.
+- [x] Define replay metadata structure.
+- [x] Add write path during run creation/completion.
+- [x] Add read API/helper for replay retrieval by `run_id`.
+- [x] Extend docs with replay assumptions and known non-determinism.
+- [x] Add tests for metadata presence/completeness.
 
 ---
 
 ## Test requirements
 
-- [ ] Every new run has persisted replay metadata.
-- [ ] Metadata can be fetched and reused to trigger replay.
-- [ ] Missing/partial metadata is handled with clear errors.
+- [x] Every new run has persisted replay metadata.
+- [x] Metadata can be fetched and reused to trigger replay.
+- [x] Missing/partial metadata is handled with clear errors.

@@ -305,8 +305,9 @@ def trigger_run(payload: RunTriggerPayload) -> JSONResponse:
     )
     started = time.perf_counter()
     try:
-        result = run_pipeline(payload.incident_id, payload.payload)
+        result = run_pipeline(payload.incident_id, payload.payload, replay_source="api")
         report = result.get("report") or {}
+        run_id = str(result.get("run_id") or "")
         duration = max(0.0, time.perf_counter() - started)
         AGENT_RUNS_TOTAL.labels(status="success").inc()
         AGENT_RUN_DURATION_SECONDS.observe(duration)
@@ -316,6 +317,7 @@ def trigger_run(payload: RunTriggerPayload) -> JSONResponse:
         with open(run_file, "w", encoding="utf-8") as f:
             json.dump(
                 {
+                    "run_id": run_id,
                     "incident_id": payload.incident_id,
                     "payload": payload.payload,
                     "report": report,
@@ -328,6 +330,7 @@ def trigger_run(payload: RunTriggerPayload) -> JSONResponse:
             status_code=200,
             content={
                 "status": "completed",
+                "run_id": run_id,
                 "incident_id": payload.incident_id,
                 "report": report,
             },
@@ -390,6 +393,7 @@ def list_runs(limit: int = Query(20, ge=1, le=200)) -> JSONResponse:
         out.append(
             {
                 "id": path.stem,
+                "run_id": payload.get("run_id", path.stem),
                 "incident_id": payload.get("incident_id", ""),
                 "status": "completed" if error is None else "error",
                 "created_at": created_at,
@@ -398,6 +402,20 @@ def list_runs(limit: int = Query(20, ge=1, le=200)) -> JSONResponse:
             }
         )
     return JSONResponse(status_code=200, content={"runs": out})
+
+
+@app.get("/replays/{run_id}")
+def get_replay_metadata(run_id: str) -> JSONResponse:
+    """PS1.4: Retrieve persisted replay metadata by run_id."""
+    from apps.replay.metadata import load_replay_metadata
+
+    try:
+        metadata = load_replay_metadata(run_id)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+    return JSONResponse(status_code=200, content={"replay": metadata})
 
 
 # ---------------------------------------------------------------------------

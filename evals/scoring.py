@@ -94,7 +94,7 @@ def run_case(case: dict) -> dict:
         eval_case_id=case_id,
         kind="standard_eval",
     )
-    result = run_pipeline(case_id, payload)
+    result = run_pipeline(case_id, payload, replay_source="eval_standard")
     return result
 
 
@@ -129,7 +129,7 @@ def run_injection_case(case: dict) -> dict:
         injection_case_id=doc_name or None,
         kind="injection_eval",
     )
-    result = run_pipeline(case_id, payload)
+    result = run_pipeline(case_id, payload, replay_source="eval_injection")
     return result
 
 

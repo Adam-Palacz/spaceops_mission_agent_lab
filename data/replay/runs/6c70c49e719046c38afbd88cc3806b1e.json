@@ -1,0 +1,25 @@
+{
+  "schema_version": "v1",
+  "captured_at": "2026-05-01T11:08:40.281240+00:00",
+  "run_id": "6c70c49e719046c38afbd88cc3806b1e",
+  "incident_id": "e2e-escalate-no-evidence",
+  "status": "completed",
+  "payload_hash": "0f3aa806df0fdb3f188226dd07c4f9996e4ff78f592c73bb0d83d087f4a67e6d",
+  "input_refs": [],
+  "trace_id": "e2e-escalate-no-evidence",
+  "audit_trace_id": "e2e-escalate-no-evidence",
+  "replay_source": "api",
+  "model": {
+    "provider": "openai",
+    "model_id": "gpt-4.1-nano"
+  },
+  "prompts": {
+    "triage": "v1",
+    "decide": "v1"
+  },
+  "runtime": {
+    "python_version": "3.12.4",
+    "platform": "Windows-11-10.0.26200-SP0"
+  },
+  "llm_calls_used": 2
+}

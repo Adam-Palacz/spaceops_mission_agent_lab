@@ -7,6 +7,7 @@ S1.12: Run-level timeout and token budget; on timeout/limit → escalation (NF6)
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
+import uuid
 
 from langgraph.graph import END, StateGraph
 
@@ -22,6 +23,7 @@ from apps.agent.nodes import (
     triage,
 )
 from apps.telemetry import get_tracer, get_current_trace_id_hex, init_telemetry
+from apps.replay.metadata import build_replay_metadata, persist_replay_metadata
 
 
 def _wrap_node(span_name: str, node_fn):
@@ -71,7 +73,9 @@ def build_graph():
     return workflow.compile()
 
 
-def _run_timeout_escalation_result(incident_id: str, trace_id: str) -> dict:
+def _run_timeout_escalation_result(
+    incident_id: str, trace_id: str, run_id: str
+) -> dict:
     """S1.12: Build result dict when run hits timeout (NF6, F10)."""
     from config import settings as s
 
@@ -100,6 +104,7 @@ def _run_timeout_escalation_result(incident_id: str, trace_id: str) -> dict:
         "handoff": "Run timed out; manual review required.",
     }
     return {
+        "run_id": run_id,
         "incident_id": incident_id,
         "trace_id": trace_id,
         "escalated": True,
@@ -108,7 +113,35 @@ def _run_timeout_escalation_result(incident_id: str, trace_id: str) -> dict:
     }
 
 
-def run_pipeline(incident_id: str, payload: dict | None = None) -> dict:
+def _persist_replay_metadata_best_effort(
+    *,
+    run_id: str,
+    incident_id: str,
+    payload: dict,
+    trace_id: str,
+    status: str,
+    replay_source: str,
+    llm_calls_used: int,
+) -> None:
+    try:
+        metadata = build_replay_metadata(
+            run_id=run_id,
+            incident_id=incident_id,
+            payload=payload,
+            trace_id=trace_id,
+            status=status,
+            replay_source=replay_source,
+            llm_calls_used=llm_calls_used,
+        )
+        persist_replay_metadata(metadata)
+    except Exception:
+        # Replay metadata must not break normal pipeline behavior.
+        return
+
+
+def run_pipeline(
+    incident_id: str, payload: dict | None = None, replay_source: str = "api"
+) -> dict:
     """Run the pipeline and return final state (includes report). S1.10: root span; S1.12: run timeout."""
     init_telemetry()
     graph = build_graph()
@@ -118,10 +151,13 @@ def run_pipeline(incident_id: str, payload: dict | None = None) -> dict:
         span.set_attribute("incident_id", incident_id)
         trace_id_hex = get_current_trace_id_hex()
         trace_id = trace_id_hex or incident_id
+        run_id = uuid.uuid4().hex
+        input_payload = payload or {}
         initial: AgentState = {
+            "run_id": run_id,
             "incident_id": incident_id,
             "trace_id": trace_id,
-            "payload": payload or {},
+            "payload": input_payload,
             "tokens_used": 0,
             "llm_calls_used": 0,
         }
@@ -131,9 +167,54 @@ def run_pipeline(incident_id: str, payload: dict | None = None) -> dict:
                 try:
                     result = fut.result(timeout=run_timeout)
                 except FuturesTimeoutError:
-                    return _run_timeout_escalation_result(incident_id, trace_id)
+                    timeout_result = _run_timeout_escalation_result(
+                        incident_id, trace_id, run_id
+                    )
+                    _persist_replay_metadata_best_effort(
+                        run_id=run_id,
+                        incident_id=incident_id,
+                        payload=input_payload,
+                        trace_id=trace_id,
+                        status="timeout",
+                        replay_source=replay_source,
+                        llm_calls_used=int(timeout_result.get("llm_calls_used") or 0),
+                    )
+                    return timeout_result
+                except Exception:
+                    _persist_replay_metadata_best_effort(
+                        run_id=run_id,
+                        incident_id=incident_id,
+                        payload=input_payload,
+                        trace_id=trace_id,
+                        status="error",
+                        replay_source=replay_source,
+                        llm_calls_used=0,
+                    )
+                    raise
         else:
-            result = graph.invoke(initial)
+            try:
+                result = graph.invoke(initial)
+            except Exception:
+                _persist_replay_metadata_best_effort(
+                    run_id=run_id,
+                    incident_id=incident_id,
+                    payload=input_payload,
+                    trace_id=trace_id,
+                    status="error",
+                    replay_source=replay_source,
+                    llm_calls_used=0,
+                )
+                raise
         # Guarantee plan steps have "action" so evals/consumers never see KeyError
         _normalize_plan_steps(result.get("plan") or [])
+        result["run_id"] = result.get("run_id") or run_id
+        _persist_replay_metadata_best_effort(
+            run_id=result["run_id"],
+            incident_id=incident_id,
+            payload=input_payload,
+            trace_id=str(result.get("trace_id") or trace_id),
+            status="completed",
+            replay_source=replay_source,
+            llm_calls_used=int(result.get("llm_calls_used") or 0),
+        )
     return result

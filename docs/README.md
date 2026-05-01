@@ -83,6 +83,7 @@ The **docs/** directory holds project documentation that supports both humans an
 - Post-incident learning loop (Phase 4 P4.7): [runbooks/post_incident_loop.md](runbooks/post_incident_loop.md)
 - 15-minute MVP demo script (with optional `.env` skip): [runbooks/demo_15min.md](runbooks/demo_15min.md)
 - DB migrations runbook (PS1.3): [runbooks/db_migrations.md](runbooks/db_migrations.md)
+- Replay metadata schema and usage (PS1.4): [replay_metadata.md](replay_metadata.md)
 
 *Ścieżki do plików .mmd są względem katalogu `docs/` (np. `workflow/end_to_end_pipeline.mmd` = `docs/workflow/end_to_end_pipeline.mmd` w repo).*
 

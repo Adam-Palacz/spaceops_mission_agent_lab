@@ -1,0 +1,25 @@
+{
+  "schema_version": "v1",
+  "captured_at": "2026-05-01T11:08:46.351073+00:00",
+  "run_id": "d15d689e14f2483db3ff987cf80514a6",
+  "incident_id": "timeout-test",
+  "status": "timeout",
+  "payload_hash": "52639006455fe7f65d070330388b0a1947e5ce91f87db329b329b2c24dd17091",
+  "input_refs": [],
+  "trace_id": "timeout-test",
+  "audit_trace_id": "timeout-test",
+  "replay_source": "api",
+  "model": {
+    "provider": "openai",
+    "model_id": "gpt-4.1-nano"
+  },
+  "prompts": {
+    "triage": "v1",
+    "decide": "v1"
+  },
+  "runtime": {
+    "python_version": "3.12.4",
+    "platform": "Windows-11-10.0.26200-SP0"
+  },
+  "llm_calls_used": 0
+}

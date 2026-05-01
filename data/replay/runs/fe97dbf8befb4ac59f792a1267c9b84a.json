@@ -1,0 +1,25 @@
+{
+  "schema_version": "v1",
+  "captured_at": "2026-05-01T11:08:45.978136+00:00",
+  "run_id": "fe97dbf8befb4ac59f792a1267c9b84a",
+  "incident_id": "audit-test-inc",
+  "status": "completed",
+  "payload_hash": "70a7f19d416cf4a93de9a075622dfd80212ae3a57074a9671d8c32641e4a6743",
+  "input_refs": [],
+  "trace_id": "audit-test-inc",
+  "audit_trace_id": "audit-test-inc",
+  "replay_source": "api",
+  "model": {
+    "provider": "openai",
+    "model_id": "gpt-4.1-nano"
+  },
+  "prompts": {
+    "triage": "v1",
+    "decide": "v1"
+  },
+  "runtime": {
+    "python_version": "3.12.4",
+    "platform": "Windows-11-10.0.26200-SP0"
+  },
+  "llm_calls_used": 2
+}

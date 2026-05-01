@@ -1,0 +1,25 @@
+{
+  "schema_version": "v1",
+  "captured_at": "2026-05-01T11:08:34.395912+00:00",
+  "run_id": "0bbf8bebe8014cc49496d247766b48ac",
+  "incident_id": "test-inc-1",
+  "status": "completed",
+  "payload_hash": "ee6200556389f35266a50a4bd64b5f87257798547fdd6e36da7c4791a069571c",
+  "input_refs": [],
+  "trace_id": "test-inc-1",
+  "audit_trace_id": "test-inc-1",
+  "replay_source": "api",
+  "model": {
+    "provider": "openai",
+    "model_id": "gpt-4.1-nano"
+  },
+  "prompts": {
+    "triage": "v1",
+    "decide": "v1"
+  },
+  "runtime": {
+    "python_version": "3.12.4",
+    "platform": "Windows-11-10.0.26200-SP0"
+  },
+  "llm_calls_used": 2
+}

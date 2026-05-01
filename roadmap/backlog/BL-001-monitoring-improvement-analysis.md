@@ -2,6 +2,8 @@
 
 **Backlog item** — use this spec to create a sprint task (e.g. P4.x) when you schedule this work. The backlog has no statuses.
 
+> Scheduled in production-scale sprint 1 as [PS1.9-monitoring-improvement-analysis.md](../02-production-scale/sprint-1/PS1.9-monitoring-improvement-analysis.md).
+
 | Field | Value |
 |-------|--------|
 | **Backlog ID** | BL-001 |

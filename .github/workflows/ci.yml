@@ -31,6 +31,20 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg15
+        env:
+          POSTGRES_USER: spaceops
+          POSTGRES_PASSWORD: spaceops
+          POSTGRES_DB: spaceops
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U spaceops -d spaceops"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v6
 
@@ -44,10 +58,19 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Migration smoke (upgrade/downgrade/upgrade)
+        env:
+          DATABASE_URL: postgresql://spaceops:spaceops@localhost:5432/spaceops
+        run: |
+          python -m alembic upgrade head
+          python -m alembic downgrade base
+          python -m alembic upgrade head
+
       - name: Pytest
         run: pytest tests/ -v
         env:
-          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          POSTGRES_PASSWORD: spaceops
+          DATABASE_URL: postgresql://spaceops:spaceops@localhost:5432/spaceops
 
   evals:
     runs-on: ubuntu-latest

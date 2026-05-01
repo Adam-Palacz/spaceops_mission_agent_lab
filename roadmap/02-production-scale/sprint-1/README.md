@@ -11,12 +11,13 @@ data contracts, auditable schema evolution, replay baseline, and strict core CI 
 - Database migrations workflow (Alembic or equivalent) and append-only/auditable tables aligned to contracts.
 - Replay baseline that can re-run the same input set and compare classification/escalation outputs.
 - CI blocks regressions in critical behaviors (must-escalate + evidence/citation expectations).
+- Distributed tracing hardening: W3C context propagation and semantic spans across Agent -> MCP services.
 
 ---
 
 ## Tasks
 
-See **[BOARD.md](BOARD.md)** for status of PS1.1-PS1.8.
+See **[BOARD.md](BOARD.md)** for status of PS1.1-PS1.9.
 
 ---
 

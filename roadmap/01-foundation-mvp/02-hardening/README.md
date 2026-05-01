@@ -7,6 +7,7 @@ Post–Sprint 2: documentation, runbooks, expanded evals, optional UI. Backlog; 
 ## Contents
 
 - **BOARD.md** — Status of hardening tasks (backlog).
+- **HARDENING-REVIEW.md** — Phase close review summary (scope, outcomes, DoD).
 - **`P4.x-name.md`** — One file per hardening task (docs, runbooks, reranker, UI, evals, post-incident loop).
 
 ## Recurring (P4.7)

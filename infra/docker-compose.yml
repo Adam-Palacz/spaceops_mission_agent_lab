@@ -20,12 +20,27 @@ services:
       - ./.env
     ports:
       - "8000:8000"
+    environment:
+      TELEMETRY_MCP_URL: http://telemetry-mcp:8001/mcp
+      KB_MCP_URL: http://kb-mcp:8002/mcp
+      TICKET_MCP_URL: http://ticket-mcp:8003/mcp
+      GITOPS_MCP_URL: http://gitops-mcp:8004/mcp
+      OPA_URL: http://opa:8181/v1/data/agent/allow
     volumes:
       - ./data:/app/data
+      - ./ops-config:/app/ops-config
     depends_on:
       postgres:
         condition: service_healthy
       opa:
+        condition: service_started
+      telemetry-mcp:
+        condition: service_started
+      kb-mcp:
+        condition: service_started
+      ticket-mcp:
+        condition: service_started
+      gitops-mcp:
         condition: service_started
     profiles:
       - ui
@@ -86,6 +101,62 @@ services:
       - ./infra/opa:/policies:ro
     ports:
       - "8181:8181"
+
+  telemetry-mcp:
+    build:
+      context: .
+      dockerfile: ./apps/mcp/Dockerfile
+    container_name: spaceops-mcp-telemetry
+    env_file:
+      - ./.env
+    command: ["python", "-m", "apps.mcp.telemetry_server.main"]
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./data:/app/data
+
+  kb-mcp:
+    build:
+      context: .
+      dockerfile: ./apps/mcp/Dockerfile
+    container_name: spaceops-mcp-kb
+    env_file:
+      - ./.env
+    command: ["python", "-m", "apps.mcp.kb_server.main"]
+    ports:
+      - "8002:8002"
+    volumes:
+      - ./data:/app/data
+      - ./kb:/app/kb
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  ticket-mcp:
+    build:
+      context: .
+      dockerfile: ./apps/mcp/Dockerfile
+    container_name: spaceops-mcp-ticket
+    env_file:
+      - ./.env
+    command: ["python", "-m", "apps.mcp.ticket_server.main"]
+    ports:
+      - "8003:8003"
+    volumes:
+      - ./data:/app/data
+
+  gitops-mcp:
+    build:
+      context: .
+      dockerfile: ./apps/mcp/Dockerfile
+    container_name: spaceops-mcp-gitops
+    env_file:
+      - ./.env
+    command: ["python", "-m", "apps.mcp.gitops_server.main"]
+    ports:
+      - "8004:8004"
+    volumes:
+      - ./ops-config:/app/ops-config
 
   prometheus:
     image: prom/prometheus:v3.10.0

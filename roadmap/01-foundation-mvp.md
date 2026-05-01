@@ -137,13 +137,13 @@ Sprints are **2 weeks** each. **Core delivery in 2 sprints** (S1 + S2); Phase 4 
 **Goal:** Documentation (architecture + runbooks), expanded evals, optional UI; production-ready criteria fully met.
 
 ### Tasks (backlog)
-- [ ] `docs/architecture.md`: component diagram, data flow, tech choices. (P4.1)
-- [ ] Runbook: “How to add a new MCP” (template, registration, agent wiring). (P4.2)
-- [ ] Runbook: “How to add an eval case” (cases.yaml, scoring.py, CI). (P4.3)
-- [ ] Reranker for RAG (NF5) if not in S1/S2. (P4.4)
-- [ ] Optional Next.js: incident list, approval list, Approve/Reject with auth. (P4.5)
-- [ ] Expand eval suite (e.g. 20–30 cases); citation precision / MoE in scoring. (P4.6)
-- [ ] Post-incident loop: postmortem template, KB re-index, new eval case per incident. (P4.7)
+- [x] `docs/architecture.md`: component diagram, data flow, tech choices. (P4.1)
+- [x] Runbook: “How to add a new MCP” (template, registration, agent wiring). (P4.2)
+- [x] Runbook: “How to add an eval case” (cases.yaml, scoring.py, CI). (P4.3)
+- [x] Reranker for RAG (NF5) if not in S1/S2. (P4.4)
+- [x] Optional Next.js: incident list, approval list, Approve/Reject with auth. (P4.5)
+- [x] Expand eval suite (e.g. 20–30 cases); citation precision / MoE in scoring. (P4.6)
+- [x] Post-incident loop: postmortem template, KB re-index, new eval case per incident. (P4.7)
 - [x] Model upgrade / shadow-testing rollout: scheduled shadow runs, reports, and switch criteria. (P4.8)
 
 ### Recurring (ongoing)

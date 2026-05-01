@@ -10,6 +10,7 @@ from pathlib import Path
 
 # Sample NDJSON for ingest tests (minimal schema: at least one key per line)
 _SAMPLE_NDJSON_VALID = b'{"ts":"2025-02-14T10:00:00Z","channel":"power.bus_voltage","value":28.5}\n{"ts":"2025-02-14T10:01:00Z","channel":"thermal.plate_t","value":22.1}\n'
+_SAMPLE_NDJSON_VALID_WITH_EVENT_ID = b'{"event_id":"evt-1","ts":"2025-02-14T10:00:00Z","channel":"power.bus_voltage","value":28.5}\n{"event_id":"evt-2","ts":"2025-02-14T10:01:00Z","channel":"thermal.plate_t","value":22.1}\n'
 _SAMPLE_NDJSON_INVALID_JSON = b"not json\n"
 _SAMPLE_NDJSON_EMPTY_OBJECT = b"{}\n"
 _SAMPLE_NDJSON_NOT_OBJECT = b'["array"]\n'
@@ -109,6 +110,44 @@ def test_ingest_rejects_invalid_source(api_client):
     )
     assert response.status_code == 400
     assert "source must be one of" in response.json().get("detail", "")
+
+
+def test_ingest_telemetry_is_idempotent_by_event_id(api_client):
+    """PS1.2: duplicate telemetry event_id should not create duplicate records."""
+    first = api_client.post(
+        "/ingest?source=telemetry",
+        content=_SAMPLE_NDJSON_VALID_WITH_EVENT_ID,
+        headers={"Content-Type": "application/x-ndjson"},
+    )
+    assert first.status_code == 201
+    first_body = first.json()
+    assert first_body.get("accepted") == 2
+    assert first_body.get("duplicates") == 0
+
+    second = api_client.post(
+        "/ingest?source=telemetry",
+        content=_SAMPLE_NDJSON_VALID_WITH_EVENT_ID,
+        headers={"Content-Type": "application/x-ndjson"},
+    )
+    assert second.status_code == 201
+    second_body = second.json()
+    assert second_body.get("accepted") == 0
+    assert second_body.get("duplicates") == 2
+
+
+def test_ingest_telemetry_contract_validation_error(api_client):
+    """PS1.2: telemetry payload that cannot satisfy contract should be rejected."""
+    invalid_missing_value = b'{"event_id":"evt-x","ts":"2025-02-14T10:00:00Z","channel":"power.bus_voltage"}\n'
+    response = api_client.post(
+        "/ingest?source=telemetry",
+        content=invalid_missing_value,
+        headers={"Content-Type": "application/x-ndjson"},
+    )
+    assert response.status_code == 400
+    detail = response.json().get("detail", {})
+    assert isinstance(detail, dict)
+    assert detail.get("error") == "validation_failed"
+    assert detail.get("rejected", 0) >= 1
 
 
 def test_ingest_events_source_persists(api_client, tmp_path: Path):

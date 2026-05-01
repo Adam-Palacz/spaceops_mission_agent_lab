@@ -3,7 +3,7 @@ wytlumacz# PS1.2 — Ingest validation + event dedupe
 | Field | Value |
 |-------|--------|
 | **Task ID** | PS1.2 |
-| **Status** | Todo |
+| **Status** | Done |
 
 ---
 
@@ -16,26 +16,26 @@ records. Primary dedupe key: `event_id` (or deterministic hash fallback for lega
 
 ## Requirements
 
-- [ ] Ingest validates incoming events against `TelemetryEvent.v1`.
-- [ ] Dedupe enforced by unique `event_id` semantics.
-- [ ] Duplicate ingest calls are idempotent (no duplicate rows).
-- [ ] API responses distinguish accepted, duplicate, and invalid records.
-- [ ] Audit/metrics expose dedupe and validation outcomes.
+- [x] Ingest validates incoming events against `TelemetryEvent.v1`.
+- [x] Dedupe enforced by unique `event_id` semantics.
+- [x] Duplicate ingest calls are idempotent (no duplicate rows).
+- [x] API responses distinguish accepted, duplicate, and invalid records.
+- [x] Audit/metrics expose dedupe and validation outcomes.
 
 ---
 
 ## Checklist
 
-- [ ] Add ingest validation step before persistence.
-- [ ] Add uniqueness protection in storage layer/index.
-- [ ] Implement conflict handling policy for duplicates.
-- [ ] Return structured ingest summary (`accepted`, `duplicates`, `rejected`).
-- [ ] Add tests for valid, invalid, and duplicate batches.
+- [x] Add ingest validation step before persistence.
+- [x] Add uniqueness protection in storage layer/index.
+- [x] Implement conflict handling policy for duplicates.
+- [x] Return structured ingest summary (`accepted`, `duplicates`, `rejected`).
+- [x] Add tests for valid, invalid, and duplicate batches.
 
 ---
 
 ## Test requirements
 
-- [ ] Reposting the same event batch keeps row count unchanged.
-- [ ] Invalid schema events return 4xx and are not stored.
-- [ ] Mixed batch processing reports correct counters.
+- [x] Reposting the same event batch keeps row count unchanged.
+- [x] Invalid schema events return 4xx and are not stored.
+- [x] Mixed batch processing reports correct counters.

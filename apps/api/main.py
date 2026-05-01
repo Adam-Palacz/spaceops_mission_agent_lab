@@ -7,6 +7,7 @@ S1.10: OTel request spans; structured logging.
 from __future__ import annotations
 
 import json
+import hashlib
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -24,6 +25,7 @@ from prometheus_client import (
 )
 
 from config import settings
+from apps.contracts.v1 import TelemetryEventV1
 from apps.telemetry import init_telemetry
 
 # Base path for data (repo root when run from repo)
@@ -72,6 +74,11 @@ AGENT_TOOL_CALLS_PER_RUN = Histogram(
     "Number of tool/LLM calls per agent run (llm_calls_used).",
     buckets=(0, 1, 2, 3, 5, 8, 13, 21, 34),
 )
+INGEST_EVENTS_TOTAL = Counter(
+    "ingest_events_total",
+    "Total ingest records processed, by outcome.",
+    ["outcome"],
+)
 
 
 # S1.10: OTel request spans for /health, /ingest, /runs
@@ -108,7 +115,7 @@ def metrics() -> Response:
 
 
 def _validate_ndjson_line(line: str, line_no: int) -> dict[str, Any]:
-    """Parse one NDJSON line; raise HTTPException if invalid."""
+    """Parse one NDJSON line; raise HTTPException if invalid JSON payload."""
     line = line.strip()
     if not line:
         raise HTTPException(status_code=400, detail=f"Line {line_no}: empty line")
@@ -122,14 +129,68 @@ def _validate_ndjson_line(line: str, line_no: int) -> dict[str, Any]:
         raise HTTPException(
             status_code=400, detail=f"Line {line_no}: expected JSON object"
         )
-    # Minimal schema: at least one key (e.g. timestamp or ts for traceability)
     if not obj:
         raise HTTPException(status_code=400, detail=f"Line {line_no}: empty object")
     return obj
 
 
-def _persist_ndjson(source: str, records: list[dict[str, Any]]) -> Path:
-    """Append records to data/{source}/; one file per ingest with timestamp."""
+def _canonical_json_hash(value: dict[str, Any]) -> str:
+    payload = json.dumps(
+        value, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+    )
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def _normalize_telemetry_record(raw: dict[str, Any], source: str) -> TelemetryEventV1:
+    """
+    Convert legacy-ish telemetry payload into TelemetryEventV1.
+
+    We accept older fixture shapes by mapping:
+    - timestamp -> ts
+    - channel_id -> channel
+    - missing event_id -> deterministic hash fallback
+    """
+    candidate = dict(raw)
+    if "ts" not in candidate and isinstance(candidate.get("timestamp"), str):
+        candidate["ts"] = candidate["timestamp"]
+    if "channel" not in candidate and isinstance(candidate.get("channel_id"), str):
+        candidate["channel"] = candidate["channel_id"]
+    if "event_id" not in candidate or not str(candidate.get("event_id")).strip():
+        candidate["event_id"] = f"legacy-{_canonical_json_hash(raw)}"
+    if "source" not in candidate or not str(candidate.get("source") or "").strip():
+        candidate["source"] = source
+    return TelemetryEventV1.model_validate(candidate)
+
+
+def _load_existing_event_ids(out_dir: Path) -> set[str]:
+    """Load known event_id values from existing NDJSON files for dedupe."""
+    event_ids: set[str] = set()
+    if not out_dir.exists():
+        return event_ids
+    for path in sorted(out_dir.glob("*.ndjson")):
+        try:
+            with path.open(encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        obj = json.loads(line)
+                    except json.JSONDecodeError:
+                        continue
+                    if isinstance(obj, dict):
+                        event_id = obj.get("event_id")
+                        if isinstance(event_id, str) and event_id.strip():
+                            event_ids.add(event_id.strip())
+        except OSError:
+            continue
+    return event_ids
+
+
+def _persist_ndjson(
+    source: str, records: list[dict[str, Any]]
+) -> tuple[Path, int, int]:
+    """Persist deduplicated records to data/{source}/ and return (path, accepted, duplicates)."""
     allowed = ("telemetry", "events", "ground_logs")
     if source not in allowed:
         raise HTTPException(
@@ -138,12 +199,26 @@ def _persist_ndjson(source: str, records: list[dict[str, Any]]) -> Path:
         )
     out_dir = DATA_DIR / source
     out_dir.mkdir(parents=True, exist_ok=True)
+    existing_event_ids = _load_existing_event_ids(out_dir)
+    seen_in_batch: set[str] = set()
+    deduped: list[dict[str, Any]] = []
+    duplicates = 0
+    for rec in records:
+        event_id = str(rec.get("event_id") or "").strip()
+        if not event_id:
+            event_id = f"legacy-{_canonical_json_hash(rec)}"
+            rec = {**rec, "event_id": event_id}
+        if event_id in existing_event_ids or event_id in seen_in_batch:
+            duplicates += 1
+            continue
+        seen_in_batch.add(event_id)
+        deduped.append(rec)
     ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     out_file = out_dir / f"ingest_{ts}.ndjson"
     with open(out_file, "w", encoding="utf-8") as f:
-        for rec in records:
+        for rec in deduped:
             f.write(json.dumps(rec, ensure_ascii=False) + "\n")
-    return out_file
+    return out_file, len(deduped), duplicates
 
 
 @app.post("/ingest")
@@ -158,16 +233,44 @@ async def ingest(
     lines = [ln for ln in body.strip().split("\n") if ln.strip()]
     if not lines:
         raise HTTPException(status_code=400, detail="Empty body or no NDJSON lines")
-    records = []
+    records: list[dict[str, Any]] = []
+    validation_errors: list[str] = []
     for i, line in enumerate(lines, start=1):
-        records.append(_validate_ndjson_line(line, i))
-    path = _persist_ndjson(source, records)
+        raw = _validate_ndjson_line(line, i)
+        if source != "telemetry":
+            # PS1.2 focuses on telemetry contract hardening.
+            records.append(raw)
+            continue
+        try:
+            contract = _normalize_telemetry_record(raw, source=source)
+            records.append(contract.model_dump())
+        except Exception as exc:
+            validation_errors.append(f"Line {i}: {exc}")
+    if validation_errors:
+        INGEST_EVENTS_TOTAL.labels(outcome="rejected").inc(len(validation_errors))
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "error": "validation_failed",
+                "source": source,
+                "rejected": len(validation_errors),
+                "messages": validation_errors[:20],
+            },
+        )
+    path, accepted_count, duplicate_count = _persist_ndjson(source, records)
+    if accepted_count:
+        INGEST_EVENTS_TOTAL.labels(outcome="accepted").inc(accepted_count)
+    if duplicate_count:
+        INGEST_EVENTS_TOTAL.labels(outcome="duplicate").inc(duplicate_count)
     return JSONResponse(
         status_code=201,
         content={
             "status": "created",
             "source": source,
-            "records": len(records),
+            "records": accepted_count,
+            "accepted": accepted_count,
+            "duplicates": duplicate_count,
+            "rejected": 0,
             "path": str(path.relative_to(REPO_ROOT)),
         },
     )

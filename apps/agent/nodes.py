@@ -9,8 +9,6 @@ import json
 from datetime import datetime, timezone
 from pathlib import Path
 
-import httpx
-
 from config import settings
 from apps.agent.state import AgentState, Citation, EscalationPacket
 from apps.agent.mcp_client import (
@@ -25,6 +23,11 @@ from apps.agent.audit_log import append_entry as audit_append
 from apps.agent.opa_client import opa_allow
 from apps.agent.approval_store import create as approval_store_create
 from apps.llm_observability import start_llm_run, log_llm_call
+from apps.llm_gateway import (
+    LLMGatewayProviderError,
+    LLMGatewayTimeoutError,
+    generate as gateway_generate,
+)
 from apps.telemetry import get_tracer
 from prompts.registry import (
     DECIDE_PROMPT_ID,
@@ -36,36 +39,6 @@ REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 DATA_INCIDENTS = REPO_ROOT / "data" / "incidents"
 
 _SUBSYSTEMS = ("ADCS", "Power", "Thermal", "Comms", "Payload", "Ground")
-
-OPENAI_CHAT_URL = "https://api.openai.com/v1/chat/completions"
-
-
-def _llm_provider_config() -> tuple[str, str]:
-    """
-    Resolve provider endpoint and API key for agent LLM calls.
-
-    Supported providers:
-    - openai
-    - cursor_sh (OpenAI-compatible chat completions payload)
-    """
-    provider = (getattr(settings, "llm_provider", "openai") or "openai").strip().lower()
-    if provider == "cursor_sh":
-        api_key = (getattr(settings, "cursor_sh_api_key", "") or "").strip()
-        url = (
-            getattr(settings, "cursor_sh_base_url", "")
-            or "https://api.cursor.sh/v1/chat/completions"
-        ).strip()
-        if not api_key:
-            raise RuntimeError(
-                "CURSOR_SH_API_KEY required when LLM_PROVIDER=cursor_sh; set it in .env"
-            )
-        return url, api_key
-
-    # Default: openai
-    api_key = (getattr(settings, "openai_api_key", "") or "").strip()
-    if not api_key:
-        raise RuntimeError("OPENAI_API_KEY required for agent; set in .env")
-    return OPENAI_CHAT_URL, api_key
 
 
 def _escalation_for_limit_or_timeout(
@@ -105,29 +78,15 @@ def _chat_completion(
     Call OpenAI Chat Completions API. Return (content, total_tokens).
     S1.12: uses agent_llm_call_timeout_seconds; raises httpx.TimeoutException on timeout.
     """
-    from apps.model_selection import get_current_model_id
-
-    model_id = model or get_current_model_id()
-    endpoint, api_key = _llm_provider_config()
-    timeout = max(1, getattr(settings, "agent_llm_call_timeout_seconds", 30))
-    with httpx.Client(timeout=float(timeout)) as client:
-        r = client.post(
-            endpoint,
-            headers={
-                "Authorization": f"Bearer {api_key}",
-                "Content-Type": "application/json",
-            },
-            json={
-                "model": model_id,
-                "temperature": temperature,
-                "messages": [{"role": "user", "content": prompt}],
-            },
-        )
-        r.raise_for_status()
-        data = r.json()
-    content = (data.get("choices") or [{}])[0].get("message", {}).get("content") or ""
-    usage = (data.get("usage") or {}).get("total_tokens") or 0
-    return content, usage
+    result = gateway_generate(
+        prompt=prompt,
+        node="nodes.chat_completion",
+        model_id=model,
+        temperature=temperature,
+    )
+    return str(result.get("content") or ""), int(
+        (result.get("usage") or {}).get("total_tokens") or 0
+    )
 
 
 def triage(state: AgentState) -> dict:
@@ -167,10 +126,24 @@ def triage(state: AgentState) -> dict:
         from apps.model_selection import get_current_model_id
 
         model_id = get_current_model_id()
-        content, usage = _chat_completion(prompt, model=model_id)
-    except httpx.TimeoutException:
+        gateway_result = gateway_generate(
+            prompt=prompt,
+            node="triage",
+            model_id=model_id,
+            temperature=0,
+        )
+        content = str(gateway_result.get("content") or "")
+        usage_meta = gateway_result.get("usage") or {}
+        usage = int(usage_meta.get("total_tokens") or 0)
+    except LLMGatewayTimeoutError:
         return _escalation_for_limit_or_timeout(
             incident_id, "llm_timeout", "LLM call timed out during triage."
+        ) | {"tokens_used": tokens_used, "llm_calls_used": llm_calls_used}
+    except LLMGatewayProviderError as exc:
+        return _escalation_for_limit_or_timeout(
+            incident_id,
+            "llm_provider_error",
+            f"LLM provider error during triage: {exc}",
         ) | {"tokens_used": tokens_used, "llm_calls_used": llm_calls_used}
     tokens_used += usage
     llm_calls_used += 1
@@ -188,7 +161,12 @@ def triage(state: AgentState) -> dict:
         prompt_id=triage_prompt.id,
         prompt_version=triage_prompt.version,
         tags={"subsystems": list(_SUBSYSTEMS)},
-        metrics={"tokens_used": usage},
+        metrics={
+            "tokens_used": usage,
+            "prompt_tokens": int(usage_meta.get("prompt_tokens") or 0),
+            "completion_tokens": int(usage_meta.get("completion_tokens") or 0),
+            "latency_ms": int(gateway_result.get("latency_ms") or 0),
+        },
     )
     text = content.strip().split()
     subsystem = text[0] if len(text) >= 1 else "Ground"
@@ -381,6 +359,7 @@ def check_escalation(state: AgentState) -> dict:
         "token_limit",
         "rate_limit",
         "llm_timeout",
+        "llm_provider_error",
         "run_timeout",
     ):
         return {
@@ -488,10 +467,24 @@ def decide(state: AgentState) -> dict:
         from apps.model_selection import get_current_model_id
 
         model_id = get_current_model_id()
-        content, usage = _chat_completion(prompt, model=model_id)
-    except httpx.TimeoutException:
+        gateway_result = gateway_generate(
+            prompt=prompt,
+            node="decide",
+            model_id=model_id,
+            temperature=0,
+        )
+        content = str(gateway_result.get("content") or "")
+        usage_meta = gateway_result.get("usage") or {}
+        usage = int(usage_meta.get("total_tokens") or 0)
+    except LLMGatewayTimeoutError:
         return _escalation_for_limit_or_timeout(
             incident_id, "llm_timeout", "LLM call timed out during decide."
+        ) | {"tokens_used": tokens_used, "llm_calls_used": llm_calls_used}
+    except LLMGatewayProviderError as exc:
+        return _escalation_for_limit_or_timeout(
+            incident_id,
+            "llm_provider_error",
+            f"LLM provider error during decide: {exc}",
         ) | {"tokens_used": tokens_used, "llm_calls_used": llm_calls_used}
     tokens_used += usage
     llm_calls_used += 1
@@ -512,7 +505,12 @@ def decide(state: AgentState) -> dict:
             "subsystem": subsystem,
             "risk": risk,
         },
-        metrics={"tokens_used": usage},
+        metrics={
+            "tokens_used": usage,
+            "prompt_tokens": int(usage_meta.get("prompt_tokens") or 0),
+            "completion_tokens": int(usage_meta.get("completion_tokens") or 0),
+            "latency_ms": int(gateway_result.get("latency_ms") or 0),
+        },
     )
     text = content.strip()
     if "```" in text:

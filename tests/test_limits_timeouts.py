@@ -8,6 +8,8 @@ import sys
 from pathlib import Path
 import time
 
+from apps.llm_gateway import LLMGatewayProviderError
+
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(REPO_ROOT) not in sys.path:
@@ -20,13 +22,21 @@ def test_run_exceeds_timeout_produces_escalation_packet(monkeypatch):
     monkeypatch.setattr("config.settings.agent_run_timeout_seconds", 0.1)
     from apps.agent import nodes
 
-    def _slow_chat_completion(
-        prompt: str, model: str = "gpt-4o-mini", temperature: float = 0
-    ) -> tuple[str, int]:
+    def _slow_gateway_generate(**_kwargs) -> dict:
         time.sleep(0.2)
-        return "Power medium", 1
+        return {
+            "content": "Power medium",
+            "usage": {
+                "prompt_tokens": 1,
+                "completion_tokens": 1,
+                "total_tokens": 1,
+            },
+            "latency_ms": 200,
+            "model_id": "gpt-4o-mini",
+            "provider": "openai",
+        }
 
-    monkeypatch.setattr(nodes, "_chat_completion", _slow_chat_completion)
+    monkeypatch.setattr(nodes, "gateway_generate", _slow_gateway_generate)
     from apps.agent.graph import run_pipeline
 
     result = run_pipeline("timeout-test", {"ref": "test"})
@@ -43,12 +53,20 @@ def test_run_exceeds_token_limit_produces_escalation_packet(monkeypatch):
     monkeypatch.setattr("config.settings.agent_token_budget_per_run", 1)
     from apps.agent import nodes
 
-    def _chat_completion_high_usage(
-        prompt: str, model: str = "gpt-4o-mini", temperature: float = 0
-    ) -> tuple[str, int]:
-        return "Power medium", 10
+    def _gateway_high_usage(**_kwargs) -> dict:
+        return {
+            "content": "Power medium",
+            "usage": {
+                "prompt_tokens": 5,
+                "completion_tokens": 5,
+                "total_tokens": 10,
+            },
+            "latency_ms": 10,
+            "model_id": "gpt-4o-mini",
+            "provider": "openai",
+        }
 
-    monkeypatch.setattr(nodes, "_chat_completion", _chat_completion_high_usage)
+    monkeypatch.setattr(nodes, "gateway_generate", _gateway_high_usage)
     from apps.agent.graph import run_pipeline
 
     result = run_pipeline("token-limit-test", {"ref": "test"})
@@ -85,13 +103,21 @@ def test_normal_run_under_limits_completes_without_false_escalation(monkeypatch)
     monkeypatch.setattr("config.settings.agent_token_budget_per_run", 100_000)
     from apps.agent import nodes
 
-    def _chat_completion_normal(
-        prompt: str, model: str = "gpt-4o-mini", temperature: float = 0
-    ) -> tuple[str, int]:
+    def _gateway_normal(**_kwargs) -> dict:
         # Reasonable token usage well under the generous budget
-        return "Power medium", 50
+        return {
+            "content": "Power medium",
+            "usage": {
+                "prompt_tokens": 20,
+                "completion_tokens": 30,
+                "total_tokens": 50,
+            },
+            "latency_ms": 20,
+            "model_id": "gpt-4o-mini",
+            "provider": "openai",
+        }
 
-    monkeypatch.setattr(nodes, "_chat_completion", _chat_completion_normal)
+    monkeypatch.setattr(nodes, "gateway_generate", _gateway_normal)
     from apps.agent.graph import run_pipeline
 
     result = run_pipeline("normal-limits-test", {"ref": "test"})
@@ -103,4 +129,21 @@ def test_normal_run_under_limits_completes_without_false_escalation(monkeypatch)
         "token_limit",
         "rate_limit",
         "llm_timeout",
+        "llm_provider_error",
     ), "Normal run should not escalate due to limit/timeout"
+
+
+def test_run_provider_error_escalates_fail_closed(monkeypatch):
+    """PS1.6: provider error path should escalate explicitly and remain fail-closed."""
+    from apps.agent import nodes
+
+    def _provider_error(**_kwargs) -> dict:
+        raise LLMGatewayProviderError("upstream provider 500")
+
+    monkeypatch.setattr(nodes, "gateway_generate", _provider_error)
+    from apps.agent.graph import run_pipeline
+
+    result = run_pipeline("provider-error-test", {"ref": "test"})
+    assert result.get("escalated") is True
+    packet = result.get("escalation_packet") or {}
+    assert packet.get("reason") == "llm_provider_error"

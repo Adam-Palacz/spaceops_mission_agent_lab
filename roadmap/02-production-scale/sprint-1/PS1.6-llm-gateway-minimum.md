@@ -3,7 +3,7 @@
 | Field | Value |
 |-------|--------|
 | **Task ID** | PS1.6 |
-| **Status** | Todo |
+| **Status** | Done |
 
 ---
 
@@ -16,26 +16,26 @@ agent nodes. Minimum scope: `generate()`/chat call abstraction plus metadata log
 
 ## Requirements
 
-- [ ] A single gateway interface is used by triage/decide/report paths.
-- [ ] Default backend remains OpenAI-compatible.
-- [ ] Gateway logs model ID/version/latency and core token metadata.
-- [ ] Gateway failure semantics are explicit (timeout/error -> escalation path compatibility).
-- [ ] Existing behavior remains backward compatible for current provider mode.
+- [x] A single gateway interface is used by triage/decide/report paths.
+- [x] Default backend remains OpenAI-compatible.
+- [x] Gateway logs model ID/version/latency and core token metadata.
+- [x] Gateway failure semantics are explicit (timeout/error -> escalation path compatibility).
+- [x] Existing behavior remains backward compatible for current provider mode.
 
 ---
 
 ## Checklist
 
-- [ ] Extract direct model calls into gateway module.
-- [ ] Update nodes/evals to use gateway interface only.
-- [ ] Add structured metadata output for observability.
-- [ ] Add tests for success, timeout, and provider error propagation.
-- [ ] Document gateway contract and extension points.
+- [x] Extract direct model calls into gateway module.
+- [x] Update nodes/evals to use gateway interface only.
+- [x] Add structured metadata output for observability.
+- [x] Add tests for success, timeout, and provider error propagation.
+- [x] Document gateway contract and extension points.
 
 ---
 
 ## Test requirements
 
-- [ ] End-to-end runs succeed with gateway enabled.
-- [ ] Timeout/error paths preserve fail-closed behavior.
-- [ ] LLM call metadata appears in logs/observability records.
+- [x] End-to-end runs succeed with gateway enabled.
+- [x] Timeout/error paths preserve fail-closed behavior.
+- [x] LLM call metadata appears in logs/observability records.

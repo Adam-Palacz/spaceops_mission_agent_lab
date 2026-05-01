@@ -85,6 +85,7 @@ The **docs/** directory holds project documentation that supports both humans an
 - DB migrations runbook (PS1.3): [runbooks/db_migrations.md](runbooks/db_migrations.md)
 - Replay metadata schema and usage (PS1.4): [replay_metadata.md](replay_metadata.md)
 - Replay CLI/API workflow (PS1.5): [runbooks/replay_workflow.md](runbooks/replay_workflow.md)
+- LLM gateway contract (PS1.6): [llm_gateway.md](llm_gateway.md)
 
 *Ścieżki do plików .mmd są względem katalogu `docs/` (np. `workflow/end_to_end_pipeline.mmd` = `docs/workflow/end_to_end_pipeline.mmd` w repo).*
 

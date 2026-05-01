@@ -15,9 +15,12 @@ import re
 from dataclasses import dataclass
 from typing import Any, Literal
 
-import httpx
-
 from config import settings
+from apps.llm_gateway import (
+    LLMGatewayProviderError,
+    LLMGatewayTimeoutError,
+    generate as gateway_generate,
+)
 
 RerankerMode = Literal["lexical", "llm"]
 
@@ -61,10 +64,6 @@ def rerank_llm(query: str, chunks: list[dict[str, Any]]) -> list[dict[str, Any]]
     Not used by default. Intended for experimentation when you want better relevance
     scoring than lexical overlap.
     """
-    if not settings.openai_api_key:
-        # Fail open: keep original order if LLM isn't configured.
-        return chunks
-
     # Keep the payload small; we rerank only the top candidate set.
     # We ask the model for numeric scores aligned to chunk order.
     formatted_chunks = "\n".join(
@@ -80,29 +79,22 @@ def rerank_llm(query: str, chunks: list[dict[str, Any]]) -> list[dict[str, Any]]
 
     # Note: using chat.completions because the repo already standardises on it.
     # If this is enabled in practice, consider caching and tighter prompt limits.
-    payload = {
-        "model": getattr(settings, "kb_reranker_llm_model", "gpt-4o-mini"),
-        "temperature": 0,
-        "messages": [
-            {"role": "system", "content": "Return strictly valid JSON only."},
-            {"role": "user", "content": prompt},
-        ],
-    }
+    model_id = getattr(settings, "kb_reranker_llm_model", "gpt-4o-mini")
+    full_prompt = "System: Return strictly valid JSON only.\n\n" f"{prompt}"
 
     try:
-        with httpx.Client(timeout=30.0) as client:
-            resp = client.post(
-                "https://api.openai.com/v1/chat/completions",
-                headers={"Authorization": f"Bearer {settings.openai_api_key}"},
-                json=payload,
-            )
-            resp.raise_for_status()
-            data = resp.json()
-    except Exception:
+        out = gateway_generate(
+            prompt=full_prompt,
+            node="kb_reranker",
+            model_id=model_id,
+            temperature=0,
+        )
+        text = str(out.get("content") or "")
+    except (LLMGatewayTimeoutError, LLMGatewayProviderError, Exception):
+        # Fail open: keep original order if LLM reranking fails or is unavailable.
         return chunks
 
     try:
-        text = (data.get("choices") or [{}])[0].get("message", {}).get("content", "")  # type: ignore[union-attr]
         parsed = json.loads(text)
         scores = parsed.get("scores")
         if not isinstance(scores, list) or len(scores) != len(chunks):

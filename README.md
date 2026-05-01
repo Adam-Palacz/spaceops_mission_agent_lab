@@ -22,7 +22,8 @@ Agent for satellite / ground segment anomaly triage: **ingest ? triage ? investi
 
 - Copy **.env.example** to **.env** and set LLM provider creds:
   - `LLM_PROVIDER=openai` + `OPENAI_API_KEY`, or
-  - `LLM_PROVIDER=cursor_sh` + `CURSOR_SH_API_KEY` (optional endpoint override: `CURSOR_SH_BASE_URL`).
+  - `LLM_PROVIDER=cursor_sh` + `CURSOR_SH_API_KEY`.
+  Optional provider endpoint settings: `OPENAI_BASE_URL`, `CURSOR_SH_BASE_URL`, `LLM_CHAT_COMPLETIONS_PATH`.
   Optional: `POSTGRES_*` if not using defaults.
 - **Limits and timeouts (S1.12, NF6):** `AGENT_RUN_TIMEOUT_SECONDS` (default 120; 0 = no limit), `AGENT_LLM_CALL_TIMEOUT_SECONDS` (default 30), `AGENT_TOKEN_BUDGET_PER_RUN` (default 50000; 0 = no limit), `AGENT_MAX_LLM_CALLS_PER_RUN` (default 10; 0 = no limit). When exceeded, run escalates to human.
 - **OTel traces (S1.10):** to export traces to the local collector/Jaeger from apps, set `OTEL_EXPORTER_OTLP_ENDPOINT` (e.g. `http://localhost:4317`, matching `infra/docker-compose.yml`).

@@ -83,7 +83,7 @@ flowchart TB
     approval and metrics endpoints.
 - **Agent (`apps/agent`)**
   - LangGraph pipeline: **Triage → Investigate → Decide → Act → Report**.
-  - Uses OpenAI Chat Completions via `httpx`; enforces limits/timeouts and escalation.
+  - Uses centralized LLM gateway (`apps/llm_gateway.py`) for provider calls; enforces limits/timeouts and escalation.
   - Integrates with MCP servers for telemetry, KB, Ticketing, and GitOps.
   - Uses OPA + approval API for restricted actions; writes audit entries and escalation packets.
 - **MCP servers (`apps/mcp`)**

@@ -92,3 +92,18 @@ def test_kb_search_runbooks_uses_reranker_when_enabled(monkeypatch):
     # Reranker should move heater_restart.md to the front.
     assert out[0]["doc_id"] == "heater_restart.md"
     assert len(out) == 2
+
+
+def test_rerank_llm_uses_gateway_scores(monkeypatch):
+    query = "restart heater controller threshold"
+    chunks = [
+        {"content": "unrelated", "doc_id": "a.md"},
+        {"content": "heater restart procedure", "doc_id": "b.md"},
+    ]
+
+    def _mock_gateway_generate(**_kwargs):
+        return {"content": '{"scores":[1,99]}'}
+
+    monkeypatch.setattr("apps.common.reranker.gateway_generate", _mock_gateway_generate)
+    ranked = rerank_chunks(query, chunks, mode="llm")
+    assert ranked[0]["doc_id"] == "b.md"

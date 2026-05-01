@@ -45,6 +45,7 @@ class AgentState(TypedDict, total=False):
     risk: str
     hypotheses: list[str]
     citations: list[Citation]
+    tool_outcomes: dict[str, str]
     plan: list[PlanStep]
     # S2.3 Act: results of safe actions; restricted steps pending approval
     act_results: list[dict]

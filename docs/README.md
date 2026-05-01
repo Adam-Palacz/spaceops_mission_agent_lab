@@ -86,6 +86,7 @@ The **docs/** directory holds project documentation that supports both humans an
 - Replay metadata schema and usage (PS1.4): [replay_metadata.md](replay_metadata.md)
 - Replay CLI/API workflow (PS1.5): [runbooks/replay_workflow.md](runbooks/replay_workflow.md)
 - LLM gateway contract (PS1.6): [llm_gateway.md](llm_gateway.md)
+- Guardrails fail-closed minimum hardening (PS1.7): [runbooks/guardrails_minimum_hardening.md](runbooks/guardrails_minimum_hardening.md)
 
 *Ścieżki do plików .mmd są względem katalogu `docs/` (np. `workflow/end_to_end_pipeline.mmd` = `docs/workflow/end_to_end_pipeline.mmd` w repo).*
 
@@ -103,7 +104,7 @@ The **docs/** directory holds project documentation that supports both humans an
 | Field | Value |
 |-------|--------|
 | **Document version** | 1.0 |
-| **Last updated** | 2025-02-14 |
+| **Last updated** | 2026-05-01 |
 
 ### Instructions for AI when working in `docs/`
 

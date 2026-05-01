@@ -90,6 +90,7 @@ def test_run_no_evidence_produces_escalation_packet():
             "no_evidence",
             "high_risk_no_evidence",
             "conflicting_signals",
+            "tool_failure",
             # With OPA enabled, Decide/Act can also fail-closed to policy_deny.
             "policy_deny",
         )

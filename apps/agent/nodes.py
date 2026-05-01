@@ -34,11 +34,37 @@ from prompts.registry import (
     TRIAGE_PROMPT_ID,
     get_prompt,
 )
+from pydantic import BaseModel, ConfigDict, Field
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 DATA_INCIDENTS = REPO_ROOT / "data" / "incidents"
 
 _SUBSYSTEMS = ("ADCS", "Power", "Thermal", "Comms", "Payload", "Ground")
+
+
+class _EscalationPacketSchema(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    reason: str = Field(min_length=1)
+    what_we_know: list[str]
+    what_we_dont_know: list[str]
+    what_to_check: list[str]
+
+
+class _ReportSchema(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    incident_id: str = Field(min_length=1)
+    executive_summary: str
+    evidence: list[dict]
+    citation_refs: list[str]
+    proposed_actions: list[str]
+    rollback: str
+    trace_link: str
+    act_results: list[dict] = Field(default_factory=list)
+    approval_requests: list[dict] = Field(default_factory=list)
+    escalation_packet: dict | None = None
+    handoff: str | None = None
 
 
 def _escalation_for_limit_or_timeout(
@@ -69,6 +95,34 @@ def _safe_error_message(exc: Exception, max_length: int = 200) -> str:
     if len(msg) > max_length:
         msg = msg[: max_length - 3] + "..."
     return msg
+
+
+def _is_conflicting_signals(hypotheses: list[str]) -> bool:
+    """Detect contradictory evidence cues inside hypotheses text."""
+    if not hypotheses:
+        return False
+    text = " ".join(hypotheses).lower()
+    anomaly_markers = (
+        "anomaly",
+        "degraded",
+        "degradation",
+        "high",
+        "spike",
+        "error",
+        "critical",
+        "drop",
+    )
+    nominal_markers = (
+        "normal",
+        "nominal",
+        "within limits",
+        "stable",
+        "healthy",
+        "ok",
+    )
+    has_anomaly = any(token in text for token in anomaly_markers)
+    has_nominal = any(token in text for token in nominal_markers)
+    return has_anomaly and has_nominal
 
 
 def _chat_completion(
@@ -328,7 +382,15 @@ def investigate(state: AgentState) -> dict:
             )
     if not hypotheses:
         hypotheses.append("No telemetry or KB hits; escalate for manual review.")
-    return {"hypotheses": hypotheses, "citations": citations}
+    return {
+        "hypotheses": hypotheses,
+        "citations": citations,
+        "tool_outcomes": {
+            "query_telemetry": telemetry_outcome,
+            "search_runbooks": runbooks_outcome,
+            "search_postmortems": postmortems_outcome,
+        },
+    }
 
 
 def _should_escalate(state: AgentState) -> tuple[bool, str]:
@@ -336,6 +398,12 @@ def _should_escalate(state: AgentState) -> tuple[bool, str]:
     hypotheses = state.get("hypotheses") or []
     citations = state.get("citations") or []
     risk = (state.get("risk") or "").lower()
+    tool_outcomes = state.get("tool_outcomes") or {}
+    if isinstance(tool_outcomes, dict) and any(
+        str(v).strip().lower() == "failure" for v in tool_outcomes.values()
+    ):
+        return True, "tool_failure"
+
     # No evidence: only the fallback "No telemetry or KB hits" or no citations
     no_evidence = not citations or (
         len(hypotheses) == 1 and "No telemetry or KB hits" in (hypotheses[0] or "")
@@ -345,9 +413,8 @@ def _should_escalate(state: AgentState) -> tuple[bool, str]:
     # High risk with no supporting citations
     if risk == "high" and len(citations) == 0:
         return True, "high_risk_no_evidence"
-    # Conflicting signals: both "anomaly" and "normal" or "within limits" in hypotheses (simple heuristic)
-    text = " ".join(hypotheses).lower()
-    if "anomaly" in text and ("normal" in text or "within limits" in text):
+    # Conflicting signals in evidence/hypotheses.
+    if _is_conflicting_signals(hypotheses):
         return True, "conflicting_signals"
     return False, ""
 
@@ -396,11 +463,31 @@ def check_escalation(state: AgentState) -> dict:
             "No telemetry or KB retrieval results; cannot ground plan in evidence.",
             "Manual review required to confirm anomaly and next steps.",
         ]
+    elif reason == "tool_failure":
+        packet["what_we_dont_know"] = [
+            "At least one required investigation tool failed; evidence may be incomplete.",
+            "Automatic decision path is blocked by guardrails (fail-closed).",
+        ]
+        packet["what_to_check"].insert(
+            0,
+            "Inspect MCP/tool failure logs and retry only after tool health is restored.",
+        )
     elif reason == "conflicting_signals":
         packet["what_to_check"].insert(
             0,
             "Resolve conflicting hypotheses (anomaly vs normal) with additional data.",
         )
+    _EscalationPacketSchema.model_validate(packet)
+    trace_id = state.get("trace_id") or incident_id
+    audit_append(
+        trace_id=trace_id,
+        incident_id=incident_id,
+        actor="agent",
+        tool="guardrail_escalation",
+        args={"reason": reason},
+        decision="escalate",
+        outcome="success",
+    )
     return {"escalated": True, "escalation_packet": packet}
 
 
@@ -729,4 +816,5 @@ def report(state: AgentState) -> dict:
         report_obj["handoff"] = (
             "Agent could not proceed with confidence; manual review required. See escalation_packet."
         )
+    _ReportSchema.model_validate(report_obj)
     return {"report": report_obj}

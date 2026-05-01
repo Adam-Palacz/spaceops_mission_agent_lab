@@ -122,6 +122,7 @@ def _persist_replay_metadata_best_effort(
     status: str,
     replay_source: str,
     llm_calls_used: int,
+    original_outcome: dict | None = None,
 ) -> None:
     try:
         metadata = build_replay_metadata(
@@ -132,6 +133,7 @@ def _persist_replay_metadata_best_effort(
             status=status,
             replay_source=replay_source,
             llm_calls_used=llm_calls_used,
+            original_outcome=original_outcome,
         )
         persist_replay_metadata(metadata)
     except Exception:
@@ -178,6 +180,11 @@ def run_pipeline(
                         status="timeout",
                         replay_source=replay_source,
                         llm_calls_used=int(timeout_result.get("llm_calls_used") or 0),
+                        original_outcome={
+                            "subsystem": "",
+                            "escalated": True,
+                            "has_citations": False,
+                        },
                     )
                     return timeout_result
                 except Exception:
@@ -189,6 +196,11 @@ def run_pipeline(
                         status="error",
                         replay_source=replay_source,
                         llm_calls_used=0,
+                        original_outcome={
+                            "subsystem": "",
+                            "escalated": False,
+                            "has_citations": False,
+                        },
                     )
                     raise
         else:
@@ -203,6 +215,11 @@ def run_pipeline(
                     status="error",
                     replay_source=replay_source,
                     llm_calls_used=0,
+                    original_outcome={
+                        "subsystem": "",
+                        "escalated": False,
+                        "has_citations": False,
+                    },
                 )
                 raise
         # Guarantee plan steps have "action" so evals/consumers never see KeyError
@@ -216,5 +233,13 @@ def run_pipeline(
             status="completed",
             replay_source=replay_source,
             llm_calls_used=int(result.get("llm_calls_used") or 0),
+            original_outcome={
+                "subsystem": str(result.get("subsystem") or ""),
+                "escalated": bool(result.get("escalated")),
+                "has_citations": bool(
+                    (result.get("citations") or [])
+                    or ((result.get("report") or {}).get("citation_refs") or [])
+                ),
+            },
         )
     return result

@@ -78,6 +78,7 @@ def test_get_replay_metadata_endpoint_success(api_client, monkeypatch, tmp_path:
         "incident_id": "inc-1",
         "payload_hash": "abc",
         "trace_id": "trace-1",
+        "replay_source": "api",
         "model": {"provider": "openai", "model_id": "gpt-4o-mini"},
         "prompts": {"triage": "v1", "decide": "v1"},
         "runtime": {"python_version": "3.12.0", "platform": "test"},

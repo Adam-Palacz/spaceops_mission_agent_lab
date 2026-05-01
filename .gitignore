@@ -13,6 +13,7 @@ evals/reports/shadow_models_*.json
 data/approvals/
 data/incidents/
 data/llm_runs/
+data/replay/runs/
 data/audit.ndjson
 
 apps/ui/node_modules/

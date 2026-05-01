@@ -3,7 +3,7 @@
 | Field | Value |
 |-------|--------|
 | **Task ID** | PS1.5 |
-| **Status** | Todo |
+| **Status** | Done |
 
 ---
 
@@ -16,26 +16,26 @@ compares key outputs (classification, escalation decision, evidence presence).
 
 ## Requirements
 
-- [ ] Replay command/endpoint accepts `run_id` (or equivalent replay key).
-- [ ] Replay executes pipeline with stored input metadata.
-- [ ] Replay output includes comparison vs original run.
-- [ ] Comparison highlights diffs in subsystem/escalation/citation presence.
-- [ ] Replay path is documented for operators and developers.
+- [x] Replay command/endpoint accepts `run_id` (or equivalent replay key).
+- [x] Replay executes pipeline with stored input metadata.
+- [x] Replay output includes comparison vs original run.
+- [x] Comparison highlights diffs in subsystem/escalation/citation presence.
+- [x] Replay path is documented for operators and developers.
 
 ---
 
 ## Checklist
 
-- [ ] Implement replay entrypoint.
-- [ ] Add comparison formatter (human-readable + machine-readable).
-- [ ] Add guardrails for unsupported/missing replay metadata.
-- [ ] Add docs examples for local and CI usage.
-- [ ] Add tests for unchanged and changed behavior scenarios.
+- [x] Implement replay entrypoint.
+- [x] Add comparison formatter (human-readable + machine-readable).
+- [x] Add guardrails for unsupported/missing replay metadata.
+- [x] Add docs examples for local and CI usage.
+- [x] Add tests for unchanged and changed behavior scenarios.
 
 ---
 
 ## Test requirements
 
-- [ ] Replay of known run succeeds with deterministic core outcomes.
-- [ ] Replay diff clearly shows regression when behavior changes.
-- [ ] CLI/API return codes reflect success/failure conditions.
+- [x] Replay of known run succeeds with deterministic core outcomes.
+- [x] Replay diff clearly shows regression when behavior changes.
+- [x] CLI/API return codes reflect success/failure conditions.

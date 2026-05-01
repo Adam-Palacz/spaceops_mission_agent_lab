@@ -418,6 +418,20 @@ def get_replay_metadata(run_id: str) -> JSONResponse:
     return JSONResponse(status_code=200, content={"replay": metadata})
 
 
+@app.post("/replays/{run_id}/run")
+def replay_run(run_id: str) -> JSONResponse:
+    """PS1.5: Replay a stored run input and compare key outcomes."""
+    from apps.replay.workflow import replay_by_run_id
+
+    try:
+        result = replay_by_run_id(run_id)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+    return JSONResponse(status_code=200, content=result)
+
+
 # ---------------------------------------------------------------------------
 # S2.5 Approval API (idempotent, auth, audit)
 # ---------------------------------------------------------------------------

@@ -6,7 +6,7 @@
 | PS1.2 | Ingest validation + event dedupe by `event_id` | Done | [PS1.2-ingest-validation-dedupe.md](PS1.2-ingest-validation-dedupe.md) |
 | PS1.3 | DB migrations baseline + contract-aligned tables | Done | [PS1.3-db-migrations-baseline.md](PS1.3-db-migrations-baseline.md) |
 | PS1.4 | Replay metadata capture (`run_id`, payload hash, input refs) | Done | [PS1.4-replay-metadata-capture.md](PS1.4-replay-metadata-capture.md) |
-| PS1.5 | Replay CLI/API minimal workflow | Todo | [PS1.5-replay-cli-api.md](PS1.5-replay-cli-api.md) |
+| PS1.5 | Replay CLI/API minimal workflow | Done | [PS1.5-replay-cli-api.md](PS1.5-replay-cli-api.md) |
 | PS1.6 | LLM gateway minimum contract (`generate`, metadata logging) | Todo | [PS1.6-llm-gateway-minimum.md](PS1.6-llm-gateway-minimum.md) |
 | PS1.7 | Guardrails minimum hardening | Todo | [PS1.7-guardrails-minimum-hardening.md](PS1.7-guardrails-minimum-hardening.md) |
 | PS1.8 | CI gate expansion (must-escalate + evidence-required) | Todo | [PS1.8-ci-gate-expansion.md](PS1.8-ci-gate-expansion.md) |

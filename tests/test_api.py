@@ -207,6 +207,41 @@ def test_runs_get_lists_recent_runs(api_client, tmp_path: Path):
     assert by_incident["inc-2"]["error"] == "Pipeline failed"
 
 
+def test_replay_run_endpoint_returns_comparison(api_client, monkeypatch):
+    monkeypatch.setattr(
+        "apps.replay.workflow.replay_by_run_id",
+        lambda _run_id: {
+            "run_id": "run-a",
+            "replay_run_id": "run-b",
+            "incident_id": "inc-1",
+            "comparison": {"has_diff": False, "diffs": []},
+        },
+    )
+    response = api_client.post("/replays/run-a/run")
+    assert response.status_code == 200
+    body = response.json()
+    assert body.get("run_id") == "run-a"
+    assert body.get("comparison", {}).get("has_diff") is False
+
+
+def test_replay_run_endpoint_not_found(api_client, monkeypatch):
+    def _missing(_run_id: str):
+        raise FileNotFoundError("missing replay metadata")
+
+    monkeypatch.setattr("apps.replay.workflow.replay_by_run_id", _missing)
+    response = api_client.post("/replays/run-missing/run")
+    assert response.status_code == 404
+
+
+def test_replay_run_endpoint_invalid_metadata(api_client, monkeypatch):
+    def _invalid(_run_id: str):
+        raise ValueError("bad metadata")
+
+    monkeypatch.setattr("apps.replay.workflow.replay_by_run_id", _invalid)
+    response = api_client.post("/replays/run-bad/run")
+    assert response.status_code == 422
+
+
 # ---------------------------------------------------------------------------
 # S2.5 Approval API
 # ---------------------------------------------------------------------------

@@ -65,8 +65,9 @@ def build_replay_metadata(
     status: str,
     replay_source: str,
     llm_calls_used: int,
+    original_outcome: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    return {
+    record: dict[str, Any] = {
         "schema_version": "v1",
         "captured_at": _now_iso(),
         "run_id": run_id,
@@ -94,6 +95,9 @@ def build_replay_metadata(
         },
         "llm_calls_used": int(llm_calls_used),
     }
+    if original_outcome:
+        record["original_outcome"] = original_outcome
+    return record
 
 
 def persist_replay_metadata(metadata: dict[str, Any]) -> Path:
@@ -123,6 +127,7 @@ def load_replay_metadata(run_id: str) -> dict[str, Any]:
         "model",
         "prompts",
         "runtime",
+        "replay_source",
     )
     missing = [key for key in required if key not in data]
     if missing:

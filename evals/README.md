@@ -13,6 +13,31 @@ python -m evals.scoring
 
 Exit code **0** if all cases pass; **1** if any case fails or score is below threshold (all must pass).
 
+## Deterministic CI gates (PS1.8)
+
+CI runs two focused gates before full evals:
+
+- Must-escalate guardrail gate:
+  - `python -m evals.scoring --case-id must-escalate-no-evidence`
+- Evidence-required gate:
+  - `python -m evals.scoring --case-id citation-present`
+
+Both commands fail fast with actionable output in format:
+
+- `FAIL  <case_id>  <reason>`
+
+Examples of reasons:
+
+- `must_escalate: expected escalation, agent did not escalate`
+- `require_citations: expected citations but run escalated`
+- `require_citations: expected at least one citation or citation_ref`
+
+Quick local pre-PR check (same gates as CI):
+
+```bash
+python -m evals.scoring --case-id must-escalate-no-evidence --case-id citation-present
+```
+
 ## Case format
 
 Cases live in `evals/cases.yaml`. Each case has:

@@ -7,6 +7,7 @@ Exit 0 if all pass and score >= threshold; else non-zero.
 
 from __future__ import annotations
 
+import argparse
 import sys
 from pathlib import Path
 
@@ -133,6 +134,55 @@ def run_injection_case(case: dict) -> dict:
     return result
 
 
+def run_selected_standard_cases(case_ids: list[str]) -> int:
+    """
+    Run only selected standard eval cases and print actionable diagnostics.
+    Returns shell-friendly exit code (0 pass, 1 fail).
+    """
+    all_cases = {str(c.get("id") or ""): c for c in load_cases()}
+    missing = [cid for cid in case_ids if cid not in all_cases]
+    if missing:
+        for cid in missing:
+            print(f"  FAIL  {cid}  case_not_found")
+        print("\nSelected-case evals failed.")
+        return 1
+
+    failed = False
+    for cid in case_ids:
+        case = all_cases[cid]
+        try:
+            result = run_case(case)
+        except Exception as e:
+            print(f"  FAIL  {cid}  run_error: {e}")
+            failed = True
+            continue
+        passed, failures = score_case(case, result)
+        if passed:
+            print(f"  PASS  {cid}")
+        else:
+            print(f"  FAIL  {cid}  {'; '.join(failures)}")
+            failed = True
+
+    if failed:
+        print("\nSelected-case evals failed.")
+        return 1
+    print("\nSelected-case evals passed.")
+    return 0
+
+
+def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Run SpaceOps eval scoring (full or selected cases)."
+    )
+    parser.add_argument(
+        "--case-id",
+        action="append",
+        default=[],
+        help="Run only selected standard case id (repeatable).",
+    )
+    return parser.parse_args(argv)
+
+
 def score_case(case: dict, result: dict) -> tuple[bool, list[str]]:
     """
     Compare result to case expectations. Return (passed, list of failure reasons).
@@ -235,7 +285,12 @@ def score_case(case: dict, result: dict) -> tuple[bool, list[str]]:
     return passed, failures
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
+    args = _parse_args(argv)
+    case_ids = [str(cid).strip() for cid in (args.case_id or []) if str(cid).strip()]
+    if case_ids:
+        return run_selected_standard_cases(case_ids)
+
     cases = load_cases()
     if not cases:
         print("No cases in evals/cases.yaml")

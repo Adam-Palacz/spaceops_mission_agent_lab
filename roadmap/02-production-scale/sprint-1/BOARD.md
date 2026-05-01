@@ -9,7 +9,7 @@
 | PS1.5 | Replay CLI/API minimal workflow | Done | [PS1.5-replay-cli-api.md](PS1.5-replay-cli-api.md) |
 | PS1.6 | LLM gateway minimum contract (`generate`, metadata logging) | Done | [PS1.6-llm-gateway-minimum.md](PS1.6-llm-gateway-minimum.md) |
 | PS1.7 | Guardrails minimum hardening | Done | [PS1.7-guardrails-minimum-hardening.md](PS1.7-guardrails-minimum-hardening.md) |
-| PS1.8 | CI gate expansion (must-escalate + evidence-required) | Todo | [PS1.8-ci-gate-expansion.md](PS1.8-ci-gate-expansion.md) |
+| PS1.8 | CI gate expansion (must-escalate + evidence-required) | Done | [PS1.8-ci-gate-expansion.md](PS1.8-ci-gate-expansion.md) |
 | PS1.9 | Distributed tracing + W3C context propagation (Agent -> MCP) | Todo | [PS1.9-monitoring-improvement-analysis.md](PS1.9-monitoring-improvement-analysis.md) |
 
 **Status key:** Todo | In progress | Done | Blocked

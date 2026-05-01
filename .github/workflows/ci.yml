@@ -97,6 +97,10 @@ jobs:
           MCP_PID=$!
           # Give the server a moment to start
           sleep 5
+          # Deterministic must-escalate gate (PS1.8)
+          python -m evals.scoring --case-id must-escalate-no-evidence
+          # Deterministic evidence-required gate (PS1.8)
+          python -m evals.scoring --case-id citation-present
           # Run evals; this will call Telemetry MCP over HTTP (http://localhost:8001/mcp)
           python -m evals.scoring
           # Stop MCP server (best-effort)

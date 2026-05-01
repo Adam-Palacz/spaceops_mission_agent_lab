@@ -23,6 +23,15 @@ def load_cases() -> list[dict]:
     return _load()
 
 
+def test_scoring_cli_case_id_arg_parses():
+    from evals.scoring import _parse_args
+
+    args = _parse_args(
+        ["--case-id", "must-escalate-no-evidence", "--case-id", "citation-present"]
+    )
+    assert args.case_id == ["must-escalate-no-evidence", "citation-present"]
+
+
 def test_cases_yaml_has_required_count():
     """S1.11: At least 5 cases, at least one must-escalate."""
     cases = load_cases()

@@ -3,7 +3,7 @@
 | Field | Value |
 |-------|--------|
 | **Task ID** | PS1.8 |
-| **Status** | Todo |
+| **Status** | Done |
 
 ---
 
@@ -16,26 +16,26 @@ and evidence-required behavior must fail fast on regression.
 
 ## Requirements
 
-- [ ] CI includes at least one deterministic `must_escalate` gate.
-- [ ] CI includes at least one deterministic evidence/citation-required gate.
-- [ ] Gate failures provide actionable diagnostics (case ID + reason).
-- [ ] Existing unit/lint gates stay intact.
-- [ ] Local run instructions for these gates are documented.
+- [x] CI includes at least one deterministic `must_escalate` gate.
+- [x] CI includes at least one deterministic evidence/citation-required gate.
+- [x] Gate failures provide actionable diagnostics (case ID + reason).
+- [x] Existing unit/lint gates stay intact.
+- [x] Local run instructions for these gates are documented.
 
 ---
 
 ## Checklist
 
-- [ ] Select or add representative eval cases for both gate classes.
-- [ ] Ensure cases are stable in local + CI execution environments.
-- [ ] Wire gate command(s) into CI workflow with clear fail conditions.
-- [ ] Add docs section on interpreting failed gates.
-- [ ] Add optional quick command for developers before PR.
+- [x] Select or add representative eval cases for both gate classes.
+- [x] Ensure cases are stable in local + CI execution environments.
+- [x] Wire gate command(s) into CI workflow with clear fail conditions.
+- [x] Add docs section on interpreting failed gates.
+- [x] Add optional quick command for developers before PR.
 
 ---
 
 ## Test requirements
 
-- [ ] CI fails when must-escalate behavior regresses.
-- [ ] CI fails when evidence-required case escalates unexpectedly or lacks citations.
-- [ ] Running gate commands locally reproduces CI outcome.
+- [x] CI fails when must-escalate behavior regresses.
+- [x] CI fails when evidence-required case escalates unexpectedly or lacks citations.
+- [x] Running gate commands locally reproduces CI outcome.

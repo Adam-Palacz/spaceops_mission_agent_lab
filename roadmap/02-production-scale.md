@@ -337,3 +337,14 @@ one-off tasks:
 - [ ] Replay tooling + golden runs
 - [ ] UI MVP shows incidents + evidence + trace link + run timeline
 - [ ] CI blocks regressions (unit + e2e eval gates)
+
+---
+
+## Sprint Execution Plan
+
+For practical delivery planning (boards + sprint goals + task tracking), use:
+
+- [`roadmap/02-production-scale/README.md`](02-production-scale/README.md)
+- Sprint folders: `sprint-1` to `sprint-6`, each with `README.md` and `BOARD.md`.
+
+This document remains the strategic source; sprint folders are the execution layer.

@@ -3,7 +3,7 @@
 | Field | Value |
 |-------|--------|
 | **Task ID** | PS1.1 |
-| **Status** | Todo |
+| **Status** | Done |
 
 ---
 
@@ -17,26 +17,26 @@ exportable as JSON Schema so API, workers, evals, and replay rely on one source 
 
 ## Requirements
 
-- [ ] Pydantic models exist for all four contracts in a stable module.
-- [ ] Each contract includes explicit version metadata (`schema_version` or equivalent).
-- [ ] JSON Schemas are exportable and committed under a predictable path.
-- [ ] Backward-compatibility rules are documented (what is additive vs breaking).
-- [ ] Unit tests validate model parsing and schema snapshots for v1.
+- [x] Pydantic models exist for all four contracts in a stable module.
+- [x] Each contract includes explicit version metadata (`schema_version` or equivalent).
+- [x] JSON Schemas are exportable and committed under a predictable path.
+- [x] Backward-compatibility rules are documented (what is additive vs breaking).
+- [x] Unit tests validate model parsing and schema snapshots for v1.
 
 ---
 
 ## Checklist
 
-- [ ] Create contract module and model classes.
-- [ ] Add field-level descriptions and strict typing for required attributes.
-- [ ] Add schema export script/command.
-- [ ] Add docs section explaining versioning policy for contracts.
-- [ ] Add tests for valid and invalid payloads per contract.
+- [x] Create contract module and model classes.
+- [x] Add field-level descriptions and strict typing for required attributes.
+- [x] Add schema export script/command.
+- [x] Add docs section explaining versioning policy for contracts.
+- [x] Add tests for valid and invalid payloads per contract.
 
 ---
 
 ## Test requirements
 
-- [ ] Contract tests pass for all valid v1 payloads.
-- [ ] Invalid payloads fail with clear validation errors.
-- [ ] Exported JSON Schemas are generated and stable in CI.
+- [x] Contract tests pass for all valid v1 payloads.
+- [x] Invalid payloads fail with clear validation errors.
+- [x] Exported JSON Schemas are generated and stable in CI.

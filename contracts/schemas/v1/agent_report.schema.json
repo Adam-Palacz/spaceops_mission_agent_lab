@@ -1,0 +1,74 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "v1",
+      "default": "v1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "incident_id": {
+      "minLength": 1,
+      "title": "Incident Id",
+      "type": "string"
+    },
+    "run_id": {
+      "minLength": 1,
+      "title": "Run Id",
+      "type": "string"
+    },
+    "summary": {
+      "default": "",
+      "title": "Summary",
+      "type": "string"
+    },
+    "subsystem": {
+      "default": "",
+      "title": "Subsystem",
+      "type": "string"
+    },
+    "risk": {
+      "default": "",
+      "title": "Risk",
+      "type": "string"
+    },
+    "plan": {
+      "items": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "title": "Plan",
+      "type": "array"
+    },
+    "citation_refs": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Citation Refs",
+      "type": "array"
+    },
+    "escalated": {
+      "default": false,
+      "title": "Escalated",
+      "type": "boolean"
+    },
+    "trace_url": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Trace Url"
+    }
+  },
+  "required": [
+    "incident_id",
+    "run_id"
+  ],
+  "title": "AgentReportV1",
+  "type": "object"
+}

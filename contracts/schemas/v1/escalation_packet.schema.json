@@ -1,0 +1,102 @@
+{
+  "$defs": {
+    "CitationV1": {
+      "additionalProperties": false,
+      "properties": {
+        "doc_id": {
+          "minLength": 1,
+          "title": "Doc Id",
+          "type": "string"
+        },
+        "snippet_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Snippet Id"
+        },
+        "content": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Content"
+        }
+      },
+      "required": [
+        "doc_id"
+      ],
+      "title": "CitationV1",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "v1",
+      "default": "v1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "incident_id": {
+      "minLength": 1,
+      "title": "Incident Id",
+      "type": "string"
+    },
+    "run_id": {
+      "minLength": 1,
+      "title": "Run Id",
+      "type": "string"
+    },
+    "reason": {
+      "minLength": 1,
+      "title": "Reason",
+      "type": "string"
+    },
+    "what_we_know": {
+      "items": {
+        "type": "string"
+      },
+      "title": "What We Know",
+      "type": "array"
+    },
+    "what_we_dont_know": {
+      "items": {
+        "type": "string"
+      },
+      "title": "What We Dont Know",
+      "type": "array"
+    },
+    "what_to_check": {
+      "items": {
+        "type": "string"
+      },
+      "title": "What To Check",
+      "type": "array"
+    },
+    "citations": {
+      "items": {
+        "$ref": "#/$defs/CitationV1"
+      },
+      "title": "Citations",
+      "type": "array"
+    }
+  },
+  "required": [
+    "incident_id",
+    "run_id",
+    "reason"
+  ],
+  "title": "EscalationPacketV1",
+  "type": "object"
+}

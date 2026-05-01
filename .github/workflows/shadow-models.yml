@@ -1,0 +1,66 @@
+# P4.8 — Shadow model comparison (offline; does not run on normal PR CI).
+# Gates model promotion: run manually before changing agent_model_id, or on schedule.
+name: Shadow models
+
+on:
+  workflow_dispatch:
+    inputs:
+      candidate_models:
+        description: "Comma-separated candidate model IDs (e.g. gpt-4o)"
+        required: false
+        default: "gpt-4o-mini"
+  schedule:
+    # Weekly smoke (same repo secrets as evals); adjust cron as needed.
+    - cron: "0 6 * * 1"
+
+jobs:
+  shadow-models:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Resolve candidate models (workflow_dispatch input or default)
+        id: shadow_env
+        shell: bash
+        run: |
+          if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
+            cand="${{ github.event.inputs.candidate_models }}"
+          else
+            cand=""
+          fi
+          if [ -z "${cand}" ]; then
+            cand="gpt-4o-mini"
+          fi
+          echo "agent_candidate_model_ids=${cand}" >> "${GITHUB_OUTPUT}"
+
+      - name: Run shadow model evals
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          AGENT_CANDIDATE_MODEL_IDS: ${{ steps.shadow_env.outputs.agent_candidate_model_ids }}
+        run: |
+          python -m apps.mcp.telemetry_server.main &
+          MCP_PID=$!
+          sleep 5
+          python -m evals.shadow_models
+          SHADOW_EXIT=$?
+          kill $MCP_PID || true
+          exit $SHADOW_EXIT
+
+      - name: Upload shadow report artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: shadow-models-report
+          path: evals/reports/shadow_models_*.json
+          if-no-files-found: warn

@@ -7,6 +7,9 @@ __pycache__/
 .mypy_cache/
 .ruff_cache/
 
+# P4.8 — generated shadow comparison reports (keep sample_*.json committed)
+evals/reports/shadow_models_*.json
+
 data/approvals/
 data/incidents/
 data/llm_runs/

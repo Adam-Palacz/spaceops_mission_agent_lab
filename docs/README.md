@@ -11,6 +11,7 @@ This file is the **index and entry point** for documentation in `docs/`. Mermaid
 The **docs/** directory holds project documentation that supports both humans and AI tooling:
 
 - **README.md** (this file) — Index of Mermaid diagrams; start here when looking for a flow, architecture, or schema.
+- **shadow_models.md** — Shadow-testing and model promotion gate (P4.8): when to run, how to read reports, who decides.
 - **workflow/** — High-level pipeline (Ingest to Post-incident) and escalation path; aligns with `roadmap/01-core-roadmap.md` and `roadmap/goals.md` F1–F10.
 - **architecture/** — System boundaries (API, Agent, MCP, OPA, storage, observability), repo layout, and production-ready criteria from `goals.md` §4.5.
 - **agent/** — LangGraph state machine and Act logic (safe vs restricted, OPA, approval); implements behaviour described in `roadmap/01-core-roadmap.md` and policy in `roadmap/goals.md` §4.3.

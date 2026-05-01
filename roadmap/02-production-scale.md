@@ -309,7 +309,9 @@ LLM-heavy, safety-critical system like SpaceOps. Treat these as ongoing themes r
 one-off tasks:
 
 - **Model & prompt lifecycle:** plan for model deprecation/migration, shadow testing of new models,
-  and a versioned prompt registry instead of inline prompts only in code.
+  and a versioned prompt registry instead of inline prompts only in code. **Concrete process:**
+  [docs/shadow_models.md](../docs/shadow_models.md) (CI: `.github/workflows/shadow-models.yml`,
+  `python -m evals.shadow_models`, reports under `evals/reports/`).
 - **Reliability patterns:** central retries/backoff and circuit-breakers for MCP and external HTTP
   calls; chaos/degradation testing (e.g. Toxiproxy) to validate escalation behaviour under failure.
 - **Infra/Sec hygiene:** keep dependency hygiene and secret management (e.g. future Vault/Secrets

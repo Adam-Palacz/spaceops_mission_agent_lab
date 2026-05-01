@@ -144,7 +144,7 @@ Sprints are **2 weeks** each. **Core delivery in 2 sprints** (S1 + S2); Phase 4 
 - [ ] Optional Next.js: incident list, approval list, Approve/Reject with auth. (P4.5)
 - [ ] Expand eval suite (e.g. 20–30 cases); citation precision / MoE in scoring. (P4.6)
 - [ ] Post-incident loop: postmortem template, KB re-index, new eval case per incident. (P4.7)
-- [ ] Model upgrade / shadow-testing rollout: scheduled shadow runs, reports, and switch criteria. (P4.8)
+- [x] Model upgrade / shadow-testing rollout: scheduled shadow runs, reports, and switch criteria. (P4.8)
 
 ### Recurring (ongoing)
 - Add `postmortem.md` to `kb/postmortems/` per closed incident; re-index KB.

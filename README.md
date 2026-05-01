@@ -15,6 +15,7 @@ Agent for satellite / ground segment anomaly triage: **ingest ? triage ? investi
 | [**roadmap/README.md**](./roadmap/README.md) | Execution plan: phases, sprints, task specs. |
 | [**docs/README.md**](./docs/README.md) | Index of Mermaid diagrams (pipeline, architecture, state flow, Act flow, repo structure). |
 | [**docs/process.md**](./docs/process.md) | Process docs, including the tech-debt budget (S3.8) and how to apply it in sprints. |
+| [**docs/shadow_models.md**](./docs/shadow_models.md) | Model promotion: shadow-testing, report layout, decision rules (P4.8). |
 | [**roadmap/01-core/README.md**](./roadmap/01-core/README.md) | Sprint boards and task specs (S1.x, S2.x, S3.x). |
 
 ## Environment
@@ -68,7 +69,7 @@ pytest tests/ -v
 python -m ruff format .
 ```
 
-**Evals (S1.11):** `python -m evals.scoring` (requires configured LLM provider credentials). See [evals/README.md](evals/README.md).
+**Evals (S1.11):** `python -m evals.scoring` (requires configured LLM provider credentials). See [evals/README.md](evals/README.md). **Shadow models (P4.8):** `python -m evals.shadow_models` with `AGENT_CANDIDATE_MODEL_IDS` set — see [docs/shadow_models.md](docs/shadow_models.md); CI workflow `shadow-models.yml` (on demand / schedule), not on every PR.
 
 **Pre-commit:** Install hooks with `pip install pre-commit && pre-commit install`. Run manually: `pre-commit run --all-files` (ruff, ruff-format, mypy). CI runs ruff, mypy, pytest, and evals on push/PR (S1.13).
 

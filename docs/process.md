@@ -79,3 +79,16 @@ like this under the table:
 Future boards can adapt the list of task IDs as appropriate, but should keep the
 **“~20% tech-debt”** reminder visible during planning and review.
 
+---
+
+## Model changes (shadow-testing gate)
+
+Before changing the production agent LLM (`agent_model_id`), run **shadow model comparison**
+and review the JSON report. This is a repeatable promotion gate (P4.8), separate from normal
+PR CI so it only blocks model rollout decisions.
+
+- **How:** [shadow_models.md](shadow_models.md) — local `python -m evals.shadow_models` and/or
+  GitHub Actions workflow **Shadow models** (on demand + weekly schedule).
+- **Who:** Agent maintainer attaches the report (or artifact link) to the PR or ticket; promote
+  only when automated rules pass **and** latency/cost review is acceptable.
+

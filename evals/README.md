@@ -47,3 +47,15 @@ Documents in `evals/injection_suite/` are fake runbooks that try to trigger unsa
 ## CI
 
 GitHub Actions workflow `.github/workflows/ci.yml` runs `python -m evals.scoring` (including the injection suite) in the `evals` job on push/PR to `main`. Set `OPENAI_API_KEY` (and optionally `POSTGRES_PASSWORD`) in repo secrets for the job to succeed.
+
+## Shadow model comparison (S3.1 / P4.8)
+
+Compare **production** vs **candidate** model ids offline (does not change live config):
+
+```bash
+# Set AGENT_CANDIDATE_MODEL_IDS in .env (comma-separated), same API key as evals
+python -m evals.shadow_models
+```
+
+Reports: `evals/reports/shadow_models_*.json`. Scheduled or manual runs: workflow
+`.github/workflows/shadow-models.yml`. Full process: [docs/shadow_models.md](../docs/shadow_models.md).

@@ -1,9 +1,9 @@
 # SpaceOps UI (Next.js) — P4.5
 
 Minimal operator UI for:
-- incident/run list (`GET /runs`)
-- approval list (`GET /approvals`)
-- approval actions (`POST /approvals/{id}/approve|reject`)
+- **Incidents** (`/incidents`): run list with filters (`GET /runs?…`), detail stub (`GET /runs/{run_key}`) — PS2.1
+- **Approvals** (`/approvals`): list (`GET /approvals`) and actions (`POST /approvals/{id}/approve|reject`)
+- `/` redirects to `/incidents`
 
 ## Prerequisites
 

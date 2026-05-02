@@ -21,6 +21,22 @@ Source strategy: [`../02-production-scale.md`](../02-production-scale.md).
 
 ---
 
+## Cross-cutting durability, safety, and evals
+
+Gaps called out in external review (e.g. **graph checkpoint vs replay-only**, **MCP under LOS**,
+**OPA/HITL test depth**, **ML observability beyond YAML evals**) are **owned** in sprints so they do
+not fall between phases:
+
+| Theme | Where it is tracked |
+|-------|---------------------|
+| **Durable LangGraph state** (Postgres checkpointer / resume after restart) | [PS3.9](sprint-3/PS3.9-langgraph-durable-checkpoint.md) — **PS3**; cluster hardening **PS6.11** — **PS6** |
+| **MCP resilience proofs** (breaker open → escalation, chaos-style tests) | [PS3.10](sprint-3/PS3.10-mcp-resilience-lossy-links.md) — **PS3** (builds on existing S3.4 code) |
+| **OPA fail-closed + HITL + integration tests** | **PS4** ([sprint-4/README.md](sprint-4/README.md)), especially PS4.4 / PS4.7; parent [Phase 4](../02-production-scale.md#phase-4--safety-controls--quality-gates-serious-mode) |
+| **Golden runs + CI gating + behavior metrics** | **PS4** (PS4.5–PS4.6); **PS2.8** ([sprint-2/BOARD.md](sprint-2/BOARD.md)) for UI-adjacent baselines |
+| **Optional LLM observability** (LangSmith / MLflow / RAGAS-style gates) | **PS5** PS5.8 + parent [Phase 4](../02-production-scale.md#phase-4--safety-controls--quality-gates-serious-mode) quality gates |
+
+---
+
 ## How to work in this phase
 
 - Use each sprint folder in order (`sprint-1` -> `sprint-6`).

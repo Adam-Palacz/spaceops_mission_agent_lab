@@ -12,5 +12,6 @@
 | PS6.8 | GCP baseline deploy plan (portable-first) | Todo | Minimal Terraform + artifact/deploy flow. |
 | PS6.9 | Billing and shutdown controls | Todo | Budgets, alerts, auto-stop routines. |
 | PS6.10 | Portfolio artifacts bundle | Todo | ADR log, threat model, runbook pack, README. |
+| PS6.11 | Graph workers + Postgres checkpoint ops | Todo | Deploy/scale **PS3.9** checkpointer-backed workers; rollout/OOM runbook; HPA notes. |
 
 **Status key:** Todo | In progress | Done | Blocked

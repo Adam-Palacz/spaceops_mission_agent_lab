@@ -2,7 +2,7 @@
 
 | Task | Title | Status | Task file |
 |------|-------|--------|-----------|
-| PS2.1 | Incident list + filters (ops triage) | Todo | [PS2.1-incident-list-filters.md](PS2.1-incident-list-filters.md) |
+| PS2.1 | Incident list + filters (ops triage) | Done | [PS2.1-incident-list-filters.md](PS2.1-incident-list-filters.md) |
 | PS2.2 | Incident detail + evidence panel | Todo | [PS2.2-incident-detail-evidence-panel.md](PS2.2-incident-detail-evidence-panel.md) |
 | PS2.3 | Run timeline + stage durations | Todo | [PS2.3-run-timeline-stage-durations.md](PS2.3-run-timeline-stage-durations.md) |
 | PS2.4 | Escalation packet UI | Todo | [PS2.4-escalation-packet-ui.md](PS2.4-escalation-packet-ui.md) |

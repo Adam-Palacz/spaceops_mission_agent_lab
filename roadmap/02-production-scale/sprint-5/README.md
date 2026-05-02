@@ -11,6 +11,9 @@ cost/safety controls so acceleration remains optional and reversible.
 - Health checks, circuit breaker, and fallback behavior for backend outages.
 - Cost controls: idle TTL, scale-to-zero pattern, budget alert thresholds.
 - Behavior parity checks between backends within defined tolerances.
+- **Observability for evals (optional):** LangSmith, MLflow, or similar — **does not replace**
+  deterministic YAML gates; extends PS4.4 / PS5.8 for **trend** and prompt-regression signals (see
+  [phase README cross-cutting](../README.md#cross-cutting-durability-safety-and-evals)).
 
 ---
 
@@ -26,3 +29,4 @@ See **[BOARD.md](BOARD.md)** for status of PS5.1-PS5.8.
 - [ ] GPU path can fail without breaking incident flow (safe fallback).
 - [ ] Cost guardrails are documented and demonstrable.
 - [ ] Backend parity evals exist and are repeatable.
+- [ ] **PS5.8** documents how optional tracing/eval SaaS connects to CI (nightly vs merge gate).

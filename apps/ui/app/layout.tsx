@@ -1,8 +1,16 @@
 import type { ReactNode } from "react";
+import Link from "next/link";
 
 export const metadata = {
   title: "SpaceOps UI",
-  description: "Incidents and approvals operator UI"
+  description: "Incidents and approvals operator UI",
+};
+
+const navLink = {
+  marginRight: 20,
+  color: "#9ecfff",
+  textDecoration: "none",
+  fontWeight: 500,
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
@@ -14,9 +22,28 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             "Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif",
           margin: 0,
           background: "#0b1220",
-          color: "#e7edf7"
+          color: "#e7edf7",
         }}
       >
+        <header
+          style={{
+            borderBottom: "1px solid #1f2a40",
+            padding: "12px 24px",
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+          }}
+        >
+          <strong style={{ marginRight: 24 }}>SpaceOps</strong>
+          <nav>
+            <Link href="/incidents" style={navLink}>
+              Incidents
+            </Link>
+            <Link href="/approvals" style={navLink}>
+              Approvals
+            </Link>
+          </nav>
+        </header>
         {children}
       </body>
     </html>

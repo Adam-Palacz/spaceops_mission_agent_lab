@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import hashlib
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -321,6 +322,10 @@ def trigger_run(payload: RunTriggerPayload) -> JSONResponse:
                     "incident_id": payload.incident_id,
                     "payload": payload.payload,
                     "report": report,
+                    "subsystem": str(result.get("subsystem") or ""),
+                    "risk": str(result.get("risk") or ""),
+                    "escalated": bool(result.get("escalated")),
+                    "trace_id": str(result.get("trace_id") or ""),
                 },
                 f,
                 indent=2,
@@ -354,54 +359,198 @@ def trigger_run(payload: RunTriggerPayload) -> JSONResponse:
         raise HTTPException(status_code=500, detail=f"Pipeline failed: {e}")
 
 
-@app.get("/runs")
-def list_runs(limit: int = Query(20, ge=1, le=200)) -> JSONResponse:
-    """
-    List recent incident runs persisted by POST /runs.
+_RUN_KEY_SAFE = re.compile(r"^run_[A-Za-z0-9._-]+$")
 
-    Returns lightweight metadata for UI usage (P4.5):
-    - incident_id
-    - status (completed/error)
-    - created_at (from file mtime)
-    - report summary or error message when available
+
+def _report_summary(report: Any) -> str | None:
+    if not isinstance(report, dict):
+        return None
+    return report.get("summary") or report.get("executive_summary")
+
+
+def _derive_confidence(pl: dict[str, Any], escalated: bool | None, report: Any) -> str:
+    c = pl.get("confidence")
+    if isinstance(c, str) and c.strip():
+        return c.strip().lower()
+    if escalated is True:
+        return "low"
+    if isinstance(report, dict):
+        refs = report.get("citation_refs") or []
+        if isinstance(refs, list) and len(refs) > 0:
+            return "high"
+    return "medium"
+
+
+def _run_row_from_file(path: Path, payload: dict[str, Any]) -> dict[str, Any]:
+    report = payload.get("report")
+    error = payload.get("error")
+    pl = payload.get("payload") if isinstance(payload.get("payload"), dict) else {}
+    raw_esc = payload.get("escalated")
+    if isinstance(raw_esc, bool):
+        esc_out: bool = raw_esc
+    else:
+        esc_out = False
+        if isinstance(report, dict) and report.get("escalation_packet"):
+            esc_out = True
+        elif isinstance(report, dict):
+            es = str(report.get("executive_summary") or "")
+            if es.startswith("[ESCALATION]"):
+                esc_out = True
+    created_at = datetime.fromtimestamp(
+        path.stat().st_mtime, tz=timezone.utc
+    ).isoformat()
+    summary = _report_summary(report)
+    sat_id = pl.get("sat_id") if isinstance(pl.get("sat_id"), str) else None
+    if sat_id is None and isinstance(pl.get("satellite_id"), str):
+        sat_id = pl.get("satellite_id")
+    return {
+        "id": path.stem,
+        "run_id": payload.get("run_id", path.stem),
+        "incident_id": payload.get("incident_id", ""),
+        "status": "completed" if error is None else "error",
+        "created_at": created_at,
+        "summary": summary,
+        "error": error,
+        "subsystem": str(payload.get("subsystem") or ""),
+        "risk": str(payload.get("risk") or ""),
+        "escalated": esc_out,
+        "sat_id": sat_id or "",
+        "confidence": _derive_confidence(pl, esc_out, report),
+    }
+
+
+@app.get("/runs")
+def list_runs(
+    limit: int = Query(20, ge=1, le=200),
+    subsystem: str | None = Query(
+        None, description="Filter: subsystem equals (case-insensitive)"
+    ),
+    risk: str | None = Query(
+        None, description="Filter: risk equals (case-insensitive)"
+    ),
+    escalated: bool | None = Query(None, description="Filter by escalation flag"),
+    status: str | None = Query(None, description="completed or error"),
+    sat_id: str | None = Query(
+        None, description="Substring match on sat_id from payload"
+    ),
+    confidence: str | None = Query(
+        None, description="low | medium | high (derived unless payload sets confidence)"
+    ),
+    after: str | None = Query(
+        None, description="ISO8601: include runs with created_at >= after"
+    ),
+    before: str | None = Query(
+        None, description="ISO8601: include runs with created_at <= before"
+    ),
+) -> JSONResponse:
+    """
+    List recent incident runs persisted by POST /runs (PS2.1: filters for operator UI).
+
+    Returns metadata including subsystem, risk, escalated, sat_id, confidence when inferable.
     """
     runs_dir = DATA_DIR / "incidents"
     if not runs_dir.exists():
         return JSONResponse(status_code=200, content={"runs": []})
 
-    out: list[dict[str, Any]] = []
     files = sorted(
         runs_dir.glob("run_*.json"),
         key=lambda p: p.stat().st_mtime,
         reverse=True,
     )
-    for path in files[:limit]:
+    after_dt = None
+    before_dt = None
+    if after:
+        try:
+            after_dt = datetime.fromisoformat(after.replace("Z", "+00:00"))
+        except ValueError:
+            raise HTTPException(
+                status_code=422, detail="Invalid after datetime (use ISO8601)"
+            )
+    if before:
+        try:
+            before_dt = datetime.fromisoformat(before.replace("Z", "+00:00"))
+        except ValueError:
+            raise HTTPException(
+                status_code=422, detail="Invalid before datetime (use ISO8601)"
+            )
+
+    sub_f = (subsystem or "").strip().lower() or None
+    risk_f = (risk or "").strip().lower() or None
+    conf_f = (confidence or "").strip().lower() or None
+    sat_f = (sat_id or "").strip().lower() or None
+    status_f = (status or "").strip().lower() or None
+    if status_f and status_f not in ("completed", "error"):
+        raise HTTPException(
+            status_code=422, detail="status must be 'completed' or 'error' when set"
+        )
+    if conf_f and conf_f not in ("low", "medium", "high"):
+        raise HTTPException(
+            status_code=422, detail="confidence must be low, medium, or high when set"
+        )
+
+    out: list[dict[str, Any]] = []
+    scanned = 0
+    max_scan = 500
+    for path in files:
+        if scanned >= max_scan:
+            break
+        scanned += 1
         try:
             payload = json.loads(path.read_text(encoding="utf-8"))
         except Exception:
-            # Keep endpoint robust even if one run file is malformed.
             continue
-        report = payload.get("report")
-        error = payload.get("error")
-        if isinstance(report, dict):
-            summary = report.get("summary")
-        else:
-            summary = None
-        created_at = datetime.fromtimestamp(
-            path.stat().st_mtime, tz=timezone.utc
-        ).isoformat()
-        out.append(
-            {
-                "id": path.stem,
-                "run_id": payload.get("run_id", path.stem),
-                "incident_id": payload.get("incident_id", ""),
-                "status": "completed" if error is None else "error",
-                "created_at": created_at,
-                "summary": summary,
-                "error": error,
-            }
-        )
+        row = _run_row_from_file(path, payload)
+        if after_dt:
+            try:
+                ca = datetime.fromisoformat(
+                    str(row["created_at"]).replace("Z", "+00:00")
+                )
+            except ValueError:
+                continue
+            if ca < after_dt:
+                continue
+        if before_dt:
+            try:
+                cb = datetime.fromisoformat(
+                    str(row["created_at"]).replace("Z", "+00:00")
+                )
+            except ValueError:
+                continue
+            if cb > before_dt:
+                continue
+        if sub_f and str(row.get("subsystem") or "").lower() != sub_f:
+            continue
+        if risk_f and str(row.get("risk") or "").lower() != risk_f:
+            continue
+        if escalated is not None and bool(row.get("escalated")) != escalated:
+            continue
+        if status_f and str(row.get("status") or "").lower() != status_f:
+            continue
+        if sat_f and sat_f not in str(row.get("sat_id") or "").lower():
+            continue
+        if conf_f and str(row.get("confidence") or "").lower() != conf_f:
+            continue
+        out.append(row)
+        if len(out) >= limit:
+            break
+
     return JSONResponse(status_code=200, content={"runs": out})
+
+
+@app.get("/runs/{run_key}")
+def get_run(run_key: str) -> JSONResponse:
+    """Return one persisted run JSON by file stem (id from GET /runs)."""
+    if not _RUN_KEY_SAFE.match(run_key) or len(run_key) > 240:
+        raise HTTPException(status_code=400, detail="Invalid run_key")
+    runs_dir = DATA_DIR / "incidents"
+    path = runs_dir / f"{run_key}.json"
+    if not path.is_file():
+        raise HTTPException(status_code=404, detail="Run not found")
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Invalid run file: {exc}") from exc
+    return JSONResponse(status_code=200, content=payload)
 
 
 @app.get("/replays/{run_id}")

@@ -207,6 +207,70 @@ def test_runs_get_lists_recent_runs(api_client, tmp_path: Path):
     assert by_incident["inc-2"]["error"] == "Pipeline failed"
 
 
+def test_runs_get_single_run(api_client, tmp_path: Path):
+    """GET /runs/{run_key} returns persisted JSON (PS2.1)."""
+    runs_dir = tmp_path / "data" / "incidents"
+    runs_dir.mkdir(parents=True, exist_ok=True)
+    key = "run_inc-x_20260101T010103Z"
+    body = {
+        "run_id": "abc",
+        "incident_id": "inc-x",
+        "subsystem": "Power",
+        "risk": "high",
+        "escalated": False,
+        "payload": {},
+        "report": {"executive_summary": "ok"},
+    }
+    (runs_dir / f"{key}.json").write_text(
+        json.dumps(body),
+        encoding="utf-8",
+    )
+    response = api_client.get(f"/runs/{key}")
+    assert response.status_code == 200
+    assert response.json().get("incident_id") == "inc-x"
+    assert response.json().get("subsystem") == "Power"
+
+
+def test_runs_get_rejects_invalid_run_key(api_client):
+    assert api_client.get("/runs/evil").status_code == 400
+    assert api_client.get("/runs/not_a_run").status_code == 400
+
+
+def test_runs_get_filter_subsystem(api_client, tmp_path: Path):
+    """GET /runs?subsystem= filters list (PS2.1)."""
+    runs_dir = tmp_path / "data" / "incidents"
+    runs_dir.mkdir(parents=True, exist_ok=True)
+    (runs_dir / "run_a_20260101T010104Z.json").write_text(
+        json.dumps(
+            {
+                "incident_id": "a",
+                "subsystem": "Power",
+                "risk": "low",
+                "escalated": False,
+                "report": {"executive_summary": "x", "citation_refs": ["r"]},
+            }
+        ),
+        encoding="utf-8",
+    )
+    (runs_dir / "run_b_20260101T010105Z.json").write_text(
+        json.dumps(
+            {
+                "incident_id": "b",
+                "subsystem": "Thermal",
+                "risk": "low",
+                "escalated": False,
+                "report": {"executive_summary": "y"},
+            }
+        ),
+        encoding="utf-8",
+    )
+    response = api_client.get("/runs?subsystem=Power&limit=10")
+    assert response.status_code == 200
+    runs = response.json().get("runs", [])
+    assert len(runs) == 1
+    assert runs[0]["incident_id"] == "a"
+
+
 def test_replay_run_endpoint_returns_comparison(api_client, monkeypatch):
     monkeypatch.setattr(
         "apps.replay.workflow.replay_by_run_id",

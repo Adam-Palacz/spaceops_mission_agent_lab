@@ -23,6 +23,7 @@ Set values:
 
 - `NEXT_PUBLIC_API_BASE_URL` (default: `http://localhost:8000`)
 - `NEXT_PUBLIC_APPROVAL_API_KEY` (must match backend `APPROVAL_API_KEY`)
+- `NEXT_PUBLIC_JAEGER_UI_URL` (optional; default `http://localhost:16686` — incident detail trace link)
 
 ## Run
 

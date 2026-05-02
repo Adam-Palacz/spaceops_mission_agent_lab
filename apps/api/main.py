@@ -326,6 +326,7 @@ def trigger_run(payload: RunTriggerPayload) -> JSONResponse:
                     "risk": str(result.get("risk") or ""),
                     "escalated": bool(result.get("escalated")),
                     "trace_id": str(result.get("trace_id") or ""),
+                    "stage_timings": result.get("stage_timings") or [],
                 },
                 f,
                 indent=2,

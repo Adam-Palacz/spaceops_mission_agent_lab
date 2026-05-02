@@ -34,6 +34,14 @@ class EscalationPacket(TypedDict, total=False):
     what_to_check: list[str]
 
 
+class StageTiming(TypedDict):
+    """PS2.3: per LangGraph node wall time (operator timeline, not Jaeger replacement)."""
+
+    node: str
+    duration_ms: int
+    status: str  # "ok" | "error"
+
+
 class AgentState(TypedDict, total=False):
     run_id: str
     incident_id: str
@@ -53,6 +61,7 @@ class AgentState(TypedDict, total=False):
     report: dict
     escalated: bool
     escalation_packet: EscalationPacket
+    stage_timings: list[StageTiming]
 
 
 _logger = logging.getLogger(__name__)

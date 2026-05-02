@@ -77,6 +77,12 @@ function Section({
   );
 }
 
+function formatStageDuration(ms: number): string {
+  if (!Number.isFinite(ms) || ms < 0) return "0 ms";
+  if (ms < 1000) return `${Math.round(ms)} ms`;
+  return `${(ms / 1000).toFixed(2)} s`;
+}
+
 function traceHref(data: Json, report: Json | null): string | null {
   const tl = report && asStr(report.trace_link);
   if (tl) return tl;
@@ -132,6 +138,29 @@ export default function IncidentRunDetailPage() {
   }, [data]);
 
   const traceUrl = useMemo(() => (data ? traceHref(data, report) : null), [data, report]);
+
+  const stageTimings = useMemo(() => {
+    if (!data) return [];
+    const st = data.stage_timings;
+    if (!Array.isArray(st)) return [];
+    const out: { node: string; duration_ms: number; status: string }[] = [];
+    for (const row of st) {
+      if (!isRecord(row)) continue;
+      const node = asStr(row.node);
+      if (!node) continue;
+      const dm = row.duration_ms;
+      const duration_ms =
+        typeof dm === "number" && Number.isFinite(dm) ? Math.max(0, dm) : 0;
+      const status = asStr(row.status) || "ok";
+      out.push({ node, duration_ms, status });
+    }
+    return out;
+  }, [data]);
+
+  const timelineTotalMs = useMemo(
+    () => stageTimings.reduce((acc, r) => acc + r.duration_ms, 0),
+    [stageTimings]
+  );
 
   const evidenceItems = useMemo(() => {
     if (!report) return [];
@@ -469,7 +498,57 @@ export default function IncidentRunDetailPage() {
             </Section>
           ) : null}
 
-          <Section title="Trace & timeline (links)">
+          <Section title="Pipeline timeline (PS2.3)">
+            <p style={{ fontSize: 13, color: "#a7b4c9", marginTop: 0 }}>
+              Wall time per LangGraph node from <code>stage_timings</code> (saved with the run).
+              Missing rows usually mean the node was not executed (e.g. escalation short-circuit).
+              For span-level detail use Jaeger below.
+            </p>
+            {stageTimings.length === 0 ? (
+              <p style={{ color: "#7a8aa6", marginBottom: 0 }}>
+                No timeline data (older runs before PS2.3, or failed before first node completed).
+              </p>
+            ) : (
+              <>
+                <p style={{ fontSize: 13, marginTop: 0 }}>
+                  <strong>Sum of stage wall times:</strong>{" "}
+                  {formatStageDuration(timelineTotalMs)}
+                </p>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
+                  <thead>
+                    <tr style={{ textAlign: "left", borderBottom: "1px solid #30405f" }}>
+                      <th style={{ padding: "6px 8px" }}>Stage</th>
+                      <th style={{ padding: "6px 8px" }}>Duration</th>
+                      <th style={{ padding: "6px 8px" }}>Outcome</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {stageTimings.map((row, i) => (
+                      <tr
+                        key={`${row.node}-${i}`}
+                        style={{ borderBottom: "1px solid #1f2a40" }}
+                      >
+                        <td style={{ padding: "8px", fontFamily: "monospace" }}>{row.node}</td>
+                        <td style={{ padding: "8px" }}>
+                          {formatStageDuration(row.duration_ms)}
+                        </td>
+                        <td
+                          style={{
+                            padding: "8px",
+                            color: row.status === "error" ? "#ff9090" : "#b8e0b8",
+                          }}
+                        >
+                          {row.status}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </>
+            )}
+          </Section>
+
+          <Section title="Trace (Jaeger)">
             <ul style={{ margin: 0, paddingLeft: 20 }}>
               <li>
                 {traceUrl ? (
@@ -479,10 +558,6 @@ export default function IncidentRunDetailPage() {
                 ) : (
                   <span style={{ color: "#7a8aa6" }}>No trace link or trace id.</span>
                 )}
-              </li>
-              <li style={{ color: "#7a8aa6", marginTop: 8 }}>
-                Run timeline (per-stage durations): planned in{" "}
-                <strong>PS2.3</strong>.
               </li>
             </ul>
           </Section>

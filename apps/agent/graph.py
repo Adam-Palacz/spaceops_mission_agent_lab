@@ -7,6 +7,7 @@ S1.12: Run-level timeout and token budget; on timeout/limit → escalation (NF6)
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
+import time
 import uuid
 
 from langgraph.graph import END, StateGraph
@@ -35,20 +36,33 @@ def _wrap_node(span_name: str, node_fn):
 
     def wrapped(state: AgentState) -> dict:
         tracer = get_tracer("apps.agent")
-        with tracer.start_as_current_span(span_name) as span:
-            span.set_attribute("incident_id", state.get("incident_id") or "unknown")
-            out = node_fn(state)
-            merged: AgentState = {**state, **out}
-            annotate_span_with_observability_attrs(span, merged)
-            if span_name == "check_escalation":
-                emit_decision_summary_span(merged, phase="post_escalation")
-            elif span_name == "decide":
-                emit_decision_summary_span(merged, phase="post_decide")
+        t0 = time.perf_counter()
+        try:
+            with tracer.start_as_current_span(span_name) as span:
+                span.set_attribute("incident_id", state.get("incident_id") or "unknown")
+                out = node_fn(state)
+                merged: AgentState = {**state, **out}
+                annotate_span_with_observability_attrs(span, merged)
+                if span_name == "check_escalation":
+                    emit_decision_summary_span(merged, phase="post_escalation")
+                elif span_name == "decide":
+                    emit_decision_summary_span(merged, phase="post_decide")
+        except BaseException:
+            duration_ms = max(0, int((time.perf_counter() - t0) * 1000))
+            prev = list(state.get("stage_timings") or [])
+            prev.append(
+                {"node": span_name, "duration_ms": duration_ms, "status": "error"}
+            )
+            raise
+        duration_ms = max(0, int((time.perf_counter() - t0) * 1000))
+        prev = list(state.get("stage_timings") or [])
+        prev.append({"node": span_name, "duration_ms": duration_ms, "status": "ok"})
+        merged = {**state, **out}
         # S3.3: context window / history compaction based on updated state snapshot.
         delta = compact_history(merged)
         if delta:
             out = {**out, **delta}
-        return out
+        return {**out, "stage_timings": prev}
 
     return wrapped
 

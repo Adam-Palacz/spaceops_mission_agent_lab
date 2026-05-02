@@ -4,7 +4,7 @@
 |------|-------|--------|-----------|
 | PS2.1 | Incident list + filters (ops triage) | Done | [PS2.1-incident-list-filters.md](PS2.1-incident-list-filters.md) |
 | PS2.2 | Incident detail + evidence panel | Done | [PS2.2-incident-detail-evidence-panel.md](PS2.2-incident-detail-evidence-panel.md) |
-| PS2.3 | Run timeline + stage durations | Todo | [PS2.3-run-timeline-stage-durations.md](PS2.3-run-timeline-stage-durations.md) |
+| PS2.3 | Run timeline + stage durations | Done | [PS2.3-run-timeline-stage-durations.md](PS2.3-run-timeline-stage-durations.md) |
 | PS2.4 | Escalation packet UI | Todo | [PS2.4-escalation-packet-ui.md](PS2.4-escalation-packet-ui.md) |
 | PS2.5 | Jaeger deep links + run correlation in UI | Todo | [PS2.5-jaeger-deep-links-ui.md](PS2.5-jaeger-deep-links-ui.md) |
 | PS2.6 | Replay from existing run input | Todo | [PS2.6-replay-from-existing-run-input.md](PS2.6-replay-from-existing-run-input.md) |

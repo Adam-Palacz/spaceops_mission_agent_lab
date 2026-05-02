@@ -8,8 +8,12 @@ from __future__ import annotations
 import asyncio
 import json
 
+import httpx
 from config import settings
 from apps.common.http_resilience import with_retry_async
+from apps.telemetry import get_tracer
+from apps.tracing import current_w3c_trace_headers
+from opentelemetry.trace import SpanKind, Status, StatusCode
 
 # Optional MCP client imports
 try:
@@ -20,6 +24,18 @@ try:
 except ImportError:
     _MCP_AVAILABLE = False
 
+# HTTP/2 + connection reuse to distinct MCP hosts can trigger 421 Misdirected Request;
+# streamable MCP transport is fine on HTTP/1.1.
+_MCP_HTTPX_TIMEOUT = httpx.Timeout(60.0)
+
+
+def _mcp_httpx_client() -> httpx.AsyncClient:
+    return httpx.AsyncClient(
+        headers=current_w3c_trace_headers(),
+        http2=False,
+        timeout=_MCP_HTTPX_TIMEOUT,
+    )
+
 
 async def _call_telemetry_mcp(
     time_range_start: str, time_range_end: str, channels: list[str] | None = None
@@ -29,81 +45,104 @@ async def _call_telemetry_mcp(
 
     async def _do() -> list[dict]:
         url = settings.telemetry_mcp_url
-        async with streamable_http_client(url) as (read_stream, write_stream, _):
-            async with ClientSession(read_stream, write_stream) as session:
-                await session.initialize()
-                result = await session.call_tool(
-                    "query_telemetry",
-                    arguments={
-                        "time_range_start": time_range_start,
-                        "time_range_end": time_range_end,
-                        "channels": channels or [],
-                    },
-                )
-                # MCP SDK may use is_error (snake_case) or isError (camelCase)
-                if getattr(result, "is_error", False) or getattr(
-                    result, "isError", False
+        tracer = get_tracer("apps.agent.mcp_client")
+        with tracer.start_as_current_span(
+            "mcp.client.query_telemetry", kind=SpanKind.CLIENT
+        ) as span:
+            span.set_attribute("tool", "query_telemetry")
+            async with _mcp_httpx_client() as http_client:
+                async with streamable_http_client(url, http_client=http_client) as (
+                    read_stream,
+                    write_stream,
+                    _,
                 ):
-                    return []
-                # Prefer structured_content (snake_case); fallback structuredContent (camelCase)
-                structured = getattr(result, "structured_content", None) or getattr(
-                    result, "structuredContent", None
-                )
-                if structured is not None:
-                    if (
-                        isinstance(structured, dict)
-                        and "result" in structured
-                        and isinstance(structured["result"], list)
-                    ):
-                        return structured["result"]
-                    if isinstance(structured, list):
-                        return structured
-                    return [structured]
-                content = getattr(result, "content", None) or []
-                for part in content:
-                    for attr in ("json", "data"):
-                        payload = getattr(part, attr, None)
-                        if isinstance(payload, list):
-                            return payload
-                        if payload is not None:
-                            return payload if isinstance(payload, list) else [payload]
-                collected: list[dict] = []
-                for part in content:
-                    text = (
-                        getattr(part, "text", None)
-                        or (part.get("text", "") if isinstance(part, dict) else "")
-                        or ""
-                    )
-                    if not isinstance(text, str):
-                        continue
-                    text = text.strip()
-                    if not text:
-                        continue
-                    try:
-                        if text.startswith("["):
-                            return json.loads(text)
-                        if text.startswith("{"):
-                            obj = json.loads(text)
-                            if isinstance(obj, dict):
-                                if "result" in obj and isinstance(obj["result"], list):
-                                    return obj["result"]
-                                if len(obj) == 1:
-                                    only = next(iter(obj.values()))
-                                    if isinstance(only, list):
-                                        return only
-                            collected.append(obj)
-                    except json.JSONDecodeError:
-                        pass
-                if collected:
-                    if (
-                        len(collected) == 1
-                        and isinstance(collected[0], dict)
-                        and "result" in collected[0]
-                    ):
-                        inner = collected[0]["result"]
-                        if isinstance(inner, list):
-                            return inner
-                    return collected
+                    async with ClientSession(read_stream, write_stream) as session:
+                        await session.initialize()
+                        result = await session.call_tool(
+                            "query_telemetry",
+                            arguments={
+                                "time_range_start": time_range_start,
+                                "time_range_end": time_range_end,
+                                "channels": channels or [],
+                            },
+                        )
+                        # MCP SDK may use is_error (snake_case) or isError (camelCase)
+                        if getattr(result, "is_error", False) or getattr(
+                            result, "isError", False
+                        ):
+                            span.set_status(
+                                Status(StatusCode.ERROR, "query_telemetry error")
+                            )
+                            return []
+                        # Prefer structured_content (snake_case); fallback structuredContent (camelCase)
+                        structured = getattr(
+                            result, "structured_content", None
+                        ) or getattr(result, "structuredContent", None)
+                        if structured is not None:
+                            if (
+                                isinstance(structured, dict)
+                                and "result" in structured
+                                and isinstance(structured["result"], list)
+                            ):
+                                return structured["result"]
+                            if isinstance(structured, list):
+                                return structured
+                            return [structured]
+                        content = getattr(result, "content", None) or []
+                        for part in content:
+                            for attr in ("json", "data"):
+                                payload = getattr(part, attr, None)
+                                if isinstance(payload, list):
+                                    return payload
+                                if payload is not None:
+                                    return (
+                                        payload
+                                        if isinstance(payload, list)
+                                        else [payload]
+                                    )
+                        collected: list[dict] = []
+                        for part in content:
+                            text = (
+                                getattr(part, "text", None)
+                                or (
+                                    part.get("text", "")
+                                    if isinstance(part, dict)
+                                    else ""
+                                )
+                                or ""
+                            )
+                            if not isinstance(text, str):
+                                continue
+                            text = text.strip()
+                            if not text:
+                                continue
+                            try:
+                                if text.startswith("["):
+                                    return json.loads(text)
+                                if text.startswith("{"):
+                                    obj = json.loads(text)
+                                    if isinstance(obj, dict):
+                                        if "result" in obj and isinstance(
+                                            obj["result"], list
+                                        ):
+                                            return obj["result"]
+                                        if len(obj) == 1:
+                                            only = next(iter(obj.values()))
+                                            if isinstance(only, list):
+                                                return only
+                                    collected.append(obj)
+                            except json.JSONDecodeError:
+                                pass
+                        if collected:
+                            if (
+                                len(collected) == 1
+                                and isinstance(collected[0], dict)
+                                and "result" in collected[0]
+                            ):
+                                inner = collected[0]["result"]
+                                if isinstance(inner, list):
+                                    return inner
+                            return collected
         return []
 
     try:
@@ -118,74 +157,83 @@ async def _call_kb_runbooks_mcp(query: str, limit: int = 5) -> list[dict]:
 
     async def _do() -> list[dict]:
         url = settings.kb_mcp_url
-        async with streamable_http_client(url) as (read_stream, write_stream, _):
-            async with ClientSession(read_stream, write_stream) as session:
-                await session.initialize()
-                result = await session.call_tool(
-                    "search_runbooks", arguments={"query": query, "limit": limit}
-                )
-                if getattr(result, "is_error", False) or getattr(
-                    result, "isError", False
-                ):
-                    return []
-                structured = getattr(result, "structured_content", None) or getattr(
-                    result, "structuredContent", None
-                )
-                if structured is not None:
-                    if (
-                        isinstance(structured, dict)
-                        and "result" in structured
-                        and isinstance(structured["result"], list)
-                    ):
-                        return structured["result"]
-                    if isinstance(structured, list):
-                        return structured
-                    return [structured]
-                content = getattr(result, "content", None) or []
-                for part in content:
-                    for attr in ("json", "data"):
-                        payload = getattr(part, attr, None)
-                        if isinstance(payload, list):
-                            return payload
-                        if payload is not None:
-                            return payload if isinstance(payload, list) else [payload]
-                collected: list[dict] = []
-                for part in content:
-                    text = (
-                        getattr(part, "text", None)
-                        or (part.get("text", "") if isinstance(part, dict) else "")
-                        or ""
+        async with _mcp_httpx_client() as http_client:
+            async with streamable_http_client(url, http_client=http_client) as (
+                read_stream,
+                write_stream,
+                _,
+            ):
+                async with ClientSession(read_stream, write_stream) as session:
+                    await session.initialize()
+                    result = await session.call_tool(
+                        "search_runbooks", arguments={"query": query, "limit": limit}
                     )
-                    if not isinstance(text, str):
-                        continue
-                    text = text.strip()
-                    if not text:
-                        continue
-                    try:
-                        if text.startswith("["):
-                            return json.loads(text)
-                        if text.startswith("{"):
-                            obj = json.loads(text)
-                            if isinstance(obj, dict):
-                                if "result" in obj and isinstance(obj["result"], list):
-                                    return obj["result"]
-                                if len(obj) == 1:
-                                    only = next(iter(obj.values()))
-                                    if isinstance(only, list):
-                                        return only
-                            collected.append(obj)
-                    except json.JSONDecodeError:
-                        pass
-                if collected:
-                    if (
-                        len(collected) == 1
-                        and isinstance(collected[0], dict)
-                        and "result" in collected[0]
+                    if getattr(result, "is_error", False) or getattr(
+                        result, "isError", False
                     ):
-                        inner = collected[0]["result"]
-                        if isinstance(inner, list):
-                            return inner
-                    return collected
+                        return []
+                    structured = getattr(result, "structured_content", None) or getattr(
+                        result, "structuredContent", None
+                    )
+                    if structured is not None:
+                        if (
+                            isinstance(structured, dict)
+                            and "result" in structured
+                            and isinstance(structured["result"], list)
+                        ):
+                            return structured["result"]
+                        if isinstance(structured, list):
+                            return structured
+                        return [structured]
+                    content = getattr(result, "content", None) or []
+                    for part in content:
+                        for attr in ("json", "data"):
+                            payload = getattr(part, attr, None)
+                            if isinstance(payload, list):
+                                return payload
+                            if payload is not None:
+                                return (
+                                    payload if isinstance(payload, list) else [payload]
+                                )
+                    collected: list[dict] = []
+                    for part in content:
+                        text = (
+                            getattr(part, "text", None)
+                            or (part.get("text", "") if isinstance(part, dict) else "")
+                            or ""
+                        )
+                        if not isinstance(text, str):
+                            continue
+                        text = text.strip()
+                        if not text:
+                            continue
+                        try:
+                            if text.startswith("["):
+                                return json.loads(text)
+                            if text.startswith("{"):
+                                obj = json.loads(text)
+                                if isinstance(obj, dict):
+                                    if "result" in obj and isinstance(
+                                        obj["result"], list
+                                    ):
+                                        return obj["result"]
+                                    if len(obj) == 1:
+                                        only = next(iter(obj.values()))
+                                        if isinstance(only, list):
+                                            return only
+                                collected.append(obj)
+                        except json.JSONDecodeError:
+                            pass
+                    if collected:
+                        if (
+                            len(collected) == 1
+                            and isinstance(collected[0], dict)
+                            and "result" in collected[0]
+                        ):
+                            inner = collected[0]["result"]
+                            if isinstance(inner, list):
+                                return inner
+                        return collected
         return []
 
     try:
@@ -200,75 +248,84 @@ async def _call_kb_postmortems_mcp(signature: str, limit: int = 5) -> list[dict]
 
     async def _do() -> list[dict]:
         url = settings.kb_mcp_url
-        async with streamable_http_client(url) as (read_stream, write_stream, _):
-            async with ClientSession(read_stream, write_stream) as session:
-                await session.initialize()
-                result = await session.call_tool(
-                    "search_postmortems",
-                    arguments={"signature": signature, "limit": limit},
-                )
-                if getattr(result, "is_error", False) or getattr(
-                    result, "isError", False
-                ):
-                    return []
-                structured = getattr(result, "structured_content", None) or getattr(
-                    result, "structuredContent", None
-                )
-                if structured is not None:
-                    if (
-                        isinstance(structured, dict)
-                        and "result" in structured
-                        and isinstance(structured["result"], list)
-                    ):
-                        return structured["result"]
-                    if isinstance(structured, list):
-                        return structured
-                    return [structured]
-                content = getattr(result, "content", None) or []
-                for part in content:
-                    for attr in ("json", "data"):
-                        payload = getattr(part, attr, None)
-                        if isinstance(payload, list):
-                            return payload
-                        if payload is not None:
-                            return payload if isinstance(payload, list) else [payload]
-                collected: list[dict] = []
-                for part in content:
-                    text = (
-                        getattr(part, "text", None)
-                        or (part.get("text", "") if isinstance(part, dict) else "")
-                        or ""
+        async with _mcp_httpx_client() as http_client:
+            async with streamable_http_client(url, http_client=http_client) as (
+                read_stream,
+                write_stream,
+                _,
+            ):
+                async with ClientSession(read_stream, write_stream) as session:
+                    await session.initialize()
+                    result = await session.call_tool(
+                        "search_postmortems",
+                        arguments={"signature": signature, "limit": limit},
                     )
-                    if not isinstance(text, str):
-                        continue
-                    text = text.strip()
-                    if not text:
-                        continue
-                    try:
-                        if text.startswith("["):
-                            return json.loads(text)
-                        if text.startswith("{"):
-                            obj = json.loads(text)
-                            if isinstance(obj, dict):
-                                if "result" in obj and isinstance(obj["result"], list):
-                                    return obj["result"]
-                                if len(obj) == 1:
-                                    only = next(iter(obj.values()))
-                                    if isinstance(only, list):
-                                        return only
-                            collected.append(obj)
-                    except json.JSONDecodeError:
-                        pass
-                if collected:
-                    if (
-                        len(collected) == 1
-                        and isinstance(collected[0], dict)
-                        and "result" in collected[0]
+                    if getattr(result, "is_error", False) or getattr(
+                        result, "isError", False
                     ):
-                        inner = collected[0]["result"]
-                        if isinstance(inner, list):
-                            return inner
-                    return collected
+                        return []
+                    structured = getattr(result, "structured_content", None) or getattr(
+                        result, "structuredContent", None
+                    )
+                    if structured is not None:
+                        if (
+                            isinstance(structured, dict)
+                            and "result" in structured
+                            and isinstance(structured["result"], list)
+                        ):
+                            return structured["result"]
+                        if isinstance(structured, list):
+                            return structured
+                        return [structured]
+                    content = getattr(result, "content", None) or []
+                    for part in content:
+                        for attr in ("json", "data"):
+                            payload = getattr(part, attr, None)
+                            if isinstance(payload, list):
+                                return payload
+                            if payload is not None:
+                                return (
+                                    payload if isinstance(payload, list) else [payload]
+                                )
+                    collected: list[dict] = []
+                    for part in content:
+                        text = (
+                            getattr(part, "text", None)
+                            or (part.get("text", "") if isinstance(part, dict) else "")
+                            or ""
+                        )
+                        if not isinstance(text, str):
+                            continue
+                        text = text.strip()
+                        if not text:
+                            continue
+                        try:
+                            if text.startswith("["):
+                                return json.loads(text)
+                            if text.startswith("{"):
+                                obj = json.loads(text)
+                                if isinstance(obj, dict):
+                                    if "result" in obj and isinstance(
+                                        obj["result"], list
+                                    ):
+                                        return obj["result"]
+                                    if len(obj) == 1:
+                                        only = next(iter(obj.values()))
+                                        if isinstance(only, list):
+                                            return only
+                                collected.append(obj)
+                        except json.JSONDecodeError:
+                            pass
+                    if collected:
+                        if (
+                            len(collected) == 1
+                            and isinstance(collected[0], dict)
+                            and "result" in collected[0]
+                        ):
+                            inner = collected[0]["result"]
+                            if isinstance(inner, list):
+                                return inner
+                        return collected
         return []
 
     try:
@@ -313,13 +370,18 @@ async def _call_ticket_mcp(title: str, body: str) -> dict | None:
 
     async def _do() -> dict | None:
         url = getattr(settings, "ticket_mcp_url", "http://localhost:8003/mcp")
-        async with streamable_http_client(url) as (read_stream, write_stream, _):
-            async with ClientSession(read_stream, write_stream) as session:
-                await session.initialize()
-                result = await session.call_tool(
-                    "create_ticket", arguments={"title": title, "body": body}
-                )
-                return _decode_single_result(result)
+        async with _mcp_httpx_client() as http_client:
+            async with streamable_http_client(url, http_client=http_client) as (
+                read_stream,
+                write_stream,
+                _,
+            ):
+                async with ClientSession(read_stream, write_stream) as session:
+                    await session.initialize()
+                    result = await session.call_tool(
+                        "create_ticket", arguments={"title": title, "body": body}
+                    )
+                    return _decode_single_result(result)
 
     try:
         return await with_retry_async(_do, circuit_key="mcp_ticket")
@@ -335,18 +397,23 @@ async def _call_gitops_mcp(
 
     async def _do() -> dict | None:
         url = getattr(settings, "gitops_mcp_url", "http://localhost:8004/mcp")
-        async with streamable_http_client(url) as (read_stream, write_stream, _):
-            async with ClientSession(read_stream, write_stream) as session:
-                await session.initialize()
-                result = await session.call_tool(
-                    "create_pr",
-                    arguments={
-                        "repo_path": repo_path,
-                        "branch": branch,
-                        "files": files,
-                    },
-                )
-                return _decode_single_result(result)
+        async with _mcp_httpx_client() as http_client:
+            async with streamable_http_client(url, http_client=http_client) as (
+                read_stream,
+                write_stream,
+                _,
+            ):
+                async with ClientSession(read_stream, write_stream) as session:
+                    await session.initialize()
+                    result = await session.call_tool(
+                        "create_pr",
+                        arguments={
+                            "repo_path": repo_path,
+                            "branch": branch,
+                            "files": files,
+                        },
+                    )
+                    return _decode_single_result(result)
 
     try:
         return await with_retry_async(_do, circuit_key="mcp_gitops")

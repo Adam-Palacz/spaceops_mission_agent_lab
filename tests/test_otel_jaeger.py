@@ -19,7 +19,7 @@ from apps.agent.graph import run_pipeline
 
 
 def test_report_contains_jaeger_trace_url():
-    """S1.10: Report contains a clickable/copy-paste Jaeger URL that opens the correct trace."""
+    """S1.10/PS1.9: Report contains Jaeger URL only when trace_id is valid."""
     try:
         result = run_pipeline("trace-url-test", {"ref": "test"})
     except RuntimeError as e:
@@ -28,15 +28,13 @@ def test_report_contains_jaeger_trace_url():
         raise
     report = result.get("report") or {}
     trace_link = report.get("trace_link") or ""
-    assert trace_link.startswith("http"), "trace_link must be a URL"
-    assert "/trace/" in trace_link, "trace_link must point to Jaeger trace page"
-    # trace_id segment (incident_id or 32-char hex)
-    match = re.search(r"/trace/([^/?#]+)", trace_link)
-    assert match, "trace_link must have trace id segment"
-    trace_id = match.group(1)
-    assert (
-        len(trace_id) >= 1 and len(trace_id) <= 64
-    ), "trace_id segment should be incident_id or 32-char hex"
+    if trace_link:
+        assert trace_link.startswith("http"), "trace_link must be a URL"
+        assert "/trace/" in trace_link, "trace_link must point to Jaeger trace page"
+        match = re.search(r"/trace/([^/?#]+)", trace_link)
+        assert match, "trace_link must have trace id segment"
+        trace_id = match.group(1)
+        assert len(trace_id) == 32, "trace_id segment should be a 32-char hex trace id"
 
 
 def test_trace_id_in_state_when_otel_enabled(monkeypatch):

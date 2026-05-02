@@ -10,7 +10,12 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import TypedDict
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.fastmcp import Context, FastMCP
+from mcp.server.transport_security import TransportSecuritySettings
+from opentelemetry.trace import SpanKind, Status, StatusCode
+
+from apps.telemetry import get_tracer
+from apps.tracing import extract_w3c_context_from_headers
 
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
@@ -32,11 +37,25 @@ def _append_ticket(ticket: Ticket) -> None:
         f.write(json.dumps(ticket, ensure_ascii=False) + "\n")
 
 
-mcp = FastMCP("SpaceOps Ticketing", json_response=True)
+mcp = FastMCP(
+    "SpaceOps Ticketing",
+    json_response=True,
+    transport_security=TransportSecuritySettings(enable_dns_rebinding_protection=False),
+)
+
+
+def _extract_headers_from_ctx(ctx: Context | None) -> dict[str, str]:
+    if ctx is None:
+        return {}
+    request = getattr(ctx.request_context, "request", None)
+    headers = getattr(request, "headers", None)
+    if headers is None:
+        return {}
+    return {str(k): str(v) for k, v in headers.items()}
 
 
 @mcp.tool()
-def create_ticket(title: str, body: str) -> Ticket:
+def create_ticket(title: str, body: str, ctx: Context | None = None) -> Ticket:
     """
     Create a ticket with the given title and body.
 
@@ -44,16 +63,28 @@ def create_ticket(title: str, body: str) -> Ticket:
     NDJSON in data/incidents/tickets.ndjson for later inspection or ingestion
     into a real ticketing system.
     """
-    now = datetime.now(timezone.utc).isoformat()
-    ticket_id = f"tkt-{now}"
-    ticket: Ticket = {
-        "id": ticket_id,
-        "title": title,
-        "body": body,
-        "created_at": now,
-    }
-    _append_ticket(ticket)
-    return ticket
+    parent_context = extract_w3c_context_from_headers(_extract_headers_from_ctx(ctx))
+    tracer = get_tracer("apps.mcp.ticket")
+    with tracer.start_as_current_span(
+        "mcp.ticket.create_ticket", context=parent_context, kind=SpanKind.SERVER
+    ) as span:
+        span.set_attribute("tool", "create_ticket")
+        try:
+            now = datetime.now(timezone.utc).isoformat()
+            ticket_id = f"tkt-{now}"
+            ticket: Ticket = {
+                "id": ticket_id,
+                "title": title,
+                "body": body,
+                "created_at": now,
+            }
+            _append_ticket(ticket)
+            span.set_attribute("outcome", "success")
+            return ticket
+        except Exception:
+            span.set_status(Status(StatusCode.ERROR, "create_ticket failed"))
+            span.set_attribute("outcome", "failure")
+            raise
 
 
 if __name__ == "__main__":

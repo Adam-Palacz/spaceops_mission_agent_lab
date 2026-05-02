@@ -11,9 +11,11 @@ from __future__ import annotations
 from typing import Any
 
 import httpx
+from opentelemetry.trace import SpanKind, Status, StatusCode
 
 from config import settings
 from apps.common.http_resilience import CircuitOpenError, with_retry_sync
+from apps.telemetry import get_tracer
 
 
 def _build_opa_input(step: dict, incident_id: str) -> dict:
@@ -48,25 +50,45 @@ def opa_allow(step: dict, incident_id: str) -> bool:
     timeout = max(1, int(getattr(settings, "opa_timeout_seconds", 2)))
     payload = {"input": _build_opa_input(step, incident_id)}
 
-    try:
-        data = with_retry_sync(
-            _opa_post,
-            url,
-            float(timeout),
-            payload,
-            circuit_key="opa",
-        )
-    except (CircuitOpenError, Exception):
-        # Fail-closed: unreachable / timeout / circuit open / non-JSON → deny.
-        return False
+    tracer = get_tracer("apps.agent.opa_client")
+    with tracer.start_as_current_span(
+        "policy.opa.evaluate", kind=SpanKind.CLIENT
+    ) as span:
+        span.set_attribute("incident_id", incident_id)
+        span.set_attribute("tool", "opa_allow")
+        try:
+            data = with_retry_sync(
+                _opa_post,
+                url,
+                float(timeout),
+                payload,
+                circuit_key="opa",
+            )
+        except (CircuitOpenError, Exception):
+            # Fail-closed: unreachable / timeout / circuit open / non-JSON → deny.
+            span.set_status(Status(StatusCode.ERROR, "opa request failed"))
+            span.set_attribute("outcome", "failure")
+            return False
 
-    # Fast path: result is a bare bool
-    result = data.get("result")
-    if isinstance(result, bool):
-        return result
-    if isinstance(result, dict):
-        allow_value = result.get("allow")
-        if isinstance(allow_value, bool):
-            return allow_value
-    # Unexpected shape → deny.
-    return False
+        # Fast path: result is a bare bool
+        result = data.get("result")
+        if isinstance(result, bool):
+            if not result:
+                span.set_status(Status(StatusCode.ERROR, "opa deny"))
+                span.set_attribute("outcome", "deny")
+            else:
+                span.set_attribute("outcome", "allow")
+            return result
+        if isinstance(result, dict):
+            allow_value = result.get("allow")
+            if isinstance(allow_value, bool):
+                if not allow_value:
+                    span.set_status(Status(StatusCode.ERROR, "opa deny"))
+                    span.set_attribute("outcome", "deny")
+                else:
+                    span.set_attribute("outcome", "allow")
+                return allow_value
+        # Unexpected shape → deny.
+        span.set_status(Status(StatusCode.ERROR, "opa malformed response"))
+        span.set_attribute("outcome", "failure")
+        return False

@@ -87,6 +87,7 @@ The **docs/** directory holds project documentation that supports both humans an
 - Replay CLI/API workflow (PS1.5): [runbooks/replay_workflow.md](runbooks/replay_workflow.md)
 - LLM gateway contract (PS1.6): [llm_gateway.md](llm_gateway.md)
 - Guardrails fail-closed minimum hardening (PS1.7): [runbooks/guardrails_minimum_hardening.md](runbooks/guardrails_minimum_hardening.md)
+- Distributed tracing + W3C propagation verification (PS1.9): [runbooks/distributed_tracing_ps19.md](runbooks/distributed_tracing_ps19.md)
 
 *Ścieżki do plików .mmd są względem katalogu `docs/` (np. `workflow/end_to_end_pipeline.mmd` = `docs/workflow/end_to_end_pipeline.mmd` w repo).*
 

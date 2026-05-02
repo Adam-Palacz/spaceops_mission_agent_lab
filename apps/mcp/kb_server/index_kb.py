@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import numpy as np
 import psycopg2
 from langchain_openai import OpenAIEmbeddings
 from pgvector.psycopg2 import register_vector
@@ -117,9 +118,10 @@ def main() -> None:
         for doc_id, doc_type, text in docs:
             for chunk in chunk_text(text):
                 vec = embeddings.embed_query(chunk)
+                query_vec = np.asarray(vec, dtype=np.float32)
                 cur.execute(
                     "INSERT INTO kb_chunks (doc_id, doc_type, content, embedding) VALUES (%s, %s, %s, %s)",
-                    (doc_id, doc_type, chunk, vec),
+                    (doc_id, doc_type, chunk, query_vec),
                 )
                 inserted += 1
     conn.commit()

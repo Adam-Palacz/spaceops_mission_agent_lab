@@ -11,7 +11,12 @@ import subprocess
 from pathlib import Path
 from typing import TypedDict
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.fastmcp import Context, FastMCP
+from mcp.server.transport_security import TransportSecuritySettings
+from opentelemetry.trace import SpanKind, Status, StatusCode
+
+from apps.telemetry import get_tracer
+from apps.tracing import extract_w3c_context_from_headers
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 DEFAULT_OPS_CONFIG_DIR = REPO_ROOT / "ops-config"
@@ -164,7 +169,21 @@ def _push_and_create_pr(
         return None, f"GitHub API: {e}"
 
 
-mcp = FastMCP("SpaceOps GitOps", json_response=True)
+mcp = FastMCP(
+    "SpaceOps GitOps",
+    json_response=True,
+    transport_security=TransportSecuritySettings(enable_dns_rebinding_protection=False),
+)
+
+
+def _extract_headers_from_ctx(ctx: Context | None) -> dict[str, str]:
+    if ctx is None:
+        return {}
+    request = getattr(ctx.request_context, "request", None)
+    headers = getattr(request, "headers", None)
+    if headers is None:
+        return {}
+    return {str(k): str(v) for k, v in headers.items()}
 
 
 def _sanitize_for_mcp(obj: dict) -> dict:
@@ -187,6 +206,7 @@ def create_pr(
     repo_path: str | None,
     branch: str,
     files: list[FileSpec],
+    ctx: Context | None = None,
 ) -> dict:
     """
     Prepare a GitOps change by writing files under ops-config/, then optionally push and open a PR.
@@ -203,53 +223,64 @@ def create_pr(
     - If GITHUB_TOKEN and GITHUB_REPO are set: creates branch, commits, pushes to origin, creates PR via GitHub API.
     - Returns a summary; pr_url or push_error are set when GitHub integration is used.
     """
-    branch = (branch or "").strip() or "agent/unknown"
-    ops_dir = _resolve_ops_config_dir(repo_path)
-    ops_dir.mkdir(parents=True, exist_ok=True)
-
-    normalized_files: list[FileSpec] = []
-    files_rel_to_repo: list[str] = []
-    for spec in files:
-        rel = (spec.get("path") or "").strip() or ""
-        content = spec.get("content")
-        content = content if isinstance(content, str) else ""
-        rel_path = Path(rel)
-        if rel_path.is_absolute() or ".." in rel_path.parts:
-            raise ValueError(f"Invalid path for GitOps file: {rel}")
-        target = ops_dir / rel_path
-        target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(content, encoding="utf-8")
-        norm_path = str(rel_path).replace("\\", "/")
-        normalized_files.append(FileSpec(path=norm_path, content=content))
+    parent_context = extract_w3c_context_from_headers(_extract_headers_from_ctx(ctx))
+    tracer = get_tracer("apps.mcp.gitops")
+    with tracer.start_as_current_span(
+        "mcp.gitops.create_pr", context=parent_context, kind=SpanKind.SERVER
+    ) as span:
+        span.set_attribute("tool", "create_pr")
         try:
-            rel_to_repo = (ops_dir / rel_path).resolve().relative_to(REPO_ROOT)
-            files_rel_to_repo.append(str(rel_to_repo).replace("\\", "/"))
-        except ValueError:
-            pass
+            branch = (branch or "").strip() or "agent/unknown"
+            ops_dir = _resolve_ops_config_dir(repo_path)
+            ops_dir.mkdir(parents=True, exist_ok=True)
 
-    note = "Files written under ops-config/."
-    result: CreatePrResult = {
-        "repo_root": str(REPO_ROOT),
-        "ops_config_dir": str(ops_dir),
-        "branch": branch,
-        "files": normalized_files,
-        "note": note,
-    }
+            normalized_files: list[FileSpec] = []
+            files_rel_to_repo: list[str] = []
+            for spec in files:
+                rel = (spec.get("path") or "").strip() or ""
+                content = spec.get("content")
+                content = content if isinstance(content, str) else ""
+                rel_path = Path(rel)
+                if rel_path.is_absolute() or ".." in rel_path.parts:
+                    raise ValueError(f"Invalid path for GitOps file: {rel}")
+                target = ops_dir / rel_path
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_text(content, encoding="utf-8")
+                norm_path = str(rel_path).replace("\\", "/")
+                normalized_files.append(FileSpec(path=norm_path, content=content))
+                try:
+                    rel_to_repo = (ops_dir / rel_path).resolve().relative_to(REPO_ROOT)
+                    files_rel_to_repo.append(str(rel_to_repo).replace("\\", "/"))
+                except ValueError:
+                    pass
 
-    pr_url, push_error = _push_and_create_pr(
-        branch=branch,
-        files_rel=files_rel_to_repo,
-        title=f"GitOps: {branch}",
-        body="Agent-proposed config change (create_pr MCP).",
-    )
-    if pr_url:
-        result["pr_url"] = str(pr_url)
-        result["note"] = "Files written, branch pushed, PR created."
-    elif push_error:
-        result["push_error"] = str(push_error)
-        result["note"] = "Files written; push/PR failed (see push_error)."
+            note = "Files written under ops-config/."
+            result: CreatePrResult = {
+                "repo_root": str(REPO_ROOT),
+                "ops_config_dir": str(ops_dir),
+                "branch": branch,
+                "files": normalized_files,
+                "note": note,
+            }
 
-    return _sanitize_for_mcp(result)
+            pr_url, push_error = _push_and_create_pr(
+                branch=branch,
+                files_rel=files_rel_to_repo,
+                title=f"GitOps: {branch}",
+                body="Agent-proposed config change (create_pr MCP).",
+            )
+            if pr_url:
+                result["pr_url"] = str(pr_url)
+                result["note"] = "Files written, branch pushed, PR created."
+            elif push_error:
+                result["push_error"] = str(push_error)
+                result["note"] = "Files written; push/PR failed (see push_error)."
+            span.set_attribute("outcome", "success")
+            return _sanitize_for_mcp(result)
+        except Exception:
+            span.set_status(Status(StatusCode.ERROR, "create_pr failed"))
+            span.set_attribute("outcome", "failure")
+            raise
 
 
 if __name__ == "__main__":

@@ -91,6 +91,7 @@ flowchart TB
   - KB MCP: RAG over runbooks/postmortems (DuckDB/pgvector), tools `search_runbooks` and `search_postmortems`.
   - Ticketing MCP: mock `create_ticket(title, body)` that appends to NDJSON.
   - GitOps MCP: mock `create_pr(repo_path, branch, files)` that writes/updates files under `ops-config/`.
+  - **Production:** MCP `Host` / DNS rebinding defaults and Docker vs public exposure are documented in `apps/mcp/README.md` (section *Transport security and `Host`*).
 - **OPA (Open Policy Agent)**
   - Runs as a sidecar/container (see `infra/docker-compose.yml`).
   - Policy bundle (`infra/opa/agent_policy.rego`) defines allowlist + argument validation for restricted actions.

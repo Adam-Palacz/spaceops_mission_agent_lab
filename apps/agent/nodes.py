@@ -29,6 +29,8 @@ from apps.llm_gateway import (
     generate as gateway_generate,
 )
 from apps.telemetry import get_tracer
+from apps.tracing import is_valid_trace_id_hex
+from opentelemetry.trace import SpanKind, Status, StatusCode
 from prompts.registry import (
     DECIDE_PROMPT_ID,
     TRIAGE_PROMPT_ID,
@@ -40,6 +42,123 @@ REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 DATA_INCIDENTS = REPO_ROOT / "data" / "incidents"
 
 _SUBSYSTEMS = ("ADCS", "Power", "Thermal", "Comms", "Payload", "Ground")
+
+
+def _tool_outcomes_compact(tool_outcomes: object, *, max_len: int = 200) -> str:
+    """Serialize tool_outcomes for span tags (bounded, low cardinality)."""
+    if not isinstance(tool_outcomes, dict):
+        return ""
+    parts: list[str] = []
+    for key in sorted(tool_outcomes.keys()):
+        val = tool_outcomes.get(key)
+        parts.append(f"{key}={val}")
+    out = ";".join(parts)
+    return out if len(out) <= max_len else out[: max_len - 3] + "..."
+
+
+def annotate_span_with_observability_attrs(span, state: AgentState) -> None:
+    """Low-cardinality pipeline facts on the current node span (no payloads or secrets)."""
+    rid = state.get("run_id")
+    if isinstance(rid, str) and rid.strip():
+        span.set_attribute("run_id", rid.strip()[:64])
+    sub = state.get("subsystem")
+    if isinstance(sub, str) and sub.strip():
+        span.set_attribute("subsystem", sub.strip()[:32])
+    risk = state.get("risk")
+    if isinstance(risk, str) and risk.strip():
+        span.set_attribute("risk", risk.strip()[:16])
+    citations = state.get("citations") or []
+    if isinstance(citations, list):
+        span.set_attribute("citation_count", len(citations))
+    span.set_attribute("escalated", bool(state.get("escalated")))
+    packet = state.get("escalation_packet") or {}
+    if isinstance(packet, dict):
+        reason = packet.get("reason")
+        if isinstance(reason, str) and reason.strip():
+            span.set_attribute("escalation_reason", reason.strip()[:64])
+    compact = _tool_outcomes_compact(state.get("tool_outcomes"))
+    if compact:
+        span.set_attribute("tool_outcomes", compact)
+    plan = state.get("plan")
+    if isinstance(plan, list) and plan:
+        span.set_attribute("plan_step_count", len(plan))
+        types: set[str] = set()
+        for step in plan:
+            if isinstance(step, dict):
+                t = (step.get("action_type") or "").strip().lower()
+                if t:
+                    types.add(t)
+        if types:
+            span.set_attribute("plan_action_types", ",".join(sorted(types))[:128])
+
+
+def emit_decision_summary_span(state: AgentState, *, phase: str) -> None:
+    """
+    One semantic summary span after escalation check / decide (Jaeger-friendly, low cardinality).
+    Full narrative stays in audit / LLM logs.
+    """
+    tracer = get_tracer("apps.agent")
+    incident_id = str(state.get("incident_id") or "unknown")[:64]
+    run_id = str(state.get("run_id") or "")[:64]
+    escalated = bool(state.get("escalated"))
+    packet = state.get("escalation_packet") or {}
+    reason = (
+        str(packet.get("reason") or "").strip()[:64] if isinstance(packet, dict) else ""
+    )
+    subsystem = str(state.get("subsystem") or "")[:32]
+    risk = str(state.get("risk") or "")[:16]
+    citations = state.get("citations") or []
+    citation_count = len(citations) if isinstance(citations, list) else 0
+    outcomes_s = _tool_outcomes_compact(state.get("tool_outcomes"))
+    plan = state.get("plan") or []
+    plan_step_count = len(plan) if isinstance(plan, list) else 0
+    types: set[str] = set()
+    if isinstance(plan, list):
+        for step in plan:
+            if isinstance(step, dict):
+                t = (step.get("action_type") or "").strip().lower()
+                if t:
+                    types.add(t)
+    plan_types = ",".join(sorted(types))[:128]
+
+    parts = [
+        f"phase={phase}",
+        f"esc={escalated}",
+        f"reason={reason or 'none'}",
+        f"sub={subsystem or 'none'}",
+        f"risk={risk or 'none'}",
+        f"cit={citation_count}",
+        f"tools={outcomes_s or 'none'}",
+    ]
+    if phase == "post_decide":
+        parts.append(f"steps={plan_step_count}")
+        parts.append(f"types={plan_types or 'none'}")
+    summary_line = "|".join(parts)
+    if len(summary_line) > 256:
+        summary_line = summary_line[:253] + "..."
+
+    with tracer.start_as_current_span(
+        "agent.decision_summary", kind=SpanKind.INTERNAL
+    ) as sp:
+        sp.set_attribute("agent.phase", phase)
+        sp.set_attribute("incident_id", incident_id)
+        if run_id:
+            sp.set_attribute("run_id", run_id)
+        sp.set_attribute("escalated", escalated)
+        if reason:
+            sp.set_attribute("escalation_reason", reason)
+        if subsystem:
+            sp.set_attribute("subsystem", subsystem)
+        if risk:
+            sp.set_attribute("risk", risk)
+        sp.set_attribute("citation_count", citation_count)
+        if outcomes_s:
+            sp.set_attribute("tool_outcomes", outcomes_s)
+        if phase == "post_decide":
+            sp.set_attribute("plan_step_count", plan_step_count)
+            if plan_types:
+                sp.set_attribute("plan_action_types", plan_types)
+        sp.set_attribute("decision.summary_line", summary_line)
 
 
 class _EscalationPacketSchema(BaseModel):
@@ -550,29 +669,36 @@ def decide(state: AgentState) -> dict:
         doc_ids=doc_ids,
         snippet_ids=snippet_ids[:10],
     )
-    try:
-        from apps.model_selection import get_current_model_id
+    tracer = get_tracer("apps.agent")
+    with tracer.start_as_current_span("agent.decide", kind=SpanKind.INTERNAL) as sp:
+        sp.set_attribute("incident_id", incident_id)
+        sp.set_attribute("run_id", run_id)
+        sp.set_attribute("tool", "llm_decide")
+        try:
+            from apps.model_selection import get_current_model_id
 
-        model_id = get_current_model_id()
-        gateway_result = gateway_generate(
-            prompt=prompt,
-            node="decide",
-            model_id=model_id,
-            temperature=0,
-        )
-        content = str(gateway_result.get("content") or "")
-        usage_meta = gateway_result.get("usage") or {}
-        usage = int(usage_meta.get("total_tokens") or 0)
-    except LLMGatewayTimeoutError:
-        return _escalation_for_limit_or_timeout(
-            incident_id, "llm_timeout", "LLM call timed out during decide."
-        ) | {"tokens_used": tokens_used, "llm_calls_used": llm_calls_used}
-    except LLMGatewayProviderError as exc:
-        return _escalation_for_limit_or_timeout(
-            incident_id,
-            "llm_provider_error",
-            f"LLM provider error during decide: {exc}",
-        ) | {"tokens_used": tokens_used, "llm_calls_used": llm_calls_used}
+            model_id = get_current_model_id()
+            gateway_result = gateway_generate(
+                prompt=prompt,
+                node="decide",
+                model_id=model_id,
+                temperature=0,
+            )
+            content = str(gateway_result.get("content") or "")
+            usage_meta = gateway_result.get("usage") or {}
+            usage = int(usage_meta.get("total_tokens") or 0)
+        except LLMGatewayTimeoutError:
+            sp.set_status(Status(StatusCode.ERROR, "llm timeout"))
+            return _escalation_for_limit_or_timeout(
+                incident_id, "llm_timeout", "LLM call timed out during decide."
+            ) | {"tokens_used": tokens_used, "llm_calls_used": llm_calls_used}
+        except LLMGatewayProviderError as exc:
+            sp.set_status(Status(StatusCode.ERROR, "llm provider error"))
+            return _escalation_for_limit_or_timeout(
+                incident_id,
+                "llm_provider_error",
+                f"LLM provider error during decide: {exc}",
+            ) | {"tokens_used": tokens_used, "llm_calls_used": llm_calls_used}
     tokens_used += usage
     llm_calls_used += 1
     if token_budget and tokens_used > token_budget:
@@ -631,6 +757,7 @@ def act(state: AgentState) -> dict:
     act_results: list[dict] = []
     approval_requests: list[dict] = []
     tracer = get_tracer("apps.agent")
+    run_id = state.get("run_id") or trace_id
 
     for i, step in enumerate(plan):
         if not isinstance(step, dict):
@@ -642,6 +769,8 @@ def act(state: AgentState) -> dict:
         if safe and action_type == "create_ticket":
             with tracer.start_as_current_span("mcp.create_ticket") as sp:
                 sp.set_attribute("incident_id", incident_id)
+                sp.set_attribute("run_id", run_id)
+                sp.set_attribute("tool", "create_ticket")
                 try:
                     ticket = call_create_ticket(
                         title=action_text[:200], body=action_text
@@ -652,6 +781,7 @@ def act(state: AgentState) -> dict:
                     ticket = None
                     outcome = "failure"
                     err_msg = _safe_error_message(exc)
+                    sp.set_status(Status(StatusCode.ERROR, err_msg))
             audit_append(
                 trace_id=trace_id,
                 incident_id=incident_id,
@@ -680,6 +810,8 @@ def act(state: AgentState) -> dict:
             ]
             with tracer.start_as_current_span("mcp.create_pr") as sp:
                 sp.set_attribute("incident_id", incident_id)
+                sp.set_attribute("run_id", run_id)
+                sp.set_attribute("tool", "create_pr")
                 try:
                     pr_result = call_create_pr(
                         repo_path=None, branch=branch, files=files
@@ -690,6 +822,7 @@ def act(state: AgentState) -> dict:
                     pr_result = None
                     outcome = "failure"
                     err_msg = _safe_error_message(exc)
+                    sp.set_status(Status(StatusCode.ERROR, err_msg))
             audit_append(
                 trace_id=trace_id,
                 incident_id=incident_id,
@@ -709,7 +842,14 @@ def act(state: AgentState) -> dict:
             )
 
         elif not safe:
-            if opa_allow(step, incident_id):
+            with tracer.start_as_current_span("policy.opa_check") as sp:
+                sp.set_attribute("incident_id", incident_id)
+                sp.set_attribute("run_id", run_id)
+                sp.set_attribute("tool", "opa_allow")
+                allowed = opa_allow(step, incident_id)
+                if not allowed:
+                    sp.set_status(Status(StatusCode.ERROR, "opa deny/unavailable"))
+            if allowed:
                 request_id = approval_store_create(
                     incident_id=incident_id,
                     step_index=i,
@@ -783,8 +923,12 @@ def report(state: AgentState) -> dict:
     escalated = state.get("escalated") or False
     escalation_packet = state.get("escalation_packet") or {}
     # S1.10: trace_id from OTel (32-char hex) when exporting; else incident_id
-    trace_id = state.get("trace_id") or incident_id
-    trace_url = f"{settings.jaeger_ui_url}/trace/{trace_id}"
+    trace_id = state.get("trace_id") or ""
+    trace_url = (
+        f"{settings.jaeger_ui_url}/trace/{trace_id}"
+        if is_valid_trace_id_hex(trace_id)
+        else ""
+    )
     cite_refs = list(
         {
             c.get("doc_id") or c.get("snippet_id")

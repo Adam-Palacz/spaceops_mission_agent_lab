@@ -21,6 +21,9 @@ services:
     ports:
       - "8000:8000"
     environment:
+      # Inside containers localhost:4317 is wrong; must reach the collector by service name.
+      # Overrides .env meant for host-run (localhost:4317) so traces actually reach Jaeger.
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
       TELEMETRY_MCP_URL: http://telemetry-mcp:8001/mcp
       KB_MCP_URL: http://kb-mcp:8002/mcp
       TICKET_MCP_URL: http://ticket-mcp:8003/mcp
@@ -109,6 +112,8 @@ services:
     container_name: spaceops-mcp-telemetry
     env_file:
       - ./.env
+    environment:
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
     command: ["python", "-m", "apps.mcp.telemetry_server.main"]
     ports:
       - "8001:8001"
@@ -122,6 +127,10 @@ services:
     container_name: spaceops-mcp-kb
     env_file:
       - ./.env
+    environment:
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      # .env is often tuned for host (localhost). Inside Compose, Postgres is the service name.
+      DATABASE_URL: postgresql://${POSTGRES_USER:-spaceops}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-spaceops}
     command: ["python", "-m", "apps.mcp.kb_server.main"]
     ports:
       - "8002:8002"
@@ -139,6 +148,8 @@ services:
     container_name: spaceops-mcp-ticket
     env_file:
       - ./.env
+    environment:
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
     command: ["python", "-m", "apps.mcp.ticket_server.main"]
     ports:
       - "8003:8003"
@@ -152,6 +163,8 @@ services:
     container_name: spaceops-mcp-gitops
     env_file:
       - ./.env
+    environment:
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
     command: ["python", "-m", "apps.mcp.gitops_server.main"]
     ports:
       - "8004:8004"

@@ -10,20 +10,24 @@ from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeou
 import uuid
 
 from langgraph.graph import END, StateGraph
+from opentelemetry import context as otel_context
 
 from config import settings
 from apps.agent.state import AgentState, compact_history
 from apps.agent.nodes import (
     _normalize_plan_steps,
     act,
+    annotate_span_with_observability_attrs,
     check_escalation,
     decide,
+    emit_decision_summary_span,
     investigate,
     report as report_node_fn,
     triage,
 )
 from apps.telemetry import get_tracer, get_current_trace_id_hex, init_telemetry
 from apps.replay.metadata import build_replay_metadata, persist_replay_metadata
+from apps.tracing import is_valid_trace_id_hex
 
 
 def _wrap_node(span_name: str, node_fn):
@@ -34,8 +38,13 @@ def _wrap_node(span_name: str, node_fn):
         with tracer.start_as_current_span(span_name) as span:
             span.set_attribute("incident_id", state.get("incident_id") or "unknown")
             out = node_fn(state)
+            merged: AgentState = {**state, **out}
+            annotate_span_with_observability_attrs(span, merged)
+            if span_name == "check_escalation":
+                emit_decision_summary_span(merged, phase="post_escalation")
+            elif span_name == "decide":
+                emit_decision_summary_span(merged, phase="post_decide")
         # S3.3: context window / history compaction based on updated state snapshot.
-        merged: AgentState = {**state, **out}
         delta = compact_history(merged)
         if delta:
             out = {**out, **delta}
@@ -91,7 +100,9 @@ def _run_timeout_escalation_result(
             "Check for slow LLM or MCP responses.",
         ],
     }
-    trace_url = f"{s.jaeger_ui_url}/trace/{trace_id}"
+    trace_url = (
+        f"{s.jaeger_ui_url}/trace/{trace_id}" if is_valid_trace_id_hex(trace_id) else ""
+    )
     report = {
         "incident_id": incident_id,
         "executive_summary": f"[ESCALATION] Incident {incident_id}: handoff to human. Reason: run_timeout.",
@@ -152,7 +163,7 @@ def run_pipeline(
     with tracer.start_as_current_span("agent.run") as span:
         span.set_attribute("incident_id", incident_id)
         trace_id_hex = get_current_trace_id_hex()
-        trace_id = trace_id_hex or incident_id
+        trace_id = trace_id_hex or ""
         run_id = uuid.uuid4().hex
         input_payload = payload or {}
         initial: AgentState = {
@@ -164,8 +175,19 @@ def run_pipeline(
             "llm_calls_used": 0,
         }
         if run_timeout:
+            # PS1.9: OTel context is not inherited by ThreadPoolExecutor workers by default.
+            # Attach parent context so triage/investigate/MCP spans stay under agent.run in one trace.
+            parent_ctx = otel_context.get_current()
+
+            def _invoke_graph_with_trace_context() -> dict:
+                token = otel_context.attach(parent_ctx)
+                try:
+                    return graph.invoke(initial)
+                finally:
+                    otel_context.detach(token)
+
             with ThreadPoolExecutor(max_workers=1) as ex:
-                fut = ex.submit(graph.invoke, initial)
+                fut = ex.submit(_invoke_graph_with_trace_context)
                 try:
                     result = fut.result(timeout=run_timeout)
                 except FuturesTimeoutError:

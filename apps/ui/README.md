@@ -1,7 +1,7 @@
 # SpaceOps UI (Next.js) — P4.5
 
 Minimal operator UI for:
-- **Incidents** (`/incidents`): run list with filters (`GET /runs?…`), detail (`GET /runs/{run_key}`) including **pipeline timeline** (`stage_timings`, PS2.3) and **escalation packet** panel when run is escalated (`report.escalation_packet`, PS2.4)
+- **Incidents** (`/incidents`): run list with filters (`GET /runs?…`), **Jaeger** column (PS2.5), detail (`GET /runs/{run_key}`) with **pipeline timeline** (`stage_timings`, PS2.3), **escalation packet** when escalated (PS2.4), and **trace** deep link + `run_id` (PS2.5)
 - **Approvals** (`/approvals`): list (`GET /approvals`) and actions (`POST /approvals/{id}/approve|reject`)
 - `/` redirects to `/incidents`
 
@@ -23,7 +23,7 @@ Set values:
 
 - `NEXT_PUBLIC_API_BASE_URL` (default: `http://localhost:8000`)
 - `NEXT_PUBLIC_APPROVAL_API_KEY` (must match backend `APPROVAL_API_KEY`)
-- `NEXT_PUBLIC_JAEGER_UI_URL` (optional; default `http://localhost:16686` — incident detail trace link)
+- `NEXT_PUBLIC_JAEGER_UI_URL` (optional; default `http://localhost:16686` — Jaeger deep links on incident **list** and **detail** when `trace_link` is absent, PS2.5)
 
 ## Run
 

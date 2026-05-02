@@ -404,6 +404,12 @@ def _run_row_from_file(path: Path, payload: dict[str, Any]) -> dict[str, Any]:
     sat_id = pl.get("sat_id") if isinstance(pl.get("sat_id"), str) else None
     if sat_id is None and isinstance(pl.get("satellite_id"), str):
         sat_id = pl.get("satellite_id")
+    trace_id = str(payload.get("trace_id") or "").strip()
+    trace_link: str | None = None
+    if isinstance(report, dict):
+        tl = report.get("trace_link")
+        if isinstance(tl, str) and tl.strip():
+            trace_link = tl.strip()
     return {
         "id": path.stem,
         "run_id": payload.get("run_id", path.stem),
@@ -417,6 +423,8 @@ def _run_row_from_file(path: Path, payload: dict[str, Any]) -> dict[str, Any]:
         "escalated": esc_out,
         "sat_id": sat_id or "",
         "confidence": _derive_confidence(pl, esc_out, report),
+        "trace_id": trace_id or None,
+        "trace_link": trace_link,
     }
 
 

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { API_BASE_URL, JAEGER_UI_URL } from "../../../lib/config";
+import { buildJaegerTraceHref } from "../../../lib/jaegerTrace";
 
 type Json = Record<string, unknown>;
 
@@ -81,16 +82,6 @@ function formatStageDuration(ms: number): string {
   if (!Number.isFinite(ms) || ms < 0) return "0 ms";
   if (ms < 1000) return `${Math.round(ms)} ms`;
   return `${(ms / 1000).toFixed(2)} s`;
-}
-
-function traceHref(data: Json, report: Json | null): string | null {
-  const tl = report && asStr(report.trace_link);
-  if (tl) return tl;
-  const tid = asStr(data.trace_id);
-  if (tid && /^[a-f0-9]{32}$/i.test(tid)) {
-    return `${JAEGER_UI_URL.replace(/\/$/, "")}/trace/${tid}`;
-  }
-  return null;
 }
 
 /** PS2.4 — EscalationPacket fields align with `apps/agent/state.EscalationPacket` / contracts v1. */
@@ -184,7 +175,17 @@ export default function IncidentRunDetailPage() {
     return isRecord(r) ? r : null;
   }, [data]);
 
-  const traceUrl = useMemo(() => (data ? traceHref(data, report) : null), [data, report]);
+  const traceUrl = useMemo(
+    () =>
+      data
+        ? buildJaegerTraceHref({
+            jaegerUiRoot: JAEGER_UI_URL,
+            traceLink: report ? asStr(report.trace_link) : "",
+            traceId: asStr(data.trace_id),
+          })
+        : null,
+    [data, report],
+  );
 
   const stageTimings = useMemo(() => {
     if (!data) return [];
@@ -297,6 +298,10 @@ export default function IncidentRunDetailPage() {
               <dd>{asStr(data.risk) || "—"}</dd>
               <dt>Escalated</dt>
               <dd>{data.escalated === true ? "yes" : data.escalated === false ? "no" : "—"}</dd>
+              <dt>Trace ID</dt>
+              <dd style={{ wordBreak: "break-all", fontFamily: "monospace", fontSize: 13 }}>
+                {asStr(data.trace_id) || "—"}
+              </dd>
             </dl>
           </Section>
 
@@ -652,15 +657,33 @@ export default function IncidentRunDetailPage() {
             )}
           </Section>
 
-          <Section title="Trace (Jaeger)">
+          <Section title="Trace (Jaeger) — PS2.5">
+            <p style={{ fontSize: 13, color: "#a7b4c9", marginTop: 0 }}>
+              Same URL pattern as the agent report and{" "}
+              <code style={{ fontSize: 12 }}>docs/runbooks/distributed_tracing_ps19.md</code> (
+              <code>{`${JAEGER_UI_URL.replace(/\/$/, "")}/trace/{trace_id}`}</code>
+              ). Opens in a new tab, not embedded.
+            </p>
             <ul style={{ margin: 0, paddingLeft: 20 }}>
               <li>
+                <strong>Run ID</strong> (correlation):{" "}
+                <code style={{ fontSize: 13 }}>{asStr(data.run_id) || "—"}</code>
+              </li>
+              <li>
                 {traceUrl ? (
-                  <a href={traceUrl} style={{ color: "#9ecfff" }} target="_blank" rel="noreferrer">
-                    Open trace in Jaeger
+                  <a
+                    href={traceUrl}
+                    style={{ color: "#9ecfff" }}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    View trace in Jaeger
                   </a>
                 ) : (
-                  <span style={{ color: "#7a8aa6" }}>No trace link or trace id.</span>
+                  <span style={{ color: "#7a8aa6" }}>
+                    No trace link — this run has no valid <code>trace_id</code> /{" "}
+                    <code>trace_link</code> (pre-OTel or export not reaching Jaeger).
+                  </span>
                 )}
               </li>
             </ul>

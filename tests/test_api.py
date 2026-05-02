@@ -236,6 +236,40 @@ def test_runs_get_rejects_invalid_run_key(api_client):
     assert api_client.get("/runs/not_a_run").status_code == 400
 
 
+def test_runs_get_includes_trace_id_and_trace_link_for_ui_ps25(
+    api_client, tmp_path: Path
+):
+    """GET /runs rows include trace_id / trace_link for Jaeger deep links (PS2.5)."""
+    runs_dir = tmp_path / "data" / "incidents"
+    runs_dir.mkdir(parents=True, exist_ok=True)
+    tid = "a" * 32
+    tlink = f"http://localhost:16686/trace/{tid}"
+    (runs_dir / "run_inc-trace_20260101T010107Z.json").write_text(
+        json.dumps(
+            {
+                "incident_id": "inc-trace",
+                "run_id": "runidhex01",
+                "trace_id": tid,
+                "report": {"summary": "ok", "trace_link": tlink},
+            }
+        ),
+        encoding="utf-8",
+    )
+    (runs_dir / "run_inc-notrace_20260101T010108Z.json").write_text(
+        json.dumps({"incident_id": "inc-notrace", "report": {"summary": "old"}}),
+        encoding="utf-8",
+    )
+    response = api_client.get("/runs?limit=10")
+    assert response.status_code == 200
+    by_inc = {r["incident_id"]: r for r in response.json().get("runs", [])}
+    row_t = by_inc["inc-trace"]
+    assert row_t.get("trace_id") == tid
+    assert row_t.get("trace_link") == tlink
+    row_n = by_inc["inc-notrace"]
+    assert row_n.get("trace_id") in (None, "")
+    assert row_n.get("trace_link") in (None, "")
+
+
 def test_runs_get_filter_subsystem(api_client, tmp_path: Path):
     """GET /runs?subsystem= filters list (PS2.1)."""
     runs_dir = tmp_path / "data" / "incidents"

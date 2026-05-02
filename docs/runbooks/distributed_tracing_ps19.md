@@ -15,7 +15,7 @@ This runbook verifies end-to-end trace continuity for Agent -> MCP calls and fai
 1. Start stack (API + at least one MCP service + Jaeger/OTel collector).
 2. Run a normal incident via API:
    - `POST /runs` with payload including time range/channels.
-3. Open Jaeger trace from `report.trace_link`.
+3. Open Jaeger trace from `report.trace_link`, or from **SpaceOps UI** (PS2.5): incident list **View trace ↗** / run detail **View trace in Jaeger** — URL shape `{jaeger_ui_url}/trace/{32-char-hex}` (same as `report.trace_link` when built from `trace_id`; configurable via `NEXT_PUBLIC_JAEGER_UI_URL`, default `http://localhost:16686`).
 4. Confirm one trace includes spans from:
    - `agent.run` / `agent.decide` / `agent.act`
    - `mcp.client.*`

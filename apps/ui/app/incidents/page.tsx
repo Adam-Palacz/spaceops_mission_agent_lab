@@ -4,7 +4,8 @@ import type { CSSProperties, FormEvent } from "react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { API_BASE_URL, SUBSYSTEM_OPTIONS } from "../../lib/config";
+import { API_BASE_URL, JAEGER_UI_URL, SUBSYSTEM_OPTIONS } from "../../lib/config";
+import { buildJaegerTraceHref } from "../../lib/jaegerTrace";
 
 export type RunListItem = {
   id: string;
@@ -19,6 +20,10 @@ export type RunListItem = {
   escalated?: boolean;
   sat_id?: string;
   confidence?: string;
+  /** 32-char hex when OTel trace was recorded (PS2.5). */
+  trace_id?: string | null;
+  /** Absolute URL from report when agent emitted `trace_link` (PS2.5). */
+  trace_link?: string | null;
 };
 
 async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
@@ -126,6 +131,8 @@ export default function IncidentsPage() {
       <h1 style={{ marginBottom: 8 }}>Incidents / runs</h1>
       <p style={{ marginTop: 0, color: "#a7b4c9" }}>
         API: <code>{API_BASE_URL}</code> — filters use <code>GET /runs</code> query params (PS2.1).
+        Jaeger deep links use <code>NEXT_PUBLIC_JAEGER_UI_URL</code> ({JAEGER_UI_URL}) when{" "}
+        <code>trace_link</code> is absent (PS2.5).
       </p>
 
       <form
@@ -261,11 +268,18 @@ export default function IncidentsPage() {
               <th style={th}>Conf.</th>
               <th style={th}>Status</th>
               <th style={th}>Summary / error</th>
+              <th style={th}>Jaeger</th>
               <th style={th}>Created (UTC)</th>
             </tr>
           </thead>
           <tbody>
-            {runs.map((run) => (
+            {runs.map((run) => {
+              const jaegerHref = buildJaegerTraceHref({
+                jaegerUiRoot: JAEGER_UI_URL,
+                traceLink: run.trace_link,
+                traceId: run.trace_id,
+              });
+              return (
               <tr key={run.id} style={{ borderBottom: "1px solid #1f2a40" }}>
                 <td style={td}>
                   <Link
@@ -284,9 +298,30 @@ export default function IncidentsPage() {
                   {(run.summary || run.error || "—").slice(0, 120)}
                   {(run.summary || run.error || "").length > 120 ? "…" : ""}
                 </td>
+                <td style={td}>
+                  {jaegerHref ? (
+                    <a
+                      href={jaegerHref}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title="Open trace in Jaeger (new tab)"
+                      style={{ color: "#9ecfff", fontSize: 13, whiteSpace: "nowrap" }}
+                    >
+                      View trace ↗
+                    </a>
+                  ) : (
+                    <span
+                      style={{ color: "#7a8aa6", fontSize: 12 }}
+                      title="No trace_id / trace_link for this run (pre-OTel or export misconfigured)"
+                    >
+                      —
+                    </span>
+                  )}
+                </td>
                 <td style={tdMono}>{run.created_at}</td>
               </tr>
-            ))}
+            );
+            })}
           </tbody>
         </table>
       ) : null}

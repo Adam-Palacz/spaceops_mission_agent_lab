@@ -93,6 +93,53 @@ function traceHref(data: Json, report: Json | null): string | null {
   return null;
 }
 
+/** PS2.4 — EscalationPacket fields align with `apps/agent/state.EscalationPacket` / contracts v1. */
+const ESCALATION_LIST_SECTIONS = [
+  { key: "what_we_know", title: "What we know" },
+  { key: "what_we_dont_know", title: "What we don't know" },
+  { key: "what_to_check", title: "What to check next" },
+] as const;
+
+function mergeEscalationPacket(data: Json | null, report: Json | null): Json | null {
+  const fromReport =
+    report && isRecord(report.escalation_packet) ? report.escalation_packet : null;
+  const fromRoot =
+    data && isRecord(data.escalation_packet) ? data.escalation_packet : null;
+  const pick = fromReport ?? fromRoot;
+  return pick && isRecord(pick) ? pick : null;
+}
+
+function stringListFromField(packet: Json, field: string): string[] {
+  const raw = packet[field];
+  if (!Array.isArray(raw)) return [];
+  return raw.map((x) => asStr(x).trim()).filter(Boolean);
+}
+
+function escalationPacketHasDisplayableContent(packet: Json | null): boolean {
+  if (!packet || Object.keys(packet).length === 0) return false;
+  if (asStr(packet.reason).trim()) return true;
+  for (const { key } of ESCALATION_LIST_SECTIONS) {
+    if (stringListFromField(packet, key).length > 0) return true;
+  }
+  return false;
+}
+
+function reportLooksEscalated(report: Json | null): boolean {
+  if (!report) return false;
+  const es = asStr(report.executive_summary) || asStr(report.summary);
+  return es.startsWith("[ESCALATION]");
+}
+
+function shouldShowEscalationPanel(
+  data: Json,
+  report: Json | null,
+  packet: Json | null,
+): boolean {
+  if (data.escalated === true) return true;
+  if (reportLooksEscalated(report)) return true;
+  return escalationPacketHasDisplayableContent(packet);
+}
+
 export default function IncidentRunDetailPage() {
   const params = useParams();
   const runKey = decodeURIComponent(String(params.runKey || ""));
@@ -204,10 +251,21 @@ export default function IncidentRunDetailPage() {
     return pa.map((x) => asStr(x)).filter(Boolean);
   }, [report]);
 
-  const escalationPacket = useMemo(() => {
-    if (!report) return null;
-    const ep = report.escalation_packet;
-    return isRecord(ep) ? ep : null;
+  const escalationPacket = useMemo(
+    () => mergeEscalationPacket(data, report),
+    [data, report],
+  );
+
+  const showEscalationPanel = useMemo(
+    () =>
+      data ? shouldShowEscalationPanel(data, report, escalationPacket) : false,
+    [data, report, escalationPacket],
+  );
+
+  const escalationTagReason = useMemo(() => {
+    if (!report) return "";
+    const t = report.escalation_reason;
+    return typeof t === "string" ? t.trim() : "";
   }, [report]);
 
   return (
@@ -272,6 +330,76 @@ export default function IncidentRunDetailPage() {
           ) : !asStr(data.error) ? (
             <Section title="Summary / report">
               <p style={{ color: "#7a8aa6" }}>No report object in this run file.</p>
+            </Section>
+          ) : null}
+
+          {showEscalationPanel ? (
+            <Section title="Escalation packet (human handoff)">
+              <div
+                style={{
+                  borderLeft: "4px solid #c9a227",
+                  paddingLeft: 14,
+                  marginTop: 0,
+                }}
+              >
+                <p style={{ fontSize: 13, color: "#e8d89a", marginTop: 0 }}>
+                  Structured handoff fields (<code style={{ fontSize: 12 }}>EscalationPacket</code>
+                  ). Absent bullets mean the agent left no lines for that bucket — not “skipped stages”.
+                </p>
+                {(data.escalated === true || reportLooksEscalated(report)) &&
+                (!escalationPacket || Object.keys(escalationPacket).length === 0 ||
+                  !escalationPacketHasDisplayableContent(escalationPacket)) ? (
+                  <p style={{ fontSize: 13, color: "#a7b4c9", marginBottom: 12 }}>
+                    No structured <code>escalation_packet</code> in this run file — use summary,
+                    run metadata, and trace below (legacy or incomplete persist).
+                  </p>
+                ) : null}
+                <p style={{ marginTop: 0, marginBottom: 12 }}>
+                  <strong style={{ color: "#f0e6cc" }}>Reason</strong>{" "}
+                  <span>
+                    {escalationPacket && asStr(escalationPacket.reason).trim()
+                      ? asStr(escalationPacket.reason)
+                      : "—"}
+                  </span>
+                </p>
+                {escalationTagReason &&
+                escalationTagReason !==
+                  (escalationPacket ? asStr(escalationPacket.reason).trim() : "") ? (
+                  <p style={{ fontSize: 12, color: "#a7b4c9", marginTop: -8, marginBottom: 12 }}>
+                    Tracing tag <code>escalation_reason</code>:{" "}
+                    <code style={{ color: "#9ecfff" }}>{escalationTagReason}</code>
+                  </p>
+                ) : null}
+                {ESCALATION_LIST_SECTIONS.map(({ key, title }) => {
+                  const items = escalationPacket
+                    ? stringListFromField(escalationPacket, key)
+                    : [];
+                  return (
+                    <div key={key} style={{ marginBottom: 14 }}>
+                      <h3 style={escalationSubheadingStyle}>{title}</h3>
+                      {items.length === 0 ? (
+                        <p
+                          style={{
+                            color: "#7a8aa6",
+                            margin: "4px 0 0",
+                            fontSize: 13,
+                          }}
+                        >
+                          (none)
+                        </p>
+                      ) : (
+                        <ul style={{ margin: "4px 0 0", paddingLeft: 20 }}>
+                          {items.map((text, i) => (
+                            <li key={i} style={{ marginBottom: 6 }}>
+                              <ExpandableText text={text} maxChars={280} />
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </Section>
           ) : null}
 
@@ -367,30 +495,6 @@ export default function IncidentRunDetailPage() {
               </>
             ) : null}
           </Section>
-
-          {escalationPacket ? (
-            <Section title="Escalation packet">
-              <p style={{ marginTop: 0 }}>
-                <strong>Reason:</strong> {asStr(escalationPacket.reason) || "—"}
-              </p>
-              {["what_we_know", "what_we_dont_know", "what_to_check"].map((k) => {
-                const arr = escalationPacket[k];
-                if (!Array.isArray(arr) || arr.length === 0) return null;
-                return (
-                  <div key={k} style={{ marginBottom: 12 }}>
-                    <h3 style={h3Style}>{k.replace(/_/g, " ")}</h3>
-                    <ul style={{ margin: 0, paddingLeft: 20 }}>
-                      {arr.map((x, i) => (
-                        <li key={i}>
-                          <ExpandableText text={asStr(x)} maxChars={200} />
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                );
-              })}
-            </Section>
-          ) : null}
 
           {approvalRequests.length > 0 ? (
             <Section title="Approval requests (pending human)">
@@ -614,5 +718,12 @@ const h3Style: CSSProperties = {
   fontSize: 14,
   textTransform: "capitalize",
   marginBottom: 8,
+  color: "#c5d0e0",
+};
+
+const escalationSubheadingStyle: CSSProperties = {
+  fontSize: 14,
+  marginBottom: 6,
+  marginTop: 0,
   color: "#c5d0e0",
 };

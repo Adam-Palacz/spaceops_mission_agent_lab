@@ -1,7 +1,7 @@
 # SpaceOps UI (Next.js) — P4.5
 
 Minimal operator UI for:
-- **Incidents** (`/incidents`): run list with filters (`GET /runs?…`), detail (`GET /runs/{run_key}`) including **pipeline timeline** from run JSON field `stage_timings` (PS2.3; not Jaeger-dependent)
+- **Incidents** (`/incidents`): run list with filters (`GET /runs?…`), detail (`GET /runs/{run_key}`) including **pipeline timeline** (`stage_timings`, PS2.3) and **escalation packet** panel when run is escalated (`report.escalation_packet`, PS2.4)
 - **Approvals** (`/approvals`): list (`GET /approvals`) and actions (`POST /approvals/{id}/approve|reject`)
 - `/` redirects to `/incidents`
 

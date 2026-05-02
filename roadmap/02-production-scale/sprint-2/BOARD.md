@@ -1,14 +1,16 @@
 # PS2 — Board
 
-| Task | Title | Status | Notes |
-|------|-------|--------|-------|
-| PS2.1 | Incident list filters for ops triage | Todo | Time, subsystem, risk, status, confidence. |
-| PS2.2 | Incident detail evidence panel | Todo | Citations/snippets/tool outputs with doc IDs. |
-| PS2.3 | Run timeline and stage durations | Todo | Triage/investigate/decide/report status view. |
-| PS2.4 | Escalation packet UI | Todo | Known/unknown/next checks surfaced explicitly. |
-| PS2.5 | Jaeger deep links + run correlation in UI | Todo | Jump from run detail to trace. |
-| PS2.6 | Replay from existing run input | Todo | Re-run button/API with deterministic metadata. |
-| PS2.7 | Fixture upload simulation flow | Todo | Small input upload + run + compare result. |
-| PS2.8 | Golden-run baseline and diff docs | Todo | Define baseline format and review checklist. |
+| Task | Title | Status | Task file |
+|------|-------|--------|-----------|
+| PS2.1 | Incident list + filters (ops triage) | Todo | [PS2.1-incident-list-filters.md](PS2.1-incident-list-filters.md) |
+| PS2.2 | Incident detail + evidence panel | Todo | [PS2.2-incident-detail-evidence-panel.md](PS2.2-incident-detail-evidence-panel.md) |
+| PS2.3 | Run timeline + stage durations | Todo | [PS2.3-run-timeline-stage-durations.md](PS2.3-run-timeline-stage-durations.md) |
+| PS2.4 | Escalation packet UI | Todo | [PS2.4-escalation-packet-ui.md](PS2.4-escalation-packet-ui.md) |
+| PS2.5 | Jaeger deep links + run correlation in UI | Todo | [PS2.5-jaeger-deep-links-ui.md](PS2.5-jaeger-deep-links-ui.md) |
+| PS2.6 | Replay from existing run input | Todo | [PS2.6-replay-from-existing-run-input.md](PS2.6-replay-from-existing-run-input.md) |
+| PS2.7 | Fixture upload + simulate run | Todo | [PS2.7-fixture-upload-simulation.md](PS2.7-fixture-upload-simulation.md) |
+| PS2.8 | Golden-run baseline + diff (docs + workflow) | Todo | [PS2.8-golden-run-baseline-diff.md](PS2.8-golden-run-baseline-diff.md) |
 
 **Status key:** Todo | In progress | Done | Blocked
+
+**Suggested order:** PS2.1 → PS2.2 → (PS2.3, PS2.4, PS2.5 in parallel) → PS2.6 → PS2.7 → PS2.8.

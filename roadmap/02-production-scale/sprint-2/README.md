@@ -16,7 +16,7 @@ diagnose incidents from evidence and compare behavior across revisions.
 
 ## Tasks
 
-See **[BOARD.md](BOARD.md)** for status of PS2.1-PS2.8.
+See **[BOARD.md](BOARD.md)** for status. Each task has a spec file `PS2.x-*.md` in this folder (same pattern as PS1).
 
 ---
 

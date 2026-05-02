@@ -23,8 +23,10 @@ See **[BOARD.md](BOARD.md)** for status of PS1.1-PS1.9.
 
 ## Definition of done (sprint)
 
-- [ ] Contracts v1 exist and are validated in tests.
-- [ ] Migrations are repeatable and documented.
-- [ ] Replay baseline is runnable and deterministic enough for regression checks.
-- [ ] CI includes at least one e2e must-escalate and one evidence-required gate.
-- [ ] Two demo scenarios still work end-to-end after changes.
+- [x] Contracts v1 exist and are validated in tests.
+- [x] Migrations are repeatable and documented (CI smoke: `alembic upgrade/downgrade/upgrade`).
+- [x] Replay baseline is runnable and deterministic enough for regression checks.
+- [x] CI includes at least one e2e must-escalate and one evidence-required gate (`evals.scoring` in `.github/workflows/ci.yml`).
+- [ ] Two demo scenarios still work end-to-end after changes (manual / release smoke; see [SPRINT_REVIEW.md](SPRINT_REVIEW.md)).
+
+**Sprint retrospective:** [SPRINT_REVIEW.md](SPRINT_REVIEW.md)

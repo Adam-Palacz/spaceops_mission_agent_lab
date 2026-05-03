@@ -20,12 +20,20 @@ MCP behaviour under unreliable links (so platform stress does not “lose the in
 
 ## Tasks
 
-See **[BOARD.md](BOARD.md)** for status of PS3.1–PS3.10.
+See **[BOARD.md](BOARD.md)** for status.
 
-| Spec | Topic |
-|------|--------|
-| [PS3.9-langgraph-durable-checkpoint.md](PS3.9-langgraph-durable-checkpoint.md) | Graph state survives restarts |
-| [PS3.10-mcp-resilience-lossy-links.md](PS3.10-mcp-resilience-lossy-links.md) | MCP chaos + escalation proofs |
+| Task | Spec |
+|------|------|
+| PS3.1 | [Queue strategy ADR](PS3.1-queue-strategy-decision.md) |
+| PS3.2 | [Offsets + idempotency](PS3.2-consumer-offset-idempotency.md) |
+| PS3.3 | [Retry + DLQ](PS3.3-retry-workflow-dlq.md) |
+| PS3.4 | [Replay queued events](PS3.4-replay-queued-events.md) |
+| PS3.5 | [Burst / backpressure scenario](PS3.5-burst-backpressure-scenario.md) |
+| PS3.6 | [Out-of-order / dup / drop](PS3.6-out-of-order-dup-drop-simulation.md) |
+| PS3.7 | [Contact-window hooks](PS3.7-contact-window-simulation-hooks.md) |
+| PS3.8 | [Runbook queue + DLQ recovery](PS3.8-runbook-queue-dlq-recovery.md) |
+| PS3.9 | [LangGraph durable checkpoint](PS3.9-langgraph-durable-checkpoint.md) |
+| PS3.10 | [MCP lossy-link resilience](PS3.10-mcp-resilience-lossy-links.md) |
 
 ---
 

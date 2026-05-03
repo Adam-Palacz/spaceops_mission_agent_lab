@@ -1,6 +1,7 @@
 /**
  * PS2.6 — HTTP client for replay metadata + execute replay (`apps/api` PS1.4–PS1.5).
- * Outcome semantics match `apps/replay/workflow.compare_outcomes` / `scripts/replay_run.py`.
+ * Outcome semantics match `apps/replay/workflow.compare_outcomes` / `scripts/replay_run.py`
+ * (subsystem, escalated, has_citations, escalation_reason, citation_count — PS2.8 golden baselines).
  */
 
 import { API_BASE_URL } from "./config";

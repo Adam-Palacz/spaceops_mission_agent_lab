@@ -1,0 +1,6 @@
+{
+  "run_id": "r-golden-ci",
+  "incident_id": "inc-golden-ci",
+  "payload": {"golden_ci": true},
+  "report": {}
+}

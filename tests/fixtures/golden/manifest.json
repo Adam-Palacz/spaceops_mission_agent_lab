@@ -1,0 +1,10 @@
+{
+  "schema_version": "golden_manifest_v1",
+  "cases": [
+    {
+      "id": "golden-ci",
+      "run_id": "r-golden-ci",
+      "description": "Synthetic fixture — pytest mocks pipeline; see docs/golden_run_baselines.md"
+    }
+  ]
+}

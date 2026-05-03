@@ -40,3 +40,6 @@ Replay metadata improves reproducibility, but results can still vary because:
 
 Use `payload_hash`, prompt versions, model id, and trace/audit linkage for
 comparison and triage instead of expecting bit-identical outputs.
+
+For **approved replay outcome pins** (golden baselines), see
+[Golden-run baselines](golden_run_baselines.md) (PS2.8).

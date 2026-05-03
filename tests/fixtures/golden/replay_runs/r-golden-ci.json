@@ -1,0 +1,18 @@
+{
+  "schema_version": "v1",
+  "run_id": "r-golden-ci",
+  "incident_id": "inc-golden-ci",
+  "payload_hash": "590f49f6a738766e1ada1590f9897f3101d352a1c6eca96c3f6edd557eeaf34d",
+  "trace_id": "golden-ci",
+  "replay_source": "api",
+  "model": {"provider": "openai", "model_id": "gpt-4.1-nano"},
+  "prompts": {"triage": "v1", "decide": "v1"},
+  "runtime": {"python_version": "3.12", "platform": "test"},
+  "original_outcome": {
+    "subsystem": "Power",
+    "escalated": false,
+    "has_citations": true,
+    "escalation_reason": "",
+    "citation_count": 1
+  }
+}

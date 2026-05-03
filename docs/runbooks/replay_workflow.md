@@ -5,6 +5,11 @@ Minimal replay lets you re-run a stored incident input by `run_id` and compare:
 - `subsystem`
 - `escalated`
 - `has_citations`
+- `escalation_reason` (`report.escalation_packet.reason` when present)
+- `citation_count` (length of citations, else `citation_refs`)
+
+**Golden baselines (PS2.8):** pin approved replay outcomes for regression checks — see
+[Golden-run baselines](../golden_run_baselines.md) (`scripts/golden_baseline.py`, `make golden-check`).
 
 ## API usage
 

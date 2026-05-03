@@ -34,6 +34,12 @@ compares key outputs (classification, escalation decision, evidence presence).
 
 ---
 
+## Related (PS2.8)
+
+Golden-run baselines (pinned expected replay outcomes): `docs/golden_run_baselines.md`.
+
+---
+
 ## Test requirements
 
 - [x] Replay of known run succeeds with deterministic core outcomes.

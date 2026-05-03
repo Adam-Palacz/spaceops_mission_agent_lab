@@ -73,6 +73,12 @@ Documents in `evals/injection_suite/` are fake runbooks that try to trigger unsa
 
 GitHub Actions workflow `.github/workflows/ci.yml` runs `python -m evals.scoring` (including the injection suite) in the `evals` job on push/PR to `main`. Set `OPENAI_API_KEY` (and optionally `POSTGRES_PASSWORD`) in repo secrets for the job to succeed.
 
+The `test` job also runs **`tests/test_golden_baseline.py`** (synthetic replay fixture): pinned
+`expected_outcome` fields must still match the mocked pipeline. After you **intentionally** change
+model or prompt behavior, refresh eval expectations in `evals/cases.yaml` / scoring as usual, and
+if you maintain repo golden pins under `data/replay/golden/`, run
+`python scripts/golden_baseline.py update --run-id …` per [docs/golden_run_baselines.md](../docs/golden_run_baselines.md).
+
 ## Shadow model comparison (S3.1 / P4.8)
 
 Compare **production** vs **candidate** model ids offline (does not change live config):

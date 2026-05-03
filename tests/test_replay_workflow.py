@@ -31,6 +31,8 @@ def test_replay_workflow_no_diff(monkeypatch, tmp_path: Path):
                     "subsystem": "Power",
                     "escalated": False,
                     "has_citations": True,
+                    "escalation_reason": "",
+                    "citation_count": 1,
                 },
             }
         ),
@@ -82,6 +84,8 @@ def test_replay_workflow_detects_diff(monkeypatch, tmp_path: Path):
                     "subsystem": "Power",
                     "escalated": False,
                     "has_citations": True,
+                    "escalation_reason": "",
+                    "citation_count": 1,
                 },
             }
         ),
@@ -107,7 +111,7 @@ def test_replay_workflow_detects_diff(monkeypatch, tmp_path: Path):
     out = replay_by_run_id("r-2")
     assert out["comparison"]["has_diff"] is True
     fields = {d["field"] for d in out["comparison"]["diffs"]}
-    assert {"subsystem", "escalated", "has_citations"} <= fields
+    assert {"subsystem", "escalated", "has_citations", "citation_count"} <= fields
 
 
 def test_replay_workflow_resolves_artifact_by_payload_hash_without_run_id(
@@ -140,6 +144,8 @@ def test_replay_workflow_resolves_artifact_by_payload_hash_without_run_id(
                     "subsystem": "Power",
                     "escalated": False,
                     "has_citations": False,
+                    "escalation_reason": "",
+                    "citation_count": 0,
                 },
             }
         ),
@@ -198,6 +204,8 @@ def test_replay_workflow_resolves_incident_fixture_json(monkeypatch, tmp_path: P
                     "subsystem": "Payload",
                     "escalated": False,
                     "has_citations": False,
+                    "escalation_reason": "",
+                    "citation_count": 0,
                 },
             }
         ),

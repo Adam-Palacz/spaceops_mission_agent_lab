@@ -51,41 +51,91 @@ def _find_run_artifact(run_id: str, metadata: dict[str, Any]) -> dict[str, Any]:
     )
 
 
+REPLAY_COMPARISON_FIELDS = (
+    "subsystem",
+    "escalated",
+    "has_citations",
+    "escalation_reason",
+    "citation_count",
+)
+
+
+def _outcome_from_run_artifact(run_artifact: dict[str, Any]) -> dict[str, Any]:
+    report = run_artifact.get("report") or {}
+    if not isinstance(report, dict):
+        report = {}
+    packet = report.get("escalation_packet") or {}
+    if not isinstance(packet, dict):
+        packet = {}
+    cites = run_artifact.get("citations") or []
+    if not isinstance(cites, list):
+        cites = []
+    refs = report.get("citation_refs") or []
+    if not isinstance(refs, list):
+        refs = []
+    citation_count = len(cites) if cites else len(refs)
+    return {
+        "subsystem": str(run_artifact.get("subsystem") or ""),
+        "escalated": bool(run_artifact.get("escalated") or bool(packet)),
+        "has_citations": bool(cites or refs),
+        "escalation_reason": str(packet.get("reason") or ""),
+        "citation_count": int(citation_count),
+    }
+
+
 def _extract_outcome_from_result(result: dict[str, Any]) -> dict[str, Any]:
     report = result.get("report") or {}
+    if not isinstance(report, dict):
+        report = {}
+    top_packet = result.get("escalation_packet") or {}
+    if not isinstance(top_packet, dict):
+        top_packet = {}
+    rep_packet = report.get("escalation_packet") or {}
+    if not isinstance(rep_packet, dict):
+        rep_packet = {}
+    reason = str(top_packet.get("reason") or rep_packet.get("reason") or "")
+    cites = result.get("citations") or []
+    if not isinstance(cites, list):
+        cites = []
+    refs = report.get("citation_refs") or []
+    if not isinstance(refs, list):
+        refs = []
+    citation_count = len(cites) if cites else len(refs)
     return {
         "subsystem": str(result.get("subsystem") or ""),
         "escalated": bool(result.get("escalated")),
-        "has_citations": bool(
-            (result.get("citations") or []) or (report.get("citation_refs") or [])
-        ),
+        "has_citations": bool(cites or refs),
+        "escalation_reason": reason,
+        "citation_count": int(citation_count),
     }
 
 
 def _extract_original_outcome(
     metadata: dict[str, Any], run_artifact: dict[str, Any]
 ) -> dict[str, Any]:
+    base = _outcome_from_run_artifact(run_artifact)
     original = metadata.get("original_outcome")
     if isinstance(original, dict):
-        return {
-            "subsystem": str(original.get("subsystem") or ""),
-            "escalated": bool(original.get("escalated")),
-            "has_citations": bool(original.get("has_citations")),
-        }
-    report = run_artifact.get("report") or {}
-    return {
-        "subsystem": str(run_artifact.get("subsystem") or ""),
-        "escalated": bool(
-            run_artifact.get("escalated") or bool(report.get("escalation_packet"))
-        ),
-        "has_citations": bool(report.get("citation_refs") or []),
-    }
+        if "subsystem" in original:
+            base["subsystem"] = str(original.get("subsystem") or "")
+        if "escalated" in original:
+            base["escalated"] = bool(original.get("escalated"))
+        if "has_citations" in original:
+            base["has_citations"] = bool(original.get("has_citations"))
+        if "escalation_reason" in original:
+            base["escalation_reason"] = str(original.get("escalation_reason") or "")
+        if "citation_count" in original:
+            try:
+                base["citation_count"] = int(original["citation_count"])
+            except (TypeError, ValueError):
+                base["citation_count"] = 0
+    return base
 
 
 def compare_outcomes(
     original: dict[str, Any], replay: dict[str, Any]
 ) -> dict[str, Any]:
-    fields = ("subsystem", "escalated", "has_citations")
+    fields = REPLAY_COMPARISON_FIELDS
     diffs: list[dict[str, Any]] = []
     for field in fields:
         old = original.get(field)

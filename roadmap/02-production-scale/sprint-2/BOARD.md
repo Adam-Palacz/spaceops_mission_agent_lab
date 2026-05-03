@@ -9,7 +9,7 @@
 | PS2.5 | Jaeger deep links + run correlation in UI | Done | [PS2.5-jaeger-deep-links-ui.md](PS2.5-jaeger-deep-links-ui.md) |
 | PS2.6 | Replay from existing run input | Done | [PS2.6-replay-from-existing-run-input.md](PS2.6-replay-from-existing-run-input.md) |
 | PS2.7 | Fixture upload + simulate run | Done | [PS2.7-fixture-upload-simulation.md](PS2.7-fixture-upload-simulation.md) |
-| PS2.8 | Golden-run baseline + diff (docs + workflow) | Todo | [PS2.8-golden-run-baseline-diff.md](PS2.8-golden-run-baseline-diff.md) |
+| PS2.8 | Golden-run baseline + diff (docs + workflow) | Done | [PS2.8-golden-run-baseline-diff.md](PS2.8-golden-run-baseline-diff.md) |
 
 **Status key:** Todo | In progress | Done | Blocked
 

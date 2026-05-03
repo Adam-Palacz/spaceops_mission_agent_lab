@@ -3,7 +3,7 @@
 | Field | Value |
 |-------|-------|
 | **Task ID** | PS2.8 |
-| **Status** | Todo |
+| **Status** | Done |
 
 ---
 
@@ -17,20 +17,20 @@ review checklist** for engineers before merge — aligned with PS1.5 replay mach
 
 ## Requirements
 
-- [ ] Document baseline file layout, naming (`run_<id>_baseline.json` or similar), and update policy.
-- [ ] Provide at least **one** scripted command or Makefile target: `golden:update` / `golden:check` (exact UX flexible).
-- [ ] Integrate with **at least one CI check OR documented mandatory manual gate** before release (per sprint README DoD).
-- [ ] Clarify what fields are compared (e.g. `subsystem`, `escalated`, `escalation_packet.reason`, citation counts).
+- [x] Document baseline file layout, naming (`run_<id>_baseline.json` or similar), and update policy.
+- [x] Provide at least **one** scripted command or Makefile target: `golden:update` / `golden:check` (exact UX flexible).
+- [x] Integrate with **at least one CI check OR documented mandatory manual gate** before release (per sprint README DoD).
+- [x] Clarify what fields are compared (e.g. `subsystem`, `escalated`, `escalation_packet.reason`, citation counts).
 
 ---
 
 ## Checklist
 
-- [ ] Link from `roadmap/02-production-scale/sprint-1` replay docs if present; avoid duplicating PS1.5 spec.
-- [ ] Add short section to `docs/` or `evals/` README on when to refresh baselines after intentional model changes.
+- [x] Link from `roadmap/02-production-scale/sprint-1` replay docs if present; avoid duplicating PS1.5 spec.
+- [x] Add short section to `docs/` or `evals/` README on when to refresh baselines after intentional model changes.
 
 ---
 
 ## Test / acceptance
 
-- [ ] CI or script fails when baseline mismatch for pinned golden case (or checklist signed in PR template if CI deferred).
+- [x] CI or script fails when baseline mismatch for pinned golden case (or checklist signed in PR template if CI deferred).

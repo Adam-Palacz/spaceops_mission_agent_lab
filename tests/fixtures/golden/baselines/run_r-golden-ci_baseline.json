@@ -1,0 +1,13 @@
+{
+  "schema_version": "golden_baseline_v1",
+  "run_id": "r-golden-ci",
+  "case_id": "golden-ci",
+  "expected_outcome": {
+    "subsystem": "Power",
+    "escalated": false,
+    "has_citations": true,
+    "escalation_reason": "",
+    "citation_count": 1
+  },
+  "notes": "CI fixture — keep aligned with mocked replay outcome in tests/test_golden_baseline.py"
+}

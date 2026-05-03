@@ -24,6 +24,8 @@ export type RunListItem = {
   trace_id?: string | null;
   /** Absolute URL from report when agent emitted `trace_link` (PS2.5). */
   trace_link?: string | null;
+  /** True when run was created via POST /runs/simulate (PS2.7). */
+  simulation?: boolean;
 };
 
 async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
@@ -93,6 +95,7 @@ export default function IncidentsPage() {
       risk: sp.get("risk") || "",
       status: sp.get("status") || "",
       escalated: sp.get("escalated") || "",
+      simulation: sp.get("simulation") || "",
       confidence: sp.get("confidence") || "",
       sat_id: sp.get("sat_id") || "",
       after: sp.get("after") || "",
@@ -110,6 +113,7 @@ export default function IncidentsPage() {
       "risk",
       "status",
       "escalated",
+      "simulation",
       "confidence",
       "sat_id",
       "after",
@@ -192,6 +196,18 @@ export default function IncidentsPage() {
           </select>
         </label>
         <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          <span>Simulation (PS2.7)</span>
+          <select
+            name="simulation"
+            defaultValue={formDefaults.simulation}
+            style={inputStyle}
+          >
+            <option value="">(any)</option>
+            <option value="true">fixture upload only</option>
+            <option value="false">exclude fixture uploads</option>
+          </select>
+        </label>
+        <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
           <span>Confidence</span>
           <select
             name="confidence"
@@ -262,6 +278,7 @@ export default function IncidentsPage() {
           <thead>
             <tr style={{ textAlign: "left", borderBottom: "1px solid #30405f" }}>
               <th style={th}>Incident</th>
+              <th style={th}>Sim</th>
               <th style={th}>Subsystem</th>
               <th style={th}>Risk</th>
               <th style={th}>Esc.</th>
@@ -288,6 +305,24 @@ export default function IncidentsPage() {
                   >
                     {run.incident_id || "—"}
                   </Link>
+                </td>
+                <td style={td} title="Fixture simulation (PS2.7)">
+                  {run.simulation ? (
+                    <span
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 700,
+                        color: "#0b1220",
+                        background: "#f0c674",
+                        padding: "2px 6px",
+                        borderRadius: 4,
+                      }}
+                    >
+                      SIM
+                    </span>
+                  ) : (
+                    <span style={{ color: "#7a8aa6" }}>—</span>
+                  )}
                 </td>
                 <td style={td}>{run.subsystem || "—"}</td>
                 <td style={td}>{run.risk || "—"}</td>

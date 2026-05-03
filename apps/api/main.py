@@ -9,12 +9,22 @@ from __future__ import annotations
 import json
 import hashlib
 import re
+import uuid
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 import time
 
-from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request
+from fastapi import (
+    Depends,
+    FastAPI,
+    File,
+    Header,
+    HTTPException,
+    Query,
+    Request,
+    UploadFile,
+)
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel, Field
@@ -32,6 +42,10 @@ from apps.telemetry import init_telemetry
 # Base path for data (repo root when run from repo)
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 DATA_DIR = REPO_ROOT / "data"
+
+# PS2.7: fixture upload — UTF-8 JSON only, bounded size (threat model in docs).
+FIXTURE_UPLOAD_MAX_BYTES = 48 * 1024
+SIM_INCIDENT_PREFIX = "sim-upload-"
 
 app = FastAPI(
     title="SpaceOps Mission Agent Lab API",
@@ -291,6 +305,92 @@ class RunTriggerPayload(BaseModel):
     )
 
 
+class SimulateQuickFormPayload(BaseModel):
+    """
+    PS2.7 — Prosty formularz: backend składa `payload` dla `run_pipeline`.
+    Wszystkie listy/selecty walidowane przez Pydantic (422 przy braku/brakach).
+    """
+
+    declared_incident_id: str = Field(
+        ...,
+        min_length=1,
+        max_length=120,
+        pattern=r"^[A-Za-z0-9._-]+$",
+        description="Etykieta logiczna (run i tak dostaje sim-upload-…).",
+    )
+    scenario_ref: Literal["fixture", "no-data", "test"] = Field(
+        ...,
+        description="payload.ref — wybór scenariusza jak w evalach.",
+    )
+    subsystem_hint: Literal[
+        "ADCS", "Power", "Thermal", "Comms", "Payload", "Ground"
+    ] = Field(...)
+    risk_level: Literal["low", "medium", "high"] = Field(...)
+    time_range_start: str = Field(
+        default="2025-02-14T09:00:00Z",
+        min_length=1,
+        max_length=80,
+    )
+    time_range_end: str = Field(
+        default="2025-02-14T11:00:00Z",
+        min_length=1,
+        max_length=80,
+    )
+    channels: str | None = Field(
+        None,
+        max_length=800,
+        description="Opcjonalnie: kanały telemetryczne, przecinki.",
+    )
+    message: str | None = Field(
+        None,
+        max_length=500,
+        description="Opcjonalnie: krótki opis (hint KB).",
+    )
+
+    def build_payload(self) -> dict[str, Any]:
+        pl: dict[str, Any] = {
+            "ref": self.scenario_ref,
+            "subsystem": self.subsystem_hint,
+            "risk": self.risk_level,
+            "time_range_start": self.time_range_start.strip(),
+            "time_range_end": self.time_range_end.strip(),
+        }
+        if self.channels and self.channels.strip():
+            parts = [c.strip() for c in self.channels.split(",") if c.strip()]
+            if parts:
+                pl["channels"] = parts
+        if self.message and self.message.strip():
+            pl["message"] = self.message.strip()
+        return pl
+
+
+def _safe_upload_basename(name: str | None) -> str:
+    """Strip path components and control chars; never trust client filenames."""
+    if not name or not str(name).strip():
+        return "fixture.json"
+    base = Path(str(name)).name
+    if not base or base in (".", ".."):
+        return "fixture.json"
+    cleaned = re.sub(r"[^\w.\-]+", "_", base, flags=re.UNICODE).strip("._")[:120]
+    if not cleaned:
+        return "fixture.json"
+    if not cleaned.lower().endswith(".json"):
+        return f"{cleaned}.json"
+    return cleaned
+
+
+def _slug_for_sim_incident_id(declared: str) -> str:
+    s = re.sub(r"[^A-Za-z0-9._-]+", "-", declared.strip()).strip("-")
+    return (s[:48] if s else "inc") or "inc"
+
+
+def _build_sim_incident_id(declared_incident_id: str) -> str:
+    """Isolated incident_id so fixture runs do not collide with production ids (PS2.7)."""
+    slug = _slug_for_sim_incident_id(declared_incident_id)
+    token = uuid.uuid4().hex[:10]
+    return f"{SIM_INCIDENT_PREFIX}{token}-{slug}"
+
+
 @app.post("/runs")
 def trigger_run(payload: RunTriggerPayload) -> JSONResponse:
     """
@@ -360,6 +460,148 @@ def trigger_run(payload: RunTriggerPayload) -> JSONResponse:
         raise HTTPException(status_code=500, detail=f"Pipeline failed: {e}")
 
 
+def _simulate_run_core(
+    declared_incident_id: str,
+    payload: dict[str, Any],
+    fixture_upload_label: str,
+) -> JSONResponse:
+    """Shared simulate persistence + metrics (PS2.7): file upload i formularz JSON."""
+    from apps.agent.graph import run_pipeline
+
+    declared = str(declared_incident_id).strip()
+    pl = dict(payload)
+    sim_incident_id = _build_sim_incident_id(declared)
+    runs_dir = DATA_DIR / "incidents"
+    runs_dir.mkdir(parents=True, exist_ok=True)
+    run_file = (
+        runs_dir
+        / f"run_{sim_incident_id}_{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')}.json"
+    )
+    upload_name = _safe_upload_basename(fixture_upload_label)
+    started = time.perf_counter()
+    try:
+        result = run_pipeline(sim_incident_id, pl, replay_source="fixture_sim")
+        report = result.get("report") or {}
+        run_id = str(result.get("run_id") or "")
+        duration = max(0.0, time.perf_counter() - started)
+        AGENT_RUNS_TOTAL.labels(status="success").inc()
+        AGENT_RUN_DURATION_SECONDS.observe(duration)
+        calls = int(result.get("llm_calls_used") or 0)
+        if calls >= 0:
+            AGENT_TOOL_CALLS_PER_RUN.observe(calls)
+        with open(run_file, "w", encoding="utf-8") as f:
+            json.dump(
+                {
+                    "run_id": run_id,
+                    "incident_id": sim_incident_id,
+                    "source_fixture_incident_id": declared,
+                    "simulation": True,
+                    "fixture_upload_name": upload_name,
+                    "payload": pl,
+                    "report": report,
+                    "subsystem": str(result.get("subsystem") or ""),
+                    "risk": str(result.get("risk") or ""),
+                    "escalated": bool(result.get("escalated")),
+                    "trace_id": str(result.get("trace_id") or ""),
+                    "stage_timings": result.get("stage_timings") or [],
+                },
+                f,
+                indent=2,
+                ensure_ascii=False,
+            )
+        return JSONResponse(
+            status_code=200,
+            content={
+                "status": "completed",
+                "simulation": True,
+                "run_key": run_file.stem,
+                "run_id": run_id,
+                "incident_id": sim_incident_id,
+                "source_fixture_incident_id": declared,
+                "payload": pl,
+                "report": report,
+            },
+        )
+    except Exception as e:
+        duration = max(0.0, time.perf_counter() - started)
+        AGENT_RUNS_TOTAL.labels(status="error").inc()
+        AGENT_RUN_DURATION_SECONDS.observe(duration)
+        AGENT_ERRORS_TOTAL.labels(type=e.__class__.__name__).inc()
+        with open(run_file, "w", encoding="utf-8") as f:
+            json.dump(
+                {
+                    "incident_id": sim_incident_id,
+                    "source_fixture_incident_id": declared,
+                    "simulation": True,
+                    "fixture_upload_name": upload_name,
+                    "payload": pl,
+                    "error": str(e),
+                },
+                f,
+                indent=2,
+                ensure_ascii=False,
+            )
+        raise HTTPException(status_code=500, detail=f"Pipeline failed: {e}") from e
+
+
+@app.post("/runs/simulate/quick")
+def simulate_run_quick(form: SimulateQuickFormPayload) -> JSONResponse:
+    """
+    PS2.7: prosty formularz — walidacja Pydantic; backend składa `payload` i uruchamia symulację.
+    """
+    pl = form.build_payload()
+    return _simulate_run_core(form.declared_incident_id, pl, "quick-form.json")
+
+
+@app.post("/runs/simulate")
+async def simulate_run_from_fixture(
+    file: UploadFile = File(
+        ..., description="Single UTF-8 JSON object: incident_id + payload"
+    ),
+) -> JSONResponse:
+    """
+    PS2.7: upload a small incident-shaped JSON fixture and run the pipeline under an isolated
+    incident_id (sim-upload-…). Same persistence shape as POST /runs; list rows set simulation=true.
+    """
+    raw = await file.read()
+    if len(raw) > FIXTURE_UPLOAD_MAX_BYTES:
+        raise HTTPException(
+            status_code=413,
+            detail=f"Fixture too large (max {FIXTURE_UPLOAD_MAX_BYTES} bytes)",
+        )
+    try:
+        text = raw.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise HTTPException(
+            status_code=400, detail="Fixture must be valid UTF-8 text"
+        ) from exc
+    text = text.strip()
+    if not text:
+        raise HTTPException(status_code=400, detail="Empty fixture")
+    try:
+        obj: Any = json.loads(text)
+    except json.JSONDecodeError as exc:
+        raise HTTPException(status_code=400, detail=f"Invalid JSON: {exc}") from exc
+    if not isinstance(obj, dict):
+        raise HTTPException(
+            status_code=400, detail="Fixture must be a single JSON object"
+        )
+    declared = str(obj.get("incident_id") or "").strip()
+    pl = obj.get("payload")
+    if not declared:
+        raise HTTPException(
+            status_code=400,
+            detail="Fixture must include non-empty string incident_id",
+        )
+    if not isinstance(pl, dict):
+        raise HTTPException(
+            status_code=400,
+            detail="Fixture must include payload as a JSON object",
+        )
+
+    return _simulate_run_core(declared, pl, file.filename or "fixture.json")
+
+
 _RUN_KEY_SAFE = re.compile(r"^run_[A-Za-z0-9._-]+$")
 
 
@@ -425,6 +667,7 @@ def _run_row_from_file(path: Path, payload: dict[str, Any]) -> dict[str, Any]:
         "confidence": _derive_confidence(pl, esc_out, report),
         "trace_id": trace_id or None,
         "trace_link": trace_link,
+        "simulation": bool(payload.get("simulation")),
     }
 
 
@@ -450,6 +693,10 @@ def list_runs(
     ),
     before: str | None = Query(
         None, description="ISO8601: include runs with created_at <= before"
+    ),
+    simulation: bool | None = Query(
+        None,
+        description="When true/false, filter rows from POST /runs/simulate (PS2.7)",
     ),
 ) -> JSONResponse:
     """
@@ -538,6 +785,8 @@ def list_runs(
         if sat_f and sat_f not in str(row.get("sat_id") or "").lower():
             continue
         if conf_f and str(row.get("confidence") or "").lower() != conf_f:
+            continue
+        if simulation is not None and bool(row.get("simulation")) != simulation:
             continue
         out.append(row)
         if len(out) >= limit:

@@ -45,6 +45,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             <Link href="/replays" style={navLink}>
               Replay
             </Link>
+            <Link href="/simulate" style={navLink}>
+              Simulate
+            </Link>
           </nav>
         </header>
         {children}

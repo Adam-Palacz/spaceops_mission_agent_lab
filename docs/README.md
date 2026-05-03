@@ -85,6 +85,7 @@ The **docs/** directory holds project documentation that supports both humans an
 - DB migrations runbook (PS1.3): [runbooks/db_migrations.md](runbooks/db_migrations.md)
 - Replay metadata schema and usage (PS1.4): [replay_metadata.md](replay_metadata.md)
 - Replay CLI/API workflow (PS1.5): [runbooks/replay_workflow.md](runbooks/replay_workflow.md)
+- Fixture upload + simulate (PS2.7): [runbooks/fixture_upload_simulation.md](runbooks/fixture_upload_simulation.md)
 - LLM gateway contract (PS1.6): [llm_gateway.md](llm_gateway.md)
 - Guardrails fail-closed minimum hardening (PS1.7): [runbooks/guardrails_minimum_hardening.md](runbooks/guardrails_minimum_hardening.md)
 - Distributed tracing + W3C propagation verification (PS1.9): [runbooks/distributed_tracing_ps19.md](runbooks/distributed_tracing_ps19.md)

@@ -72,6 +72,29 @@ jobs:
           POSTGRES_PASSWORD: spaceops
           DATABASE_URL: postgresql://spaceops:spaceops@localhost:5432/spaceops
 
+  docker-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Validate Compose configuration
+        env:
+          POSTGRES_PASSWORD: ci-docker-build
+          APPROVAL_API_KEY: ""
+        run: docker compose -f infra/docker-compose.yml --project-directory . config >/dev/null
+
+      - name: Build application images (API, UI, MCP)
+        env:
+          POSTGRES_PASSWORD: ci-docker-build
+          APPROVAL_API_KEY: ""
+        run: |
+          docker compose -f infra/docker-compose.yml --project-directory . --profile ui build \
+            api ui telemetry-mcp kb-mcp ticket-mcp gitops-mcp
+
   evals:
     runs-on: ubuntu-latest
     steps:

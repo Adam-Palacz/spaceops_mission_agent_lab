@@ -305,6 +305,118 @@ def test_runs_get_filter_subsystem(api_client, tmp_path: Path):
     assert runs[0]["incident_id"] == "a"
 
 
+def test_runs_simulate_fixture_too_large_returns_413(api_client):
+    """PS2.7: oversized upload rejected before pipeline."""
+    prefix = b'{"incident_id":"x","payload":{}}'
+    body = prefix + b"0" * (52 * 1024)
+    response = api_client.post(
+        "/runs/simulate",
+        files={"file": ("huge.json", body, "application/json")},
+    )
+    assert response.status_code == 413
+
+
+def test_runs_simulate_rejects_invalid_fixture(api_client):
+    response = api_client.post(
+        "/runs/simulate",
+        files={"file": ("bad.json", b"not json {", "application/json")},
+    )
+    assert response.status_code == 400
+
+
+def test_runs_simulate_quick_validation_returns_422(api_client):
+    """PS2.7: quick form requires declared_incident_id, scenario_ref, subsystem, risk."""
+    response = api_client.post("/runs/simulate/quick", json={})
+    assert response.status_code == 422
+
+
+def test_runs_simulate_quick_success(api_client, monkeypatch, tmp_path: Path):
+    """POST /runs/simulate/quick builds payload server-side."""
+
+    def _fake_pipeline(incident_id, payload=None, replay_source="api"):
+        assert str(incident_id).startswith("sim-upload-")
+        assert replay_source == "fixture_sim"
+        assert payload.get("ref") == "fixture"
+        assert payload.get("subsystem") == "Power"
+        assert payload.get("risk") == "low"
+        return {
+            "run_id": "quick-sim-1",
+            "report": {"executive_summary": "quick ok"},
+            "subsystem": "Power",
+            "risk": "low",
+            "escalated": False,
+            "trace_id": "",
+            "stage_timings": [],
+        }
+
+    monkeypatch.setattr("apps.agent.graph.run_pipeline", _fake_pipeline)
+    response = api_client.post(
+        "/runs/simulate/quick",
+        json={
+            "declared_incident_id": "lab-quick",
+            "scenario_ref": "fixture",
+            "subsystem_hint": "Power",
+            "risk_level": "low",
+            "time_range_start": "2025-02-14T09:00:00Z",
+            "time_range_end": "2025-02-14T11:00:00Z",
+            "channels": "power.bus_voltage, thermal.plate_t",
+            "message": "bus glitch",
+        },
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body.get("simulation") is True
+    assert body.get("payload", {}).get("channels") == [
+        "power.bus_voltage",
+        "thermal.plate_t",
+    ]
+    assert body.get("payload", {}).get("message") == "bus glitch"
+
+
+def test_runs_simulate_success_sets_simulation_flag(
+    api_client, monkeypatch, tmp_path: Path
+):
+    """PS2.7: simulate uses isolated incident_id and persists simulation=true."""
+
+    def _fake_pipeline(incident_id, payload=None, replay_source="api"):
+        assert str(incident_id).startswith("sim-upload-")
+        assert replay_source == "fixture_sim"
+        assert isinstance(payload, dict)
+        return {
+            "run_id": "replay-sim-1",
+            "report": {"executive_summary": "sim ok"},
+            "subsystem": "Power",
+            "risk": "low",
+            "escalated": False,
+            "trace_id": "",
+            "stage_timings": [],
+        }
+
+    monkeypatch.setattr("apps.agent.graph.run_pipeline", _fake_pipeline)
+    fx = json.dumps({"incident_id": "orig-z", "payload": {"ref": "fixture"}})
+    response = api_client.post(
+        "/runs/simulate",
+        files={"file": ("lab.json", fx.encode("utf-8"), "application/json")},
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body.get("simulation") is True
+    assert body.get("source_fixture_incident_id") == "orig-z"
+    assert body.get("run_key")
+    assert str(body.get("incident_id") or "").startswith("sim-upload-")
+
+    runs_dir = tmp_path / "data" / "incidents"
+    written = list(runs_dir.glob("run_sim-upload*.json"))
+    assert len(written) == 1
+    disk = json.loads(written[0].read_text(encoding="utf-8"))
+    assert disk.get("simulation") is True
+    assert disk.get("source_fixture_incident_id") == "orig-z"
+
+    listed = api_client.get("/runs?simulation=true&limit=20").json().get("runs", [])
+    assert any(r.get("id") == written[0].stem for r in listed)
+    assert all(r.get("simulation") for r in listed if r.get("id") == written[0].stem)
+
+
 def test_replay_run_endpoint_returns_comparison(api_client, monkeypatch):
     monkeypatch.setattr(
         "apps.replay.workflow.replay_by_run_id",

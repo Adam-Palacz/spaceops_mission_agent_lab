@@ -296,6 +296,30 @@ export default function IncidentRunDetailPage() {
         Run file: <code>{runKey}</code>
       </p>
 
+      {!loading && !error && data && data.simulation === true ? (
+        <div
+          style={{
+            padding: 12,
+            marginBottom: 16,
+            background: "#2a2410",
+            border: "1px solid #c9a227",
+            borderRadius: 8,
+          }}
+        >
+          <strong style={{ color: "#f0e6cc" }}>Fixture simulation (PS2.7)</strong>
+          <p style={{ margin: "8px 0 0", fontSize: 13, color: "#e8d89a" }}>
+            Pipeline ran under synthetic <code>sim-upload-…</code> id. Declared incident in fixture:{" "}
+            <code>{asStr(data.source_fixture_incident_id) || "—"}</code>
+            {asStr(data.fixture_upload_name) ? (
+              <>
+                {" "}
+                · file <code>{asStr(data.fixture_upload_name)}</code>
+              </>
+            ) : null}
+          </p>
+        </div>
+      ) : null}
+
       {loading ? <p>Loading…</p> : null}
       {error ? <p style={{ color: "#ff9090" }}>{error}</p> : null}
 

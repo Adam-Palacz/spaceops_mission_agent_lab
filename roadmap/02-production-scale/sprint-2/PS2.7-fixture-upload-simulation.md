@@ -3,7 +3,7 @@
 | Field | Value |
 |-------|-------|
 | **Task ID** | PS2.7 |
-| **Status** | Todo |
+| **Status** | Done |
 
 ---
 
@@ -16,20 +16,20 @@ replacing production data paths — useful for demos, support, and regression re
 
 ## Requirements
 
-- [ ] File upload UI with strict size/type limits (reject arbitrary binaries).
-- [ ] Server-side validation using same ingest / incident validation as normal pipeline where possible.
-- [ ] Run triggered in **isolated** or clearly labelled mode (e.g. prefixed `incident_id` or sandbox flag) so operators do not confuse with production incidents — document behaviour.
-- [ ] Show resulting report + evidence + trace link like a normal run.
+- [x] File upload UI with strict size/type limits (reject arbitrary binaries / UTF-8 JSON cap 48 KiB server-side).
+- [x] Server-side validation: single JSON object with `incident_id` + `payload` (incident-shaped; NDJSON → use `POST /ingest`).
+- [x] Run uses synthetic **`sim-upload-<token>-<slug>`** `incident_id`, persisted **`simulation": true`**, **`source_fixture_incident_id`** — documented in `docs/runbooks/fixture_upload_simulation.md`.
+- [x] Same run persistence + UI detail (report, trace, PS2.3/2.4/2.5 panels) as normal runs; list **SIM** badge + `?simulation=` filter.
 
 ---
 
 ## Checklist
 
-- [ ] Threat model: no path traversal, no SSR from uploaded content; virus scan out of scope but mention.
-- [ ] Rate limit or auth requirement if exposed beyond local dev.
+- [x] Threat model: runbook table (path basename only, size cap, UTF-8/JSON, no `dangerouslySetInnerHTML`); virus scan out of scope.
+- [x] Rate limit / auth: same as `POST /runs` in MVP; runbook notes gateway for non-dev.
 
 ---
 
 ## Test / acceptance
 
-- [ ] Manual: upload minimal valid fixture → run completes → appears in list with distinct label.
+- [x] Manual: upload minimal valid fixture → run completes → appears in list with **SIM** badge / filter.

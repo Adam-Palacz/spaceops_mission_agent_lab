@@ -1,0 +1,20 @@
+# Root build context for apps/api + apps/mcp Dockerfiles (compose uses context: .)
+.env
+.env.*
+!.env.example
+.git
+.github
+.cursor
+**/__pycache__
+**/*.pyc
+.pytest_cache
+.mypy_cache
+.ruff_cache
+.venv
+**/node_modules
+apps/ui/.next
+data
+tests
+docs
+roadmap
+*.md

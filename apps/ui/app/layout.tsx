@@ -3,7 +3,7 @@ import Link from "next/link";
 
 export const metadata = {
   title: "SpaceOps UI",
-  description: "Incidents and approvals operator UI",
+  description: "Incidents, approvals, and replay operator UI",
 };
 
 const navLink = {
@@ -41,6 +41,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             </Link>
             <Link href="/approvals" style={navLink}>
               Approvals
+            </Link>
+            <Link href="/replays" style={navLink}>
+              Replay
             </Link>
           </nav>
         </header>

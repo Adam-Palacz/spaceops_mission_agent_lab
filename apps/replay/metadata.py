@@ -34,6 +34,11 @@ def _canonical_hash(value: dict[str, Any]) -> str:
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
+def replay_payload_fingerprint(payload: dict[str, Any]) -> str:
+    """Same digest as stored `payload_hash` in replay metadata (for artifact lookup)."""
+    return _canonical_hash(payload)
+
+
 def _collect_input_refs(payload: dict[str, Any]) -> list[str]:
     refs: set[str] = set()
     candidates = (

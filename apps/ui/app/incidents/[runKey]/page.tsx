@@ -5,8 +5,10 @@ import { Fragment } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { ReplayComparisonSummary } from "../../../components/ReplayComparisonSummary";
 import { API_BASE_URL, JAEGER_UI_URL } from "../../../lib/config";
 import { buildJaegerTraceHref } from "../../../lib/jaegerTrace";
+import { postReplayRun, type ReplayRunResponse } from "../../../lib/replayApi";
 
 type Json = Record<string, unknown>;
 
@@ -138,6 +140,14 @@ export default function IncidentRunDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showRaw, setShowRaw] = useState(false);
+  const [replayLoading, setReplayLoading] = useState(false);
+  const [replayErr, setReplayErr] = useState<string | null>(null);
+  const [replayOut, setReplayOut] = useState<ReplayRunResponse | null>(null);
+
+  useEffect(() => {
+    setReplayErr(null);
+    setReplayOut(null);
+  }, [runKey]);
 
   useEffect(() => {
     if (!runKey) return;
@@ -208,6 +218,11 @@ export default function IncidentRunDetailPage() {
   const timelineTotalMs = useMemo(
     () => stageTimings.reduce((acc, r) => acc + r.duration_ms, 0),
     [stageTimings]
+  );
+
+  const pipelineRunId = useMemo(
+    () => (data ? asStr(data.run_id).trim() : ""),
+    [data],
   );
 
   const evidenceItems = useMemo(() => {
@@ -687,6 +702,90 @@ export default function IncidentRunDetailPage() {
                 )}
               </li>
             </ul>
+          </Section>
+
+          <Section title="Replay from this run (PS2.6)">
+            {!pipelineRunId ? (
+              <p style={{ color: "#7a8aa6", marginTop: 0 }}>
+                No <code>run_id</code> on this artifact — the replay API needs the pipeline UUID
+                (see a successful run or <Link href="/replays" style={{ color: "#9ecfff" }}>Replay</Link>{" "}
+                page).
+              </p>
+            ) : (
+              <>
+                <p style={{ fontSize: 13, color: "#a7b4c9", marginTop: 0 }}>
+                  Calls <code>POST /replays/{"{run_id}"}/run</code> with this run&apos;s{" "}
+                  <code>run_id</code>. Same diff logic as <code>scripts/replay_run.py</code> /{" "}
+                  <code>replay_by_run_id</code>. Requires replay metadata under{" "}
+                  <code>data/replay/runs/</code> for this id.
+                </p>
+                <p style={{ marginTop: 0 }}>
+                  <strong>run_id:</strong>{" "}
+                  <code style={{ fontSize: 13 }}>{pipelineRunId}</code>
+                </p>
+                <button
+                  type="button"
+                  disabled={replayLoading || Boolean(asStr(data.error))}
+                  onClick={() => {
+                    setReplayErr(null);
+                    setReplayOut(null);
+                    setReplayLoading(true);
+                    void (async () => {
+                      try {
+                        const out = await postReplayRun(pipelineRunId);
+                        setReplayOut(out);
+                      } catch (e) {
+                        setReplayErr(
+                          e instanceof Error ? e.message : "Replay request failed",
+                        );
+                      } finally {
+                        setReplayLoading(false);
+                      }
+                    })();
+                  }}
+                  style={{
+                    padding: "10px 16px",
+                    borderRadius: 6,
+                    border: "none",
+                    background: "#6b4f9e",
+                    color: "#fff",
+                    cursor: replayLoading || asStr(data.error) ? "not-allowed" : "pointer",
+                    fontWeight: 600,
+                    opacity: replayLoading || asStr(data.error) ? 0.6 : 1,
+                  }}
+                >
+                  {replayLoading ? "Running replay…" : "Run replay & compare"}
+                </button>
+                {asStr(data.error) ? (
+                  <p style={{ fontSize: 13, color: "#7a8aa6", marginBottom: 0 }}>
+                    Disabled for failed runs (artifact may be incomplete).
+                  </p>
+                ) : null}
+                {replayErr ? (
+                  <p style={{ color: "#ff9090", marginBottom: 0, whiteSpace: "pre-wrap" }}>
+                    {replayErr}
+                  </p>
+                ) : null}
+                {replayOut ? (
+                  <div style={{ marginTop: 16 }}>
+                    <p style={{ marginTop: 0 }}>
+                      <strong>New replay_run_id:</strong>{" "}
+                      <code style={{ fontSize: 13 }}>
+                        {replayOut.replay_run_id ? String(replayOut.replay_run_id) : "—"}
+                      </code>{" "}
+                      — check latest row on{" "}
+                      <Link href="/incidents" style={{ color: "#9ecfff" }}>
+                        Incidents
+                      </Link>
+                      .
+                    </p>
+                    {replayOut.comparison ? (
+                      <ReplayComparisonSummary c={replayOut.comparison} />
+                    ) : null}
+                  </div>
+                ) : null}
+              </>
+            )}
           </Section>
 
           <div style={{ marginTop: 32 }}>

@@ -3,7 +3,7 @@
 | Field | Value |
 |-------|-------|
 | **Task ID** | PS2.6 |
-| **Status** | Todo |
+| **Status** | Done |
 
 ---
 
@@ -17,19 +17,19 @@ the same captured inputs (`run_id`, payload hash, input refs) as defined in PS1.
 
 ## Requirements
 
-- [ ] UI button or form: enter `run_id` → call existing replay API/CLI contract (prefer HTTP on `apps/api` if missing, add minimal endpoint).
-- [ ] Display replay outcome: success, diff detected (exit semantics aligned with `apps/replay/workflow.py`).
-- [ ] Auth: respect existing approval/API key patterns if replay endpoint is sensitive.
+- [x] UI form: `/replays` + run detail **Run replay & compare** → existing `GET/POST /replays/{run_id}` (no new endpoint).
+- [x] Display replay outcome: `comparison.has_diff` + diffs table (aligned with `apps/replay/workflow.py` / CLI `0` vs `2`).
+- [x] Auth: replay endpoints unchanged (same exposure as `POST /runs`; approvals still use API key only).
 
 ---
 
 ## Checklist
 
-- [ ] Reuse `replay_by_run_id` / `scripts/replay_run.py` behaviour; avoid duplicating diff logic in UI.
-- [ ] Document operator steps in `apps/ui/README.md` or `docs/runbooks/`.
+- [x] Reuse `replay_by_run_id` / `scripts/replay_run.py` behaviour; UI only renders API `comparison` payload.
+- [x] Document operator steps in `apps/ui/README.md` and `docs/runbooks/replay_workflow.md`.
 
 ---
 
 ## Test / acceptance
 
-- [ ] Manual: replay a known fixture run id twice — second run compares to baseline per PS1.5 semantics.
+- [x] Manual: replay a known fixture run id twice — second run compares to baseline per PS1.5 semantics.

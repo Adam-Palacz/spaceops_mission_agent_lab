@@ -10,6 +10,8 @@ inline for convenience.
 
 For goals and requirements, see `roadmap/goals.md` (§4.5) and `roadmap/01-foundation-mvp.md`.
 
+**Ingest / queue strategy (PS3):** **NATS JetStream–first** at the API boundary; **Postgres** for evidence and query (`telemetry_events` filled by consumers) — [`docs/adr/0002-ingest-nats-first-postgres-evidence-store.md`](adr/0002-ingest-nats-first-postgres-evidence-store.md). Superseded lab path: [ADR 0001](adr/0001-queue-strategy-postgres-first-jetstream-later.md).
+
 ---
 
 ## Components
@@ -114,7 +116,7 @@ The main runtime path (see also `docs/workflow/end_to_end_pipeline.mmd`):
 
 1. **Ingest**
    - Webhook/CLI sends NDJSON to `POST /ingest` on the API.
-   - API validates and persists data under `data/` (and optionally Postgres/DuckDB).
+   - API validates and (today) persists under `data/`; **target path** is publish to **JetStream** then `202 Accepted` per [ADR 0002](adr/0002-ingest-nats-first-postgres-evidence-store.md); Postgres `telemetry_events` via **Persister** consumer (PS3.x).
 2. **Trigger run**
    - Operator or upstream system calls `POST /runs` with `incident_id` + `payload`.
    - API constructs an initial `AgentState` and hands it to the LangGraph pipeline.

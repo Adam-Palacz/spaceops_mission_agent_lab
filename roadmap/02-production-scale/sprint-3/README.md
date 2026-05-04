@@ -24,7 +24,7 @@ See **[BOARD.md](BOARD.md)** for status.
 
 | Task | Spec |
 |------|------|
-| PS3.1 | [Queue strategy ADR](PS3.1-queue-strategy-decision.md) |
+| PS3.1 | [Queue strategy ADR](PS3.1-queue-strategy-decision.md) → current: [**ADR 0002** — NATS-first ingest](../../../docs/adr/0002-ingest-nats-first-postgres-evidence-store.md); [ADR 0001](../../../docs/adr/0001-queue-strategy-postgres-first-jetstream-later.md) superseded |
 | PS3.2 | [Offsets + idempotency](PS3.2-consumer-offset-idempotency.md) |
 | PS3.3 | [Retry + DLQ](PS3.3-retry-workflow-dlq.md) |
 | PS3.4 | [Replay queued events](PS3.4-replay-queued-events.md) |

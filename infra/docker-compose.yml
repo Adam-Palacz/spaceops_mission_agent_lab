@@ -29,6 +29,8 @@ services:
       TICKET_MCP_URL: http://ticket-mcp:8003/mcp
       GITOPS_MCP_URL: http://gitops-mcp:8004/mcp
       OPA_URL: http://opa:8181/v1/data/agent/allow
+      # PS3.2 — JetStream ingest when set (e.g. nats://nats:4222). Empty = NDJSON files only.
+      NATS_URL: ${NATS_URL:-}
     volumes:
       - ./data:/app/data
       - ./ops-config:/app/ops-config
@@ -45,8 +47,35 @@ services:
         condition: service_started
       gitops-mcp:
         condition: service_started
+      nats:
+        condition: service_started
     profiles:
       - ui
+
+  nats:
+    image: nats:2.10-alpine
+    container_name: spaceops-nats
+    command: ["-js", "-m", "8222"]
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+
+  telemetry-persister:
+    build:
+      context: .
+      dockerfile: ./apps/api/Dockerfile
+    container_name: spaceops-telemetry-persister
+    env_file:
+      - ./.env
+    environment:
+      NATS_URL: nats://nats:4222
+      DATABASE_URL: postgresql://${POSTGRES_USER:-spaceops}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-spaceops}
+    command: ["python", "-m", "apps.workers.telemetry_persister"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nats:
+        condition: service_started
 
   postgres:
     image: pgvector/pgvector:pg15

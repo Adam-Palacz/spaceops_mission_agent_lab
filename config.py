@@ -203,6 +203,24 @@ class Settings(BaseSettings):
         description="OpenAI model used for LLM reranking (only when kb_reranker_mode='llm').",
     )
 
+    # PS3.2 / ADR 0002 — NATS JetStream ingest (telemetry); empty = legacy NDJSON files
+    nats_url: str = Field(
+        default="",
+        description="NATS server URLs (comma-separated optional); empty disables JetStream ingest.",
+    )
+    jetstream_stream_name: str = Field(
+        default="SPACEOPS_INGEST",
+        description="JetStream stream name for ingest workload.",
+    )
+    jetstream_telemetry_subject: str = Field(
+        default="ingest.telemetry",
+        description="Subject for validated TelemetryEventV1 JSON payloads.",
+    )
+    jetstream_persister_durable: str = Field(
+        default="telemetry-persister",
+        description="Durable consumer name writing telemetry_events (Postgres).",
+    )
+
     @property
     def postgres_dsn(self) -> str:
         """Connection string when DATABASE_URL is not set."""

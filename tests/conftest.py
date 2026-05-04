@@ -5,8 +5,9 @@ Tests do not require Docker or live Postgres/LLM (mocks or tmp paths).
 
 from __future__ import annotations
 
-import pytest
+import config
 import os
+import pytest
 import tempfile
 from pathlib import Path
 
@@ -25,6 +26,7 @@ os.environ["OTEL_EXPORTER_OTLP_ENDPOINT"] = ""
 
 # Sample valid NDJSON lines for ingest tests (minimal schema: at least one key per line)
 SAMPLE_NDJSON_VALID = b'{"ts":"2025-02-14T10:00:00Z","channel":"power.bus_voltage","value":28.5}\n{"ts":"2025-02-14T10:01:00Z","channel":"thermal.plate_t","value":22.1}\n'
+SAMPLE_NDJSON_VALID_WITH_EVENT_ID = b'{"event_id":"evt-1","ts":"2025-02-14T10:00:00Z","channel":"power.bus_voltage","value":28.5}\n{"event_id":"evt-2","ts":"2025-02-14T10:01:00Z","channel":"thermal.plate_t","value":22.1}\n'
 SAMPLE_NDJSON_INVALID_JSON = b"not json\n"
 SAMPLE_NDJSON_EMPTY_OBJECT = b"{}\n"
 SAMPLE_NDJSON_NOT_OBJECT = b'["array"]\n'
@@ -38,7 +40,10 @@ def api_client(tmp_path: Path, monkeypatch):
     """
     monkeypatch.setattr("apps.api.main.REPO_ROOT", tmp_path)
     monkeypatch.setattr("apps.api.main.DATA_DIR", tmp_path / "data")
+    # .env may set NATS_URL; without a broker ingest would return 503. Default tests = file ingest (201).
+    monkeypatch.setattr(config.settings, "nats_url", "")
     from fastapi.testclient import TestClient
     from apps.api.main import app
 
-    return TestClient(app)
+    with TestClient(app) as client:
+        yield client

@@ -6,6 +6,7 @@ S1.10: OTel request spans; structured logging.
 
 from __future__ import annotations
 
+from contextlib import asynccontextmanager
 import json
 import hashlib
 import re
@@ -47,10 +48,20 @@ DATA_DIR = REPO_ROOT / "data"
 FIXTURE_UPLOAD_MAX_BYTES = 48 * 1024
 SIM_INCIDENT_PREFIX = "sim-upload-"
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    yield
+    from apps.ingest_jetstream import close_nats
+
+    await close_nats(app)
+
+
 app = FastAPI(
     title="SpaceOps Mission Agent Lab API",
     description="Ingest, health, and run trigger for anomaly triage pipeline.",
     version="0.1.0",
+    lifespan=lifespan,
 )
 
 # P4.5 UI: allow browser calls from local Next.js app.
@@ -242,7 +253,12 @@ async def ingest(
     source: str = Query(..., description="One of: telemetry, events, ground_logs"),
 ) -> JSONResponse:
     """
-    Accept NDJSON body (newline-delimited JSON lines). Validate each line; persist to data/{source}/.
+    Accept NDJSON (newline-delimited JSON).
+
+    - **telemetry** + ``NATS_URL`` set → validate, publish to JetStream (ADR 0002), **202 Accepted**
+      after broker ack (Postgres filled asynchronously by ``telemetry-persister`` worker).
+    - **telemetry** without NATS → legacy NDJSON files under ``data/{source}/``, **201 Created**.
+    - **events** / **ground_logs** → files only (**201**) until a later PS extends JetStream.
     """
     body = (await request.body()).decode("utf-8")
     lines = [ln for ln in body.strip().split("\n") if ln.strip()]
@@ -272,6 +288,39 @@ async def ingest(
                 "messages": validation_errors[:20],
             },
         )
+
+    if source == "telemetry" and settings.nats_url.strip():
+        from apps.ingest_jetstream import get_or_create_js, publish_telemetry_records
+
+        try:
+            js = await get_or_create_js(request.app)
+            accepted_new, dup_batch, dup_broker = await publish_telemetry_records(
+                js, records
+            )
+        except Exception as exc:
+            raise HTTPException(
+                status_code=503,
+                detail={"error": "ingest_unavailable", "message": str(exc)},
+            ) from exc
+
+        dup_total = dup_batch + dup_broker
+        if accepted_new:
+            INGEST_EVENTS_TOTAL.labels(outcome="accepted").inc(accepted_new)
+        if dup_total:
+            INGEST_EVENTS_TOTAL.labels(outcome="duplicate").inc(dup_total)
+        return JSONResponse(
+            status_code=202,
+            content={
+                "status": "accepted",
+                "source": source,
+                "ingest_mode": "jetstream",
+                "records": len(records),
+                "accepted": accepted_new,
+                "duplicates": dup_total,
+                "rejected": 0,
+            },
+        )
+
     path, accepted_count, duplicate_count = _persist_ndjson(source, records)
     if accepted_count:
         INGEST_EVENTS_TOTAL.labels(outcome="accepted").inc(accepted_count)

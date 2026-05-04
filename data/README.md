@@ -21,6 +21,8 @@ Ingest accepts any JSON object per line; the above fields align with agent triag
 
 ## Ingest
 
+When **`NATS_URL`** is set (see `.env.example`), **`POST /ingest?source=telemetry`** validates NDJSON and publishes to **JetStream** (`202 Accepted`); **`telemetry_events`** in Postgres are filled by the **`telemetry-persister`** worker (`infra/docker-compose.yml`). Without NATS, ingest still writes **`ingest_*.ndjson`** here (**201 Created**) — legacy lab path.
+
 ```bash
 curl -X POST "http://localhost:8000/ingest?source=telemetry" \
   -H "Content-Type: application/x-ndjson" \

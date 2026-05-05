@@ -11,16 +11,43 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import math
 import sys
+from datetime import datetime, timedelta, timezone
 
 import psycopg2
 
 from apps.ingest_jetstream import setup_jetstream_stream
-from apps.workers.telemetry_persist import insert_telemetry_event
+from apps.workers.telemetry_persist import insert_dlq_event, insert_telemetry_event
 from config import settings
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+
+def _delivery_attempt(msg: object) -> int:
+    meta = getattr(msg, "metadata", None)
+    delivered = getattr(meta, "num_delivered", None)
+    if delivered is None:
+        return 1
+    try:
+        return int(delivered)
+    except (TypeError, ValueError):
+        return 1
+
+
+def _calc_backoff_seconds(attempt: int, base: float) -> float:
+    p = max(0, attempt - 1)
+    return max(0.0, float(base) * (2.0**p))
+
+
+def _reason_from_error(exc: Exception) -> str:
+    text = str(exc).lower()
+    if "json" in text:
+        return "invalid_json"
+    if "schema" in text or "validation" in text:
+        return "validation_error"
+    return "persist_failure"
 
 
 async def run_forever() -> None:
@@ -65,17 +92,83 @@ async def run_forever() -> None:
                 continue
 
             for msg in msgs:
+                attempt = _delivery_attempt(msg)
+                row: dict[str, object] = {}
                 try:
                     row = json.loads(msg.data.decode("utf-8"))
                     insert_telemetry_event(conn, row)
                     await msg.ack()
                 except json.JSONDecodeError as je:
-                    logger.warning("invalid json, nak: %s", je)
-                    await msg.nak()
+                    reason = "invalid_json"
+                    if attempt >= settings.jetstream_persister_max_retries:
+                        insert_dlq_event(
+                            conn,
+                            event_id="unknown",
+                            reason=reason,
+                            retry_count=attempt,
+                            next_retry_at=None,
+                            last_error=str(je),
+                            payload={"raw": msg.data.decode("utf-8", errors="ignore")},
+                            subject=getattr(msg, "subject", None),
+                        )
+                        logger.error(
+                            "DLQ invalid json after %s attempts subject=%s",
+                            attempt,
+                            getattr(msg, "subject", None),
+                        )
+                        await msg.ack()
+                    else:
+                        backoff = _calc_backoff_seconds(
+                            attempt, settings.jetstream_persister_retry_base_seconds
+                        )
+                        logger.warning(
+                            "invalid json, retry attempt=%s delay=%.1fs: %s",
+                            attempt,
+                            backoff,
+                            je,
+                        )
+                        try:
+                            await msg.nak(delay=math.ceil(backoff))
+                        except TypeError:
+                            await msg.nak()
                 except Exception as exc:
-                    logger.exception("persist failed, nak: %s", exc)
-                    conn.rollback()
-                    await msg.nak()
+                    reason = _reason_from_error(exc)
+                    event_id = str(row.get("event_id") or "unknown")
+                    if attempt >= settings.jetstream_persister_max_retries:
+                        next_retry = None
+                        insert_dlq_event(
+                            conn,
+                            event_id=event_id,
+                            reason=reason,
+                            retry_count=attempt,
+                            next_retry_at=next_retry,
+                            last_error=str(exc),
+                            payload=row,
+                            subject=getattr(msg, "subject", None),
+                        )
+                        logger.exception(
+                            "persist failed permanently; moved to DLQ event_id=%s attempts=%s",
+                            event_id,
+                            attempt,
+                        )
+                        await msg.ack()
+                    else:
+                        backoff = _calc_backoff_seconds(
+                            attempt, settings.jetstream_persister_retry_base_seconds
+                        )
+                        next_retry_at = datetime.now(timezone.utc) + timedelta(
+                            seconds=backoff
+                        )
+                        logger.exception(
+                            "persist failed; retry attempt=%s delay=%.1fs next_retry_at=%s",
+                            attempt,
+                            backoff,
+                            next_retry_at.isoformat(),
+                        )
+                        try:
+                            await msg.nak(delay=math.ceil(backoff))
+                        except TypeError:
+                            await msg.nak()
     finally:
         await nc.drain()
         await nc.close()

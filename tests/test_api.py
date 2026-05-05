@@ -719,3 +719,43 @@ def test_approvals_reject_and_404(api_client, tmp_path: Path, monkeypatch):
         headers={"X-API-Key": _API_KEY},
     )
     assert not_found.status_code == 404
+
+
+def test_dlq_telemetry_endpoint_returns_rows(api_client, monkeypatch):
+    class DummyConn:
+        def close(self):
+            return None
+
+    monkeypatch.setattr("psycopg2.connect", lambda _dsn: DummyConn())
+    monkeypatch.setattr(
+        "apps.workers.telemetry_persist.list_dlq_events",
+        lambda _conn, limit=100: [
+            {
+                "event_id": "evt-1",
+                "reason": "persist_failure",
+                "retry_count": 3,
+                "next_retry_at": None,
+                "last_error": "boom",
+                "last_error_hash": "h",
+                "run_id": None,
+                "incident_id": None,
+                "subject": "ingest.telemetry",
+                "payload": {"k": 1},
+                "created_at": "2026-05-05T12:00:00+00:00",
+            }
+        ],
+    )
+    response = api_client.get("/dlq/telemetry?limit=5")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["count"] == 1
+    assert body["dlq_events"][0]["event_id"] == "evt-1"
+
+
+def test_dlq_telemetry_endpoint_db_unavailable(api_client, monkeypatch):
+    monkeypatch.setattr(
+        "psycopg2.connect",
+        lambda _dsn: (_ for _ in ()).throw(RuntimeError("db down")),
+    )
+    response = api_client.get("/dlq/telemetry")
+    assert response.status_code == 503

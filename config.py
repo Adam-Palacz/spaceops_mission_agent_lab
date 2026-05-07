@@ -220,6 +220,14 @@ class Settings(BaseSettings):
         default="telemetry-persister",
         description="Durable consumer name writing telemetry_events (Postgres).",
     )
+    jetstream_persister_max_retries: int = Field(
+        default=3,
+        description="Max delivery attempts before telemetry message goes to DLQ.",
+    )
+    jetstream_persister_retry_base_seconds: float = Field(
+        default=2.0,
+        description="Base retry delay (seconds) for telemetry persister NAK backoff.",
+    )
 
     @property
     def postgres_dsn(self) -> str:

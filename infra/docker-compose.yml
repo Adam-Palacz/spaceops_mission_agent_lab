@@ -24,6 +24,8 @@ services:
       # Inside containers localhost:4317 is wrong; must reach the collector by service name.
       # Overrides .env meant for host-run (localhost:4317) so traces actually reach Jaeger.
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      # PS3.3: API DLQ endpoint queries Postgres; inside Compose use service hostname.
+      DATABASE_URL: postgresql://${POSTGRES_USER:-spaceops}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-spaceops}
       TELEMETRY_MCP_URL: http://telemetry-mcp:8001/mcp
       KB_MCP_URL: http://kb-mcp:8002/mcp
       TICKET_MCP_URL: http://ticket-mcp:8003/mcp

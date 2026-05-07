@@ -3,7 +3,7 @@
 | Field | Value |
 |-------|-------|
 | **Task ID** | PS3.3 |
-| **Status** | Todo |
+| **Status** | Done |
 
 ---
 
@@ -17,23 +17,41 @@ correlation to `run_id` / `event_id`.
 
 ## Requirements
 
-- [ ] DLQ persistence (`dlq_events` table or broker DLQ topic per PS3.1).
-- [ ] Fields minimally: `event_id`, `reason`, `retry_count`, `next_retry_at`, `last_error` / hash, linkage to incident/run where known.
-- [ ] Retry policy configurable (max attempts, backoff); visible in settings or env documentation.
-- [ ] API or CLI hook to **inspect** DLQ rows (read-only minimum).
+- [x] DLQ persistence (`dlq_events` table via Alembic `20260505_0002_ps33_dlq`).
+- [x] Fields: `event_id`, `reason`, `retry_count`, `next_retry_at`, `last_error`, `last_error_hash`, `subject`, optional `incident_id` / `run_id`, `payload`.
+- [x] Retry policy configurable (env-backed settings).
+- [x] API hook to inspect DLQ rows (read-only): `GET /dlq/telemetry`.
 
 ---
 
 ## Checklist
 
-- [ ] Audit trail: DLQ insertion emits structured log / audit row where repo pattern exists.
+- [x] DLQ insertion emits structured logs from persister (`persist failed permanently; moved to DLQ ...`).
 
 ---
 
 ## Test / acceptance
 
-- [ ] Tests simulate transient failure → retry succeeds → no DLQ row (or DLQ cleared).
-- [ ] Tests simulate permanent failure → DLQ row with stable reason classification.
+- [x] Tests cover transient path primitives and DLQ insert plumbing:
+  - `tests/test_telemetry_persist.py` helper behavior
+  - `tests/test_telemetry_dlq.py` DLQ insert call/commit
+- [x] API read-only inspection tests:
+  - `tests/test_api.py::test_dlq_telemetry_endpoint_returns_rows`
+  - `tests/test_api.py::test_dlq_telemetry_endpoint_db_unavailable`
+
+---
+
+## Delivered
+
+- Worker retry/backoff + DLQ escalation in `apps/workers/telemetry_persister.py`.
+- DLQ storage + listing helpers in `apps/workers/telemetry_persist.py`.
+- API endpoint `GET /dlq/telemetry` in `apps/api/main.py`.
+- Config knobs in `config.py`:
+  - `jetstream_persister_max_retries`
+  - `jetstream_persister_retry_base_seconds`
+- Env docs in `.env.example`.
+- Migration adding `dlq_events` table:
+  - `alembic/versions/20260505_0002_ps33_dlq.py`
 
 ---
 

@@ -135,6 +135,31 @@ def metrics() -> Response:
     return Response(content=payload, media_type=CONTENT_TYPE_LATEST)
 
 
+@app.get("/dlq/telemetry")
+def dlq_telemetry(limit: int = Query(100, ge=1, le=1000)) -> dict[str, Any]:
+    """
+    PS3.3 read-only DLQ inspection endpoint.
+
+    Returns latest dead-letter rows emitted by telemetry persister.
+    """
+    import psycopg2
+
+    from apps.workers.telemetry_persist import list_dlq_events
+
+    try:
+        conn = psycopg2.connect(settings.postgres_dsn)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=503,
+            detail=f"DLQ unavailable: cannot connect to Postgres ({exc})",
+        ) from exc
+    try:
+        rows = list_dlq_events(conn, limit=limit)
+        return {"dlq_events": rows, "count": len(rows)}
+    finally:
+        conn.close()
+
+
 # ---------------------------------------------------------------------------
 # Ingest (F1)
 # ---------------------------------------------------------------------------

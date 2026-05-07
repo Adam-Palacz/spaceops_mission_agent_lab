@@ -86,6 +86,7 @@ def test_run_no_evidence_produces_escalation_packet():
         assert (
             "escalation_packet" in report
         ), "Escalated run must include escalation_packet in report"
+        # CI may run without OPENAI_API_KEY; triage then fail-closes with llm_provider_error.
         assert report["escalation_packet"].get("reason") in (
             "no_evidence",
             "high_risk_no_evidence",
@@ -93,6 +94,8 @@ def test_run_no_evidence_produces_escalation_packet():
             "tool_failure",
             # With OPA enabled, Decide/Act can also fail-closed to policy_deny.
             "policy_deny",
+            # Missing/invalid LLM provider credentials in CI/local env.
+            "llm_provider_error",
         )
 
 

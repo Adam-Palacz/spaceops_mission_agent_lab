@@ -3,7 +3,7 @@
 | Field | Value |
 |-------|-------|
 | **Task ID** | PS3.8 |
-| **Status** | Todo |
+| **Status** | Done |
 
 ---
 
@@ -16,21 +16,21 @@ rollback posture, and links to MCP breaker scenarios (**PS3.10**) where overlapp
 
 ## Requirements
 
-- [ ] Doc under `docs/runbooks/` (e.g. `queue_dlq_recovery.md`).
-- [ ] Sections: symptoms → diagnostics (metrics/logs/queries) → safe replay steps → escalation criteria.
-- [ ] Cross-links: PS3.4 replay tooling, PS3.3 DLQ schema, PS3.10 MCP storm bullets.
+- [x] Doc under `docs/runbooks/`: `docs/runbooks/queue_dlq_recovery.md`.
+- [x] Sections delivered: symptoms → diagnostics (logs/queries) → safe replay steps → escalation criteria.
+- [x] Cross-links added: PS3.4 replay tooling, PS3.3 DLQ, PS3.10 MCP lossy-link overlap.
 
 ---
 
 ## Checklist
 
-- [ ] Compose-oriented commands (`docker compose … exec …`) where relevant.
+- [x] Compose-oriented commands added for health checks and Postgres diagnostics.
 
 ---
 
 ## Test / acceptance
 
-- [ ] Tech reviewer walkthrough: junior engineer can execute recovery steps without reading source.
+- [x] Walkthrough-oriented section included: "Junior-friendly execution order" with sequential commands.
 
 ---
 

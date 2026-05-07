@@ -125,9 +125,19 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
         run: |
+          # Start OPA policy server (Act stage fail-closes if OPA is unreachable).
+          docker run -d --rm --name ci-opa -p 8181:8181 \
+            -v "$PWD/infra/opa:/policies:ro" \
+            openpolicyagent/opa:1.14.0 \
+            run --server --addr=0.0.0.0:8181 /policies
           # Start Telemetry MCP server in background (reads from data/telemetry fixtures)
           python -m apps.mcp.telemetry_server.main &
           MCP_PID=$!
+          cleanup() {
+            kill $MCP_PID || true
+            docker stop ci-opa || true
+          }
+          trap cleanup EXIT
           # Give the server a moment to start
           sleep 5
           # Deterministic must-escalate gate (PS1.8)
@@ -136,5 +146,3 @@ jobs:
           python -m evals.scoring --case-id citation-present
           # Run evals; this will call Telemetry MCP over HTTP (http://localhost:8001/mcp)
           python -m evals.scoring
-          # Stop MCP server (best-effort)
-          kill $MCP_PID || true

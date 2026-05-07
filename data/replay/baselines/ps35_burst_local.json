@@ -1,0 +1,16 @@
+{
+  "total_requests": 150,
+  "successes": 150,
+  "failures": 0,
+  "failure_rate": 0.0,
+  "accepted_sum": 150,
+  "duplicates_sum": 0,
+  "rejected_sum": 0,
+  "duration_seconds": 0.544,
+  "requests_per_second": 275.92,
+  "latency_ms": {
+    "mean": 295.26,
+    "p50": 292.93,
+    "p95": 502.71
+  }
+}

@@ -6,7 +6,7 @@
 | PS3.2 | Consumer offset store + idempotency keys | Done | [PS3.2-consumer-offset-idempotency.md](PS3.2-consumer-offset-idempotency.md) |
 | PS3.3 | Retry workflow + DLQ table/topic | Done | [PS3.3-retry-workflow-dlq.md](PS3.3-retry-workflow-dlq.md) |
 | PS3.4 | Replay tooling for queued events | Done | [PS3.4-replay-queued-events.md](PS3.4-replay-queued-events.md) |
-| PS3.5 | Burst/backpressure load scenario | Todo | [PS3.5-burst-backpressure-scenario.md](PS3.5-burst-backpressure-scenario.md) |
+| PS3.5 | Burst/backpressure load scenario | Done | [PS3.5-burst-backpressure-scenario.md](PS3.5-burst-backpressure-scenario.md) |
 | PS3.6 | Out-of-order/dup/drop simulation | Todo | [PS3.6-out-of-order-dup-drop-simulation.md](PS3.6-out-of-order-dup-drop-simulation.md) |
 | PS3.7 | Contact-window simulation hooks | Todo | [PS3.7-contact-window-simulation-hooks.md](PS3.7-contact-window-simulation-hooks.md) |
 | PS3.8 | Ops runbook for queue + DLQ recovery | Todo | [PS3.8-runbook-queue-dlq-recovery.md](PS3.8-runbook-queue-dlq-recovery.md) |

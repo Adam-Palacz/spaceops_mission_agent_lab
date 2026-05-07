@@ -52,6 +52,31 @@ Exit codes:
 - `2`: replay succeeded and diff detected
 - `1`: replay failed (missing metadata/input or runtime error)
 
+## Queue replay (PS3.4)
+
+PS1.5 replay (`scripts/replay_run.py`) re-runs a **single stored incident input** by `run_id` and
+compares behavior. PS3.4 queue replay (`scripts/replay_queue.py`) re-drives **queued telemetry
+messages** back into JetStream.
+
+Examples:
+
+```bash
+# Dry-run DLQ subset by IDs (default mode; no publish)
+python -m scripts.replay_queue --dlq-ids 12,15,18
+
+# Dry-run by DLQ time window
+python -m scripts.replay_queue --after 2026-05-05T00:00:00Z --before 2026-05-05T12:00:00Z
+
+# Replay JetStream sequence range (offset-like)
+python -m scripts.replay_queue --seq-start 100 --seq-end 130 --apply
+```
+
+Safety:
+
+- `--apply` is required to publish; without it script is dry-run only.
+- Local duplicates are filtered by `event_id` before publish.
+- Broker dedupe still applies via `Nats-Msg-Id=event_id`.
+
 ## CI usage example
 
 Replay a golden run and fail pipeline on regressions:

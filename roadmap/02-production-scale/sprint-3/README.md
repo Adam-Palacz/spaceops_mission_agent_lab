@@ -39,12 +39,12 @@ See **[BOARD.md](BOARD.md)** for status.
 
 ## Definition of done (sprint)
 
-- [ ] Backpressure does not crash ingest or corrupt offsets.
-- [ ] DLQ captures failed events with diagnosable reasons.
-- [ ] Replay works for queued events and preserves incident traceability.
-- [ ] At least one disruption scenario is covered by automated tests.
-- [ ] **PS3.9:** ADR + checkpoint integration path documented; resume or explicit limitation covered by tests.
-- [ ] **PS3.10:** At least one automated scenario proves breaker/retry + escalation path for MCP failures.
+- [x] Backpressure does not crash ingest or corrupt offsets.
+- [x] DLQ captures failed events with diagnosable reasons.
+- [x] Replay works for queued events and preserves incident traceability.
+- [x] At least one disruption scenario is covered by automated tests.
+- [x] **PS3.9:** ADR + checkpoint integration path documented; resume or explicit limitation covered by tests.
+- [x] **PS3.10:** At least one automated scenario proves breaker/retry + escalation path for MCP failures.
 
 ---
 

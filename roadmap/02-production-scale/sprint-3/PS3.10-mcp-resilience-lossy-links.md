@@ -3,7 +3,7 @@
 | Field | Value |
 |-------|-------|
 | **Task ID** | PS3.10 |
-| **Status** | Todo |
+| **Status** | Done |
 
 ---
 
@@ -33,10 +33,14 @@ specific.
 
 ## Requirements
 
-- [ ] Test module or tox/pytest marker runnable in CI (or nightly) without live OpenAI; use httpx
-      mock / stub MCP or test double.
-- [ ] Matrix: telemetry vs KB keys (`mcp_telemetry`, `mcp_kb_*`) to ensure per-key circuits.
-- [ ] Update ops runbook (PS3.8 or link) with “MCP storm / breaker open” triage bullets.
+- [x] CI-safe pytest module added (no live OpenAI/MCP required; uses monkeypatch + test doubles).
+- [x] Matrix validated for per-key circuits: `mcp_telemetry`, `mcp_kb_runbooks`, `mcp_kb_postmortems`.
+- [x] Ops runbook updated with “MCP storm / breaker open” triage bullets.
+
+Implemented artifacts:
+- `tests/test_mcp_resilience_ps310.py`
+- `apps/common/http_resilience.py` (`421` added to retryable transport statuses)
+- `docs/runbooks/queue_dlq_recovery.md` (PS3.10 triage section)
 
 ---
 

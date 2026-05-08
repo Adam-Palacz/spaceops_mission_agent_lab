@@ -87,7 +87,8 @@ def _is_retryable(exc: BaseException) -> bool:
         code = getattr(exc, "response", None)
         if code is not None:
             status = getattr(code, "status_code", 0)
-            return status >= 500 or status == 429
+            # 421 (misdirected request) is common with reused HTTP/2 pools and is retry-safe.
+            return status >= 500 or status in (429, 421)
     return False
 
 

@@ -139,3 +139,21 @@ Escalate to senior/on-call if any condition holds:
 5. `scripts.replay_queue --apply` on a small subset
 6. verify persistence + DLQ trend
 7. escalate if trend is still bad
+
+## 8) MCP storm / breaker-open triage (PS3.10)
+
+When symptoms suggest MCP transport degradation (timeouts, connect resets, repeated 5xx/421):
+
+1. Confirm MCP services are reachable:
+   - `docker compose logs --tail=150 telemetry-mcp`
+   - `docker compose logs --tail=150 kb-mcp`
+2. Check API/agent logs for repeated tool failures and circuit-open messages:
+   - `docker compose logs --tail=300 api`
+   - look for `http_resilience: circuit open for key=mcp_*`
+3. Treat evidence as fail-closed while circuit is open:
+   - expect `tool_failure` / `no_evidence` escalation paths,
+   - do **not** force unsafe actions while MCP health is unknown.
+4. Recovery sequence:
+   - restore MCP connectivity first,
+   - wait for breaker reset window,
+   - run a small verification incident before full traffic.

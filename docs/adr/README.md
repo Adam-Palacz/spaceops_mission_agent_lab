@@ -8,5 +8,6 @@ ADR entries are **append-only**: superseded documents keep full text; status upd
 |-----|-------|--------|
 | [0001-queue-strategy-postgres-first-jetstream-later.md](0001-queue-strategy-postgres-first-jetstream-later.md) | Queue / Postgres-first lab path (PS3.1 v1) | **Superseded** |
 | [0002-ingest-nats-first-postgres-evidence-store.md](0002-ingest-nats-first-postgres-evidence-store.md) | **Ingest NATS-first; Postgres evidence store** | **Accepted** |
+| [0003-langgraph-durable-checkpoint-postgres.md](0003-langgraph-durable-checkpoint-postgres.md) | **Durable agent checkpoint in Postgres** | **Accepted** |
 
 **Current ingest / queue strategy:** read **ADR 0002** first.

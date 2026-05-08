@@ -379,6 +379,16 @@ class RunTriggerPayload(BaseModel):
     )
 
 
+class ResumeRunPayload(BaseModel):
+    """PS3.9: operator-triggered resume of a run with same run_id."""
+
+    run_id: str = Field(..., min_length=1, description="Existing pipeline run_id")
+    incident_id: str = Field(..., min_length=1, description="Incident identifier")
+    payload: dict[str, Any] = Field(
+        default_factory=dict, description="Same/safe payload needed to continue context"
+    )
+
+
 class SimulateQuickFormPayload(BaseModel):
     """
     PS2.7 — Prosty formularz: backend składa `payload` dla `run_pipeline`.
@@ -532,6 +542,35 @@ def trigger_run(payload: RunTriggerPayload) -> JSONResponse:
                 ensure_ascii=False,
             )
         raise HTTPException(status_code=500, detail=f"Pipeline failed: {e}")
+
+
+@app.post("/runs/resume")
+def resume_run(payload: ResumeRunPayload) -> JSONResponse:
+    """
+    PS3.9: Operator action to resume a checkpointed run with same run_id.
+    Requires durable checkpoints enabled and Postgres reachable.
+    """
+    from apps.agent.graph import run_pipeline
+
+    try:
+        result = run_pipeline(
+            payload.incident_id,
+            payload.payload,
+            replay_source="resume",
+            run_id=payload.run_id,
+            resume=True,
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Resume failed: {e}") from e
+    return JSONResponse(
+        status_code=200,
+        content={
+            "status": "resumed",
+            "run_id": str(result.get("run_id") or payload.run_id),
+            "incident_id": payload.incident_id,
+            "report": result.get("report") or {},
+        },
+    )
 
 
 def _simulate_run_core(

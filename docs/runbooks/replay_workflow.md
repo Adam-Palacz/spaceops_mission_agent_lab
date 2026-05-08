@@ -77,6 +77,25 @@ Safety:
 - Local duplicates are filtered by `event_id` before publish.
 - Broker dedupe still applies via `Nats-Msg-Id=event_id`.
 
+## Mid-run restart: resume vs replay (PS3.9)
+
+When a pod/process dies during an agent run:
+
+1. If durable checkpointing is enabled (`AGENT_DURABLE_CHECKPOINT_ENABLED=true`) and you have the original `run_id`, prefer **resume** (continue from saved `next_node`), e.g.:
+
+```bash
+curl -X POST http://localhost:8000/runs/resume \
+  -H "Content-Type: application/json" \
+  -d '{"run_id":"<run_id>","incident_id":"<incident_id>","payload":{"ref":"fixture"}}'
+```
+2. If checkpoint is unavailable/disabled, use standard **replay** from input (`POST /replays/{run_id}/run` or `scripts/replay_run.py`) and treat it as a fresh execution.
+
+Operator guidance:
+
+- **Resume** is for continuity of in-flight orchestration state.
+- **Replay** is for reproducibility/regression from captured input, not exact in-flight restoration.
+- Queue consumers must keep idempotency guards (PS3.2) because checkpoint restore does not replace side-effect dedupe.
+
 ## CI usage example
 
 Replay a golden run and fail pipeline on regressions:

@@ -32,6 +32,18 @@ SAMPLE_NDJSON_EMPTY_OBJECT = b"{}\n"
 SAMPLE_NDJSON_NOT_OBJECT = b'["array"]\n'
 
 
+@pytest.fixture(autouse=True)
+def _default_test_settings(monkeypatch):
+    """
+    Keep test behavior deterministic regardless of local .env overrides.
+
+    PS3.9 durable checkpoints are feature-flagged and should be opt-in per test;
+    otherwise baseline tests that assert legacy run_pipeline flow may become flaky.
+    """
+    monkeypatch.setattr(config.settings, "agent_durable_checkpoint_enabled", False)
+    yield
+
+
 @pytest.fixture
 def api_client(tmp_path: Path, monkeypatch):
     """

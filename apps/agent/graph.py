@@ -29,6 +29,11 @@ from apps.agent.nodes import (
 from apps.telemetry import get_tracer, get_current_trace_id_hex, init_telemetry
 from apps.replay.metadata import build_replay_metadata, persist_replay_metadata
 from apps.tracing import is_valid_trace_id_hex
+from apps.agent.checkpointing import (
+    durable_checkpoint_enabled,
+    load_checkpoint,
+    upsert_checkpoint,
+)
 
 
 def _wrap_node(span_name: str, node_fn):
@@ -72,6 +77,14 @@ def _route_after_escalation(state: AgentState) -> str:
     return "build_report" if state.get("escalated") else "decide"
 
 
+def _thread_id_for_incident(incident_id: str) -> str:
+    prefix = str(
+        getattr(settings, "agent_durable_checkpoint_thread_prefix", "incident")
+    )
+    p = prefix.strip() or "incident"
+    return f"{p}:{incident_id}"
+
+
 def build_graph():
     workflow = StateGraph(AgentState)
     workflow.add_node("triage", _wrap_node("triage", triage))
@@ -94,6 +107,79 @@ def build_graph():
     workflow.add_edge("act", "build_report")
     workflow.add_edge("build_report", END)
     return workflow.compile()
+
+
+def _run_with_durable_checkpoint(
+    *,
+    run_id: str,
+    incident_id: str,
+    initial: AgentState,
+    resume: bool,
+) -> dict:
+    """
+    PS3.9 durable state runner.
+
+    Persists per-node state snapshots in Postgres and resumes from saved `next_node`
+    for the same `run_id`. This is an ADR-chosen equivalent to LangGraph Postgres
+    saver integration and keeps existing node semantics unchanged.
+    """
+    thread_id = _thread_id_for_incident(incident_id)
+    current: AgentState = dict(initial)
+    next_node = "triage"
+    if resume:
+        cp = load_checkpoint(run_id)
+        if cp and cp.status != "completed":
+            current = {**current, **cp.state}
+            if cp.next_node:
+                next_node = cp.next_node
+
+    nodes = {
+        "triage": _wrap_node("triage", triage),
+        "investigate": _wrap_node("investigate", investigate),
+        "check_escalation": _wrap_node("check_escalation", check_escalation),
+        "decide": _wrap_node("decide", decide),
+        "act": _wrap_node("act", act),
+        "build_report": _wrap_node("build_report", report_node_fn),
+    }
+
+    def _next_after(node: str, state: AgentState) -> str | None:
+        if node == "triage":
+            return "investigate"
+        if node == "investigate":
+            return "check_escalation"
+        if node == "check_escalation":
+            return _route_after_escalation(state)
+        if node == "decide":
+            return "act"
+        if node == "act":
+            return "build_report"
+        if node == "build_report":
+            return None
+        raise ValueError(f"Unknown node {node!r}")
+
+    upsert_checkpoint(
+        run_id=run_id,
+        thread_id=thread_id,
+        incident_id=incident_id,
+        status="in_progress",
+        next_node=next_node,
+        state=current,
+    )
+
+    while next_node:
+        node_fn = nodes[next_node]
+        out = node_fn(current)
+        current = {**current, **out}
+        next_node = _next_after(next_node, current)
+        upsert_checkpoint(
+            run_id=run_id,
+            thread_id=thread_id,
+            incident_id=incident_id,
+            status="in_progress" if next_node else "completed",
+            next_node=next_node,
+            state=current,
+        )
+    return current
 
 
 def _run_timeout_escalation_result(
@@ -167,7 +253,11 @@ def _persist_replay_metadata_best_effort(
 
 
 def run_pipeline(
-    incident_id: str, payload: dict | None = None, replay_source: str = "api"
+    incident_id: str,
+    payload: dict | None = None,
+    replay_source: str = "api",
+    run_id: str | None = None,
+    resume: bool = False,
 ) -> dict:
     """Run the pipeline and return final state (includes report). S1.10: root span; S1.12: run timeout."""
     init_telemetry()
@@ -178,7 +268,7 @@ def run_pipeline(
         span.set_attribute("incident_id", incident_id)
         trace_id_hex = get_current_trace_id_hex()
         trace_id = trace_id_hex or ""
-        run_id = uuid.uuid4().hex
+        run_id = (run_id or "").strip() or uuid.uuid4().hex
         input_payload = payload or {}
         initial: AgentState = {
             "run_id": run_id,
@@ -188,7 +278,31 @@ def run_pipeline(
             "tokens_used": 0,
             "llm_calls_used": 0,
         }
-        if run_timeout:
+        if durable_checkpoint_enabled():
+            try:
+                result = _run_with_durable_checkpoint(
+                    run_id=run_id,
+                    incident_id=incident_id,
+                    initial=initial,
+                    resume=resume,
+                )
+            except Exception:
+                _persist_replay_metadata_best_effort(
+                    run_id=run_id,
+                    incident_id=incident_id,
+                    payload=input_payload,
+                    trace_id=trace_id,
+                    status="error",
+                    replay_source=replay_source,
+                    llm_calls_used=0,
+                    original_outcome={
+                        "subsystem": "",
+                        "escalated": False,
+                        "has_citations": False,
+                    },
+                )
+                raise
+        elif run_timeout:
             # PS1.9: OTel context is not inherited by ThreadPoolExecutor workers by default.
             # Attach parent context so triage/investigate/MCP spans stay under agent.run in one trace.
             parent_ctx = otel_context.get_current()

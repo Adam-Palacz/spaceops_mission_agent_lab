@@ -10,7 +10,7 @@
 | PS3.6 | Out-of-order/dup/drop simulation | Done | [PS3.6-out-of-order-dup-drop-simulation.md](PS3.6-out-of-order-dup-drop-simulation.md) |
 | PS3.7 | Contact-window simulation hooks | Done | [PS3.7-contact-window-simulation-hooks.md](PS3.7-contact-window-simulation-hooks.md) |
 | PS3.8 | Ops runbook for queue + DLQ recovery | Done | [PS3.8-runbook-queue-dlq-recovery.md](PS3.8-runbook-queue-dlq-recovery.md) |
-| PS3.9 | LangGraph durable checkpoint (Postgres) + resume | Todo | [PS3.9-langgraph-durable-checkpoint.md](PS3.9-langgraph-durable-checkpoint.md) |
+| PS3.9 | LangGraph durable checkpoint (Postgres) + resume | Done | [PS3.9-langgraph-durable-checkpoint.md](PS3.9-langgraph-durable-checkpoint.md) |
 | PS3.10 | MCP resilience under lossy links + escalation proofs | Todo | [PS3.10-mcp-resilience-lossy-links.md](PS3.10-mcp-resilience-lossy-links.md) |
 
 **Status key:** Todo | In progress | Done | Blocked

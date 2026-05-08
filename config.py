@@ -142,6 +142,14 @@ class Settings(BaseSettings):
     agent_max_llm_calls_per_run: int = Field(
         default=10, description="Max LLM calls per run; 0 = no limit (rate limit NF6)"
     )
+    agent_durable_checkpoint_enabled: bool = Field(
+        default=False,
+        description="Enable Postgres-backed durable checkpoints for LangGraph-like pipeline state.",
+    )
+    agent_durable_checkpoint_thread_prefix: str = Field(
+        default="incident",
+        description="Prefix strategy for durable checkpoint thread_id: '<prefix>:<incident_id>'.",
+    )
 
     # S3.1: model lifecycle / shadow-testing
     agent_model_id: str = Field(

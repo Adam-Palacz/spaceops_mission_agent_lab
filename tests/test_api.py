@@ -452,6 +452,45 @@ def test_replay_run_endpoint_invalid_metadata(api_client, monkeypatch):
     assert response.status_code == 422
 
 
+def test_runs_resume_triggers_pipeline_resume_with_same_run_id(api_client, monkeypatch):
+    captured: dict[str, object] = {}
+
+    def _fake_run_pipeline(
+        incident_id, payload=None, replay_source="api", run_id=None, resume=False
+    ):
+        captured["incident_id"] = incident_id
+        captured["payload"] = payload
+        captured["replay_source"] = replay_source
+        captured["run_id"] = run_id
+        captured["resume"] = resume
+        return {
+            "run_id": run_id,
+            "report": {"executive_summary": "resumed"},
+        }
+
+    monkeypatch.setattr("apps.agent.graph.run_pipeline", _fake_run_pipeline)
+    response = api_client.post(
+        "/runs/resume",
+        json={
+            "run_id": "run-resume-api-1",
+            "incident_id": "inc-resume-api",
+            "payload": {"ref": "fixture"},
+        },
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body.get("status") == "resumed"
+    assert body.get("run_id") == "run-resume-api-1"
+    assert body.get("incident_id") == "inc-resume-api"
+    assert body.get("report", {}).get("executive_summary") == "resumed"
+
+    assert captured["incident_id"] == "inc-resume-api"
+    assert captured["payload"] == {"ref": "fixture"}
+    assert captured["replay_source"] == "resume"
+    assert captured["run_id"] == "run-resume-api-1"
+    assert captured["resume"] is True
+
+
 # ---------------------------------------------------------------------------
 # S2.5 Approval API
 # ---------------------------------------------------------------------------

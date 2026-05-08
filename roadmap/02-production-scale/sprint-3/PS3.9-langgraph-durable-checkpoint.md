@@ -3,7 +3,7 @@
 | Field | Value |
 |-------|-------|
 | **Task ID** | PS3.9 |
-| **Status** | Todo |
+| **Status** | Done |
 
 ---
 
@@ -28,11 +28,19 @@ consumers** (PS3.2–PS3.4) without double-execution.
 
 ## Requirements
 
-- [ ] ADR: choice of checkpointer backend, thread/run id strategy, retention, and interaction with replay.
-- [ ] Implementation wired into `apps/agent/graph.py` (or documented wrapper) behind feature flag
-      defaulting **off** in pure-file MVP until Postgres is available.
-- [ ] Automated test: simulate interrupt → resume and assert state continuity (or documented limitation).
-- [ ] Runbook note: operator steps when a pod dies mid-run (resume vs re-run from replay).
+- [x] ADR captured: backend choice, key strategy, retention posture, replay/queue interaction.
+- [x] Implementation wired into `apps/agent/graph.py` via durable wrapper behind feature flag
+      (`AGENT_DURABLE_CHECKPOINT_ENABLED`, default **off**).
+- [x] Automated test: interrupt → resume continuity covered.
+- [x] Runbook note added: operator decision path for resume vs replay.
+
+Implemented artifacts:
+- `docs/adr/0003-langgraph-durable-checkpoint-postgres.md`
+- `apps/agent/checkpointing.py`
+- `apps/agent/graph.py` (durable runner integration)
+- `apps/api/main.py` (`POST /runs/resume` operator trigger)
+- `tests/test_durable_checkpoint_resume.py`
+- `docs/runbooks/replay_workflow.md` (PS3.9 operator note)
 
 ---
 

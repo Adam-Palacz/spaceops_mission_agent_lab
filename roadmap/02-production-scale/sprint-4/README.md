@@ -24,6 +24,17 @@ and human gates.
 
 See **[BOARD.md](BOARD.md)** for status of PS4.1-PS4.8.
 
+| Task | Spec |
+|------|------|
+| PS4.1 | [Evidence policy enforcement](PS4.1-evidence-policy-enforcement.md) |
+| PS4.2 | [Strict output schema validation](PS4.2-strict-output-schema-validation.md) |
+| PS4.3 | [Prompt injection hardening](PS4.3-prompt-injection-hardening.md) |
+| PS4.4 | [Evals citation/audit expansion](PS4.4-evals-citation-audit-expansion.md) |
+| PS4.5 | [Golden runner snapshot/diff](PS4.5-golden-runner-snapshot-diff.md) |
+| PS4.6 | [Behavior metrics emission](PS4.6-behavior-metrics-emission.md) |
+| PS4.7 | [CI gating policy](PS4.7-ci-gating-policy-safety-quality.md) |
+| PS4.8 | [Guardrails/quality runbook update](PS4.8-guardrails-quality-runbook-update.md) |
+
 ---
 
 ## Definition of done (sprint)

@@ -22,11 +22,12 @@ and human gates.
 
 ## Tasks
 
-See **[BOARD.md](BOARD.md)** for status of PS4.1-PS4.8.
+See **[BOARD.md](BOARD.md)** for status of PS4.1–PS4.8 (plus PS4.1.1 DX).
 
 | Task | Spec |
 |------|------|
 | PS4.1 | [Evidence policy enforcement](PS4.1-evidence-policy-enforcement.md) |
+| PS4.1.1 | [Makefile / CI parity for local checks](PS4.1.1-makefile-ci-parity.md) |
 | PS4.2 | [Strict output schema validation](PS4.2-strict-output-schema-validation.md) |
 | PS4.3 | [Prompt injection hardening](PS4.3-prompt-injection-hardening.md) |
 | PS4.4 | [Evals citation/audit expansion](PS4.4-evals-citation-audit-expansion.md) |

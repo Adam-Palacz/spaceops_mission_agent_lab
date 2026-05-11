@@ -79,6 +79,12 @@ def annotate_span_with_observability_attrs(span, state: AgentState) -> None:
     compact = _tool_outcomes_compact(state.get("tool_outcomes"))
     if compact:
         span.set_attribute("tool_outcomes", compact)
+    eps = state.get("evidence_policy_status")
+    if isinstance(eps, str) and eps.strip():
+        span.set_attribute("evidence_policy_status", eps.strip()[:32])
+    epr = state.get("evidence_policy_reason")
+    if isinstance(epr, str) and epr.strip():
+        span.set_attribute("evidence_policy_reason", epr.strip()[:64])
     plan = state.get("plan")
     if isinstance(plan, list) and plan:
         span.set_attribute("plan_step_count", len(plan))
@@ -627,6 +633,67 @@ def _normalize_plan_steps(
                 step["snippet_ids"] = snippet_ids[:1] if snippet_ids else []
 
 
+def _evaluate_evidence_policy(state: AgentState) -> tuple[bool, str, str]:
+    """
+    PS4.1 evidence policy:
+    - non-escalated outputs must have at least one citation identifier,
+    - non-report plan steps must be grounded to citation identifiers.
+    """
+    citations = state.get("citations") or []
+    plan = state.get("plan") or []
+    if not isinstance(citations, list):
+        citations = []
+    if not isinstance(plan, list):
+        plan = []
+
+    citation_ids: set[str] = set()
+    for c in citations:
+        if not isinstance(c, dict):
+            continue
+        doc_id = str(c.get("doc_id") or "").strip()
+        snippet_id = str(c.get("snippet_id") or "").strip()
+        if doc_id:
+            citation_ids.add(doc_id)
+        if snippet_id:
+            citation_ids.add(snippet_id)
+
+    if not citation_ids:
+        return (
+            False,
+            "evidence_policy_violation",
+            "No valid citation identifiers available for grounding.",
+        )
+
+    for idx, step in enumerate(plan):
+        if not isinstance(step, dict):
+            continue
+        action_type = str(step.get("action_type") or "report").strip().lower()
+        if action_type == "report":
+            continue
+        refs: set[str] = set()
+        for d in step.get("doc_ids") or []:
+            s = str(d or "").strip()
+            if s:
+                refs.add(s)
+        for sref in step.get("snippet_ids") or []:
+            s = str(sref or "").strip()
+            if s:
+                refs.add(s)
+        if not refs:
+            return (
+                False,
+                "evidence_policy_violation",
+                f"Plan step {idx} has no grounding references.",
+            )
+        if refs.isdisjoint(citation_ids):
+            return (
+                False,
+                "evidence_policy_violation",
+                f"Plan step {idx} references unsupported citations.",
+            )
+    return True, "ok", ""
+
+
 def decide(state: AgentState) -> dict:
     """Produce plan; each step must reference at least one doc_id or snippet_id (NF5a). S1.12: token budget, rate limit, timeout."""
     incident_id = state.get("incident_id") or "unknown"
@@ -922,6 +989,33 @@ def report(state: AgentState) -> dict:
     plan = state.get("plan") or []
     escalated = state.get("escalated") or False
     escalation_packet = state.get("escalation_packet") or {}
+    evidence_policy_status = "n/a"
+    evidence_policy_reason = ""
+    if not escalated:
+        ok, reason, detail = _evaluate_evidence_policy(state)
+        if not ok:
+            evidence_policy_status = "violation"
+            evidence_policy_reason = reason
+            escalated = True
+            escalation_packet = {
+                "reason": reason,
+                "what_we_know": [
+                    f"Incident {incident_id}",
+                    "Evidence policy guard rejected non-grounded output.",
+                    detail,
+                ],
+                "what_we_dont_know": [
+                    "Proposed actions cannot be trusted without valid grounding.",
+                ],
+                "what_to_check": [
+                    "Inspect investigation citations and plan references.",
+                    "Re-run after MCP evidence sources are healthy.",
+                ],
+            }
+        else:
+            evidence_policy_status = "ok"
+    else:
+        evidence_policy_status = "skipped_escalated"
     # S1.10: trace_id from OTel (32-char hex) when exporting; else incident_id
     trace_id = state.get("trace_id") or ""
     trace_url = (
@@ -961,4 +1055,10 @@ def report(state: AgentState) -> dict:
             "Agent could not proceed with confidence; manual review required. See escalation_packet."
         )
     _ReportSchema.model_validate(report_obj)
-    return {"report": report_obj}
+    return {
+        "report": report_obj,
+        "escalated": bool(escalated),
+        "escalation_packet": escalation_packet if escalated else {},
+        "evidence_policy_status": evidence_policy_status,
+        "evidence_policy_reason": evidence_policy_reason,
+    }

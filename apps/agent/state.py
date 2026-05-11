@@ -61,6 +61,8 @@ class AgentState(TypedDict, total=False):
     report: dict
     escalated: bool
     escalation_packet: EscalationPacket
+    evidence_policy_status: str
+    evidence_policy_reason: str
     stage_timings: list[StageTiming]
 
 

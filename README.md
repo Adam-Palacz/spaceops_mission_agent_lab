@@ -24,7 +24,7 @@ Agent for satellite / ground segment anomaly triage: **ingest ? triage ? investi
   - `LLM_PROVIDER=openai` + `OPENAI_API_KEY`, or
   - `LLM_PROVIDER=cursor_sh` + `CURSOR_SH_API_KEY`.
   Optional provider endpoint settings: `OPENAI_BASE_URL`, `CURSOR_SH_BASE_URL`, `LLM_CHAT_COMPLETIONS_PATH`.
-  Optional: `POSTGRES_*` if not using defaults.
+  **Postgres:** set `POSTGRES_PASSWORD` in `.env` before `docker compose` (required; no default in Compose). Optionally set `DATABASE_URL` for host-run apps. See [docs/output_schema.md](docs/output_schema.md) and [contracts/README.md](contracts/README.md) for report contracts (PS4.2).
 - **Limits and timeouts (S1.12, NF6):** `AGENT_RUN_TIMEOUT_SECONDS` (default 120; 0 = no limit), `AGENT_LLM_CALL_TIMEOUT_SECONDS` (default 30), `AGENT_TOKEN_BUDGET_PER_RUN` (default 50000; 0 = no limit), `AGENT_MAX_LLM_CALLS_PER_RUN` (default 10; 0 = no limit). When exceeded, run escalates to human.
 - **OTel traces (S1.10):** to export traces to the local collector/Jaeger from apps, set `OTEL_EXPORTER_OTLP_ENDPOINT` (e.g. `http://localhost:4317`, matching `infra/docker-compose.yml`).
 - **MCP + GitOps (S2):** MCP URLs can be overridden via `TELEMETRY_MCP_URL`, `KB_MCP_URL`, `TICKET_MCP_URL`, `GITOPS_MCP_URL` (see `.env.example`). For GitOps PR creation, set `GITHUB_TOKEN`, `GITHUB_REPO`, `GITHUB_REPO_BASE_BRANCH`.

@@ -38,6 +38,10 @@ from prometheus_client import (
 
 from config import settings
 from apps.contracts.v1 import TelemetryEventV1
+from apps.contracts.output_validation import (
+    OutputSchemaViolation,
+    validate_run_report,
+)
 from apps.telemetry import init_telemetry
 
 # Base path for data (repo root when run from repo)
@@ -468,6 +472,18 @@ def _slug_for_sim_incident_id(declared: str) -> str:
     return (s[:48] if s else "inc") or "inc"
 
 
+def _schema_violation_response(exc: OutputSchemaViolation) -> HTTPException:
+    """Stable 422 body for output envelope validation failures (PS4.2)."""
+    return HTTPException(
+        status_code=422,
+        detail={
+            "error": exc.reason_code,
+            "envelope": exc.envelope,
+            "message": exc.operator_message,
+        },
+    )
+
+
 def _build_sim_incident_id(declared_incident_id: str) -> str:
     """Isolated incident_id so fixture runs do not collide with production ids (PS2.7)."""
     slug = _slug_for_sim_incident_id(declared_incident_id)
@@ -492,6 +508,10 @@ def trigger_run(payload: RunTriggerPayload) -> JSONResponse:
     try:
         result = run_pipeline(payload.incident_id, payload.payload, replay_source="api")
         report = result.get("report") or {}
+        try:
+            validate_run_report(report)
+        except OutputSchemaViolation as exc:
+            raise _schema_violation_response(exc) from exc
         run_id = str(result.get("run_id") or "")
         duration = max(0.0, time.perf_counter() - started)
         AGENT_RUNS_TOTAL.labels(status="success").inc()
@@ -560,15 +580,22 @@ def resume_run(payload: ResumeRunPayload) -> JSONResponse:
             run_id=payload.run_id,
             resume=True,
         )
+    except OutputSchemaViolation as exc:
+        raise _schema_violation_response(exc) from exc
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Resume failed: {e}") from e
+    report = result.get("report") or {}
+    try:
+        validate_run_report(report)
+    except OutputSchemaViolation as exc:
+        raise _schema_violation_response(exc) from exc
     return JSONResponse(
         status_code=200,
         content={
             "status": "resumed",
             "run_id": str(result.get("run_id") or payload.run_id),
             "incident_id": payload.incident_id,
-            "report": result.get("report") or {},
+            "report": report,
         },
     )
 
@@ -595,6 +622,10 @@ def _simulate_run_core(
     try:
         result = run_pipeline(sim_incident_id, pl, replay_source="fixture_sim")
         report = result.get("report") or {}
+        try:
+            validate_run_report(report)
+        except OutputSchemaViolation as exc:
+            raise _schema_violation_response(exc) from exc
         run_id = str(result.get("run_id") or "")
         duration = max(0.0, time.perf_counter() - started)
         AGENT_RUNS_TOTAL.labels(status="success").inc()

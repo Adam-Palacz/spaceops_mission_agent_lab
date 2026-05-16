@@ -46,19 +46,69 @@ class IncidentV1(ContractBase):
 
 
 class AgentReportV1(ContractBase):
+    """Canonical v1 report emitted by the agent pipeline and persisted by APIs."""
+
     schema_version: Literal["v1"] = "v1"
     incident_id: str = Field(..., min_length=1)
     run_id: str = Field(..., min_length=1)
-    summary: str = Field(default="")
-    subsystem: str = Field(default="")
-    risk: str = Field(default="")
-    plan: list[dict[str, Any]] = Field(default_factory=list)
+    executive_summary: str
+    evidence: list["EvidenceItemV1"]
     citation_refs: list[str] = Field(default_factory=list)
-    escalated: bool = Field(default=False)
-    trace_url: str | None = None
+    proposed_actions: list[str] = Field(default_factory=list)
+    rollback: str
+    trace_link: str
+    act_results: list["ToolResultV1"] = Field(default_factory=list)
+    approval_requests: list["ApprovalRequestV1"] = Field(default_factory=list)
+    escalation_packet: "EmbeddedEscalationPacketV1 | None" = None
+    handoff: str | None = None
+    summary: str | None = Field(
+        default=None,
+        description="Deprecated compatibility alias; prefer executive_summary.",
+    )
+
+
+class EmbeddedEscalationPacketV1(ContractBase):
+    """Escalation handoff packet embedded in agent state and reports.
+
+    The enclosing AgentReportV1 carries incident_id/run_id/schema_version.
+    """
+
+    reason: str = Field(..., min_length=1)
+    what_we_know: list[str] = Field(default_factory=list)
+    what_we_dont_know: list[str] = Field(default_factory=list)
+    what_to_check: list[str] = Field(default_factory=list)
+
+
+class EvidenceItemV1(BaseModel):
+    """Single evidence row in the run report."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    hypothesis: str
+
+
+class ToolResultV1(ContractBase):
+    """Normalized Act/MCP tool result row."""
+
+    step_index: int = Field(..., ge=0)
+    tool: str = Field(..., min_length=1)
+    outcome: Literal["success", "empty", "failure"]
+    result: dict[str, Any] | list[Any] | str | int | float | bool | None = None
+
+
+class ApprovalRequestV1(ContractBase):
+    """Pending restricted-action approval created during Act."""
+
+    id: str = Field(..., min_length=1)
+    step_index: int = Field(..., ge=0)
+    step: dict[str, Any]
+    incident_id: str = Field(..., min_length=1)
+    reason: str = Field(default="restricted", min_length=1)
 
 
 class EscalationPacketV1(ContractBase):
+    """Standalone storage/escalation packet contract."""
+
     schema_version: Literal["v1"] = "v1"
     incident_id: str = Field(..., min_length=1)
     run_id: str = Field(..., min_length=1)

@@ -29,9 +29,16 @@ def test_incident_v1_rejects_extra_fields() -> None:
 
 
 def test_agent_report_v1_has_expected_schema_version() -> None:
-    report = AgentReportV1(incident_id="inc-1", run_id="run-1")
+    report = AgentReportV1(
+        incident_id="inc-1",
+        run_id="run-1",
+        executive_summary="Incident inc-1: ok.",
+        evidence=[],
+        rollback="N/A",
+        trace_link="",
+    )
     assert report.schema_version == "v1"
-    assert report.escalated is False
+    assert report.executive_summary == "Incident inc-1: ok."
 
 
 def test_escalation_packet_v1_requires_reason() -> None:

@@ -187,6 +187,10 @@ def _run_timeout_escalation_result(
 ) -> dict:
     """S1.12: Build result dict when run hits timeout (NF6, F10)."""
     from config import settings as s
+    from apps.contracts.output_validation import (
+        validate_escalation_packet,
+        validate_run_report,
+    )
 
     packet = {
         "reason": "run_timeout",
@@ -204,16 +208,20 @@ def _run_timeout_escalation_result(
         f"{s.jaeger_ui_url}/trace/{trace_id}" if is_valid_trace_id_hex(trace_id) else ""
     )
     report = {
+        "schema_version": "v1",
         "incident_id": incident_id,
+        "run_id": run_id,
         "executive_summary": f"[ESCALATION] Incident {incident_id}: handoff to human. Reason: run_timeout.",
         "evidence": [],
         "citation_refs": [],
         "proposed_actions": [],
         "rollback": "N/A",
         "trace_link": trace_url,
-        "escalation_packet": packet,
         "handoff": "Run timed out; manual review required.",
     }
+    packet = validate_escalation_packet(packet)
+    report["escalation_packet"] = packet
+    validate_run_report(report)
     return {
         "run_id": run_id,
         "incident_id": incident_id,

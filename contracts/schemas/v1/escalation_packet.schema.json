@@ -41,6 +41,7 @@
     }
   },
   "additionalProperties": false,
+  "description": "Standalone storage/escalation packet contract.",
   "properties": {
     "schema_version": {
       "const": "v1",

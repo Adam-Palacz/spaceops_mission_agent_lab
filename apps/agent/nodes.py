@@ -36,7 +36,15 @@ from prompts.registry import (
     TRIAGE_PROMPT_ID,
     get_prompt,
 )
-from pydantic import BaseModel, ConfigDict, Field
+from apps.contracts.output_validation import (
+    OUTPUT_SCHEMA_VIOLATION,
+    OutputSchemaViolation,
+    escalation_packet_for_schema_violation,
+    validate_act_results,
+    validate_approval_requests,
+    validate_escalation_packet,
+    validate_run_report,
+)
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 DATA_INCIDENTS = REPO_ROOT / "data" / "incidents"
@@ -85,6 +93,12 @@ def annotate_span_with_observability_attrs(span, state: AgentState) -> None:
     epr = state.get("evidence_policy_reason")
     if isinstance(epr, str) and epr.strip():
         span.set_attribute("evidence_policy_reason", epr.strip()[:64])
+    oss = state.get("output_schema_status")
+    if isinstance(oss, str) and oss.strip():
+        span.set_attribute("output_schema_status", oss.strip()[:32])
+    osr = state.get("output_schema_reason")
+    if isinstance(osr, str) and osr.strip():
+        span.set_attribute("output_schema_reason", osr.strip()[:64])
     plan = state.get("plan")
     if isinstance(plan, list) and plan:
         span.set_attribute("plan_step_count", len(plan))
@@ -167,29 +181,51 @@ def emit_decision_summary_span(state: AgentState, *, phase: str) -> None:
         sp.set_attribute("decision.summary_line", summary_line)
 
 
-class _EscalationPacketSchema(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+def _audit_schema_guardrail(
+    *,
+    trace_id: str,
+    incident_id: str,
+    envelope: str,
+    detail: str,
+) -> None:
+    audit_append(
+        trace_id=trace_id,
+        incident_id=incident_id,
+        actor="agent",
+        tool="guardrail_escalation",
+        args={
+            "reason": OUTPUT_SCHEMA_VIOLATION,
+            "envelope": envelope,
+            "detail": detail[:200],
+        },
+        decision="escalate",
+        outcome="success",
+    )
 
-    reason: str = Field(min_length=1)
-    what_we_know: list[str]
-    what_we_dont_know: list[str]
-    what_to_check: list[str]
 
-
-class _ReportSchema(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    incident_id: str = Field(min_length=1)
-    executive_summary: str
-    evidence: list[dict]
-    citation_refs: list[str]
-    proposed_actions: list[str]
-    rollback: str
-    trace_link: str
-    act_results: list[dict] = Field(default_factory=list)
-    approval_requests: list[dict] = Field(default_factory=list)
-    escalation_packet: dict | None = None
-    handoff: str | None = None
+def _ensure_escalation_packet(
+    incident_id: str,
+    packet: dict,
+    *,
+    trace_id: str,
+    audit_on_fallback: bool = True,
+) -> dict:
+    """Validate escalation packet; on failure return a schema-safe fail-closed packet."""
+    try:
+        return validate_escalation_packet(packet)
+    except OutputSchemaViolation as exc:
+        if audit_on_fallback:
+            _audit_schema_guardrail(
+                trace_id=trace_id,
+                incident_id=incident_id,
+                envelope=exc.envelope,
+                detail=exc.operator_message,
+            )
+        return escalation_packet_for_schema_violation(
+            incident_id,
+            envelope=exc.envelope,
+            detail=exc.operator_message,
+        )
 
 
 def _escalation_for_limit_or_timeout(
@@ -546,6 +582,8 @@ def _should_escalate(state: AgentState) -> tuple[bool, str]:
 
 def check_escalation(state: AgentState) -> dict:
     """S1.8: Evaluate escalation conditions; if met, set escalation_packet (F10). S1.12: preserve limit/timeout escalation."""
+    incident_id = state.get("incident_id") or "unknown"
+    trace_id = state.get("trace_id") or incident_id
     # Preserve escalation already set by token_limit, llm_timeout, or run_timeout (NF6)
     if state.get("escalated") and state.get("escalation_packet", {}).get("reason") in (
         "token_limit",
@@ -554,9 +592,21 @@ def check_escalation(state: AgentState) -> dict:
         "llm_provider_error",
         "run_timeout",
     ):
+        packet = _ensure_escalation_packet(
+            incident_id,
+            state.get("escalation_packet") or {},
+            trace_id=trace_id,
+            audit_on_fallback=True,
+        )
         return {
             "escalated": True,
-            "escalation_packet": state.get("escalation_packet") or {},
+            "escalation_packet": packet,
+            "output_schema_status": "ok"
+            if packet.get("reason") != OUTPUT_SCHEMA_VIOLATION
+            else "violation",
+            "output_schema_reason": ""
+            if packet.get("reason") != OUTPUT_SCHEMA_VIOLATION
+            else OUTPUT_SCHEMA_VIOLATION,
         }
     escalated, reason = _should_escalate(state)
     if not escalated:
@@ -602,8 +652,9 @@ def check_escalation(state: AgentState) -> dict:
             0,
             "Resolve conflicting hypotheses (anomaly vs normal) with additional data.",
         )
-    _EscalationPacketSchema.model_validate(packet)
-    trace_id = state.get("trace_id") or incident_id
+    packet = _ensure_escalation_packet(
+        incident_id, packet, trace_id=trace_id, audit_on_fallback=False
+    )
     audit_append(
         trace_id=trace_id,
         incident_id=incident_id,
@@ -613,7 +664,12 @@ def check_escalation(state: AgentState) -> dict:
         decision="escalate",
         outcome="success",
     )
-    return {"escalated": True, "escalation_packet": packet}
+    return {
+        "escalated": True,
+        "escalation_packet": packet,
+        "output_schema_status": "ok",
+        "output_schema_reason": "",
+    }
 
 
 def _normalize_plan_steps(
@@ -964,16 +1020,52 @@ def act(state: AgentState) -> dict:
                     outcome="failure",
                     error_message="OPA deny or unavailable",
                 )
+                packet = _ensure_escalation_packet(
+                    incident_id, packet, trace_id=trace_id, audit_on_fallback=True
+                )
+                try:
+                    safe_results = validate_act_results(act_results)
+                except OutputSchemaViolation:
+                    safe_results = []
                 return {
-                    "act_results": act_results,
+                    "act_results": safe_results,
                     "approval_requests": approval_requests,
                     "escalated": True,
                     "escalation_packet": packet,
+                    "output_schema_status": "ok"
+                    if packet.get("reason") != OUTPUT_SCHEMA_VIOLATION
+                    else "violation",
+                    "output_schema_reason": ""
+                    if packet.get("reason") != OUTPUT_SCHEMA_VIOLATION
+                    else OUTPUT_SCHEMA_VIOLATION,
                 }
 
+    try:
+        safe_results = validate_act_results(act_results)
+        safe_approvals = validate_approval_requests(approval_requests)
+    except OutputSchemaViolation as exc:
+        packet = escalation_packet_for_schema_violation(
+            incident_id,
+            envelope=exc.envelope,
+            detail=exc.operator_message,
+        )
+        _audit_schema_guardrail(
+            trace_id=trace_id,
+            incident_id=incident_id,
+            envelope=exc.envelope,
+            detail=exc.operator_message,
+        )
+        return {
+            "act_results": [],
+            "approval_requests": [],
+            "escalated": True,
+            "escalation_packet": packet,
+            "output_schema_status": "violation",
+            "output_schema_reason": OUTPUT_SCHEMA_VIOLATION,
+        }
     return {
-        "act_results": act_results,
-        "approval_requests": approval_requests,
+        "act_results": safe_results,
+        "approval_requests": safe_approvals,
     }
 
 
@@ -1017,12 +1109,13 @@ def report(state: AgentState) -> dict:
     else:
         evidence_policy_status = "skipped_escalated"
     # S1.10: trace_id from OTel (32-char hex) when exporting; else incident_id
-    trace_id = state.get("trace_id") or ""
+    trace_id_raw = state.get("trace_id") or ""
     trace_url = (
-        f"{settings.jaeger_ui_url}/trace/{trace_id}"
-        if is_valid_trace_id_hex(trace_id)
+        f"{settings.jaeger_ui_url}/trace/{trace_id_raw}"
+        if is_valid_trace_id_hex(trace_id_raw)
         else ""
     )
+    trace_id = trace_id_raw or incident_id
     cite_refs = list(
         {
             c.get("doc_id") or c.get("snippet_id")
@@ -1032,33 +1125,87 @@ def report(state: AgentState) -> dict:
     )
     act_results = state.get("act_results") or []
     approval_requests = state.get("approval_requests") or []
-    report_obj: dict = {
-        "incident_id": incident_id,
-        "executive_summary": (
-            f"[ESCALATION] Incident {incident_id}: handoff to human. Reason: {escalation_packet.get('reason', 'unknown')}."
-            if escalated
-            else f"Incident {incident_id}: subsystem={subsystem}, risk={risk}. {len(hypotheses)} investigation notes."
-        ),
-        "evidence": [{"hypothesis": h} for h in hypotheses[:5]],
-        "citation_refs": cite_refs,
-        "proposed_actions": [p.get("action", "") for p in plan if isinstance(p, dict)],
-        "rollback": "Revert config changes via ops-config PR; no automated rollback in MVP.",
-        "trace_link": trace_url,
-    }
-    if act_results:
-        report_obj["act_results"] = act_results
-    if approval_requests:
-        report_obj["approval_requests"] = approval_requests
-    if escalated:
-        report_obj["escalation_packet"] = escalation_packet
-        report_obj["handoff"] = (
-            "Agent could not proceed with confidence; manual review required. See escalation_packet."
+    output_schema_status = "ok"
+    output_schema_reason = ""
+
+    def _assemble_report(
+        *,
+        esc: bool,
+        packet: dict,
+        results: list[dict],
+        approvals: list[dict],
+    ) -> dict:
+        obj: dict = {
+            "schema_version": "v1",
+            "incident_id": incident_id,
+            "run_id": str(state.get("run_id") or trace_id or incident_id),
+            "executive_summary": (
+                f"[ESCALATION] Incident {incident_id}: handoff to human. Reason: {packet.get('reason', 'unknown')}."
+                if esc
+                else f"Incident {incident_id}: subsystem={subsystem}, risk={risk}. {len(hypotheses)} investigation notes."
+            ),
+            "evidence": [{"hypothesis": h} for h in hypotheses[:5]],
+            "citation_refs": cite_refs,
+            "proposed_actions": [
+                p.get("action", "") for p in plan if isinstance(p, dict)
+            ],
+            "rollback": "Revert config changes via ops-config PR; no automated rollback in MVP.",
+            "trace_link": trace_url,
+        }
+        if results:
+            obj["act_results"] = results
+        if approvals:
+            obj["approval_requests"] = approvals
+        if esc:
+            obj["escalation_packet"] = packet
+            obj["handoff"] = (
+                "Agent could not proceed with confidence; manual review required. See escalation_packet."
+            )
+        return obj
+
+    try:
+        safe_results = validate_act_results(act_results) if act_results else []
+        safe_approvals = (
+            validate_approval_requests(approval_requests) if approval_requests else []
         )
-    _ReportSchema.model_validate(report_obj)
+        if escalated:
+            escalation_packet = validate_escalation_packet(escalation_packet)
+        report_obj = _assemble_report(
+            esc=escalated,
+            packet=escalation_packet,
+            results=safe_results,
+            approvals=safe_approvals,
+        )
+        validate_run_report(report_obj)
+    except OutputSchemaViolation as exc:
+        output_schema_status = "violation"
+        output_schema_reason = OUTPUT_SCHEMA_VIOLATION
+        escalated = True
+        _audit_schema_guardrail(
+            trace_id=trace_id,
+            incident_id=incident_id,
+            envelope=exc.envelope,
+            detail=exc.operator_message,
+        )
+        escalation_packet = escalation_packet_for_schema_violation(
+            incident_id,
+            envelope=exc.envelope,
+            detail=exc.operator_message,
+        )
+        report_obj = _assemble_report(
+            esc=True,
+            packet=escalation_packet,
+            results=[],
+            approvals=[],
+        )
+        validate_run_report(report_obj)
+
     return {
         "report": report_obj,
         "escalated": bool(escalated),
         "escalation_packet": escalation_packet if escalated else {},
         "evidence_policy_status": evidence_policy_status,
         "evidence_policy_reason": evidence_policy_reason,
+        "output_schema_status": output_schema_status,
+        "output_schema_reason": output_schema_reason,
     }

@@ -16,6 +16,26 @@ _SAMPLE_NDJSON_EMPTY_OBJECT = b"{}\n"
 _SAMPLE_NDJSON_NOT_OBJECT = b'["array"]\n'
 
 
+def _agent_report(
+    *,
+    incident_id: str,
+    run_id: str,
+    executive_summary: str,
+    citation_refs: list[str] | None = None,
+) -> dict:
+    return {
+        "schema_version": "v1",
+        "incident_id": incident_id,
+        "run_id": run_id,
+        "executive_summary": executive_summary,
+        "evidence": [],
+        "citation_refs": citation_refs or [],
+        "proposed_actions": [],
+        "rollback": "N/A",
+        "trace_link": "",
+    }
+
+
 def test_health_returns_200_and_body(api_client):
     """GET /health returns 200 and expected body."""
     response = api_client.get("/health")
@@ -341,7 +361,11 @@ def test_runs_simulate_quick_success(api_client, monkeypatch, tmp_path: Path):
         assert payload.get("risk") == "low"
         return {
             "run_id": "quick-sim-1",
-            "report": {"executive_summary": "quick ok"},
+            "report": _agent_report(
+                incident_id=str(incident_id),
+                run_id="quick-sim-1",
+                executive_summary="quick ok",
+            ),
             "subsystem": "Power",
             "risk": "low",
             "escalated": False,
@@ -384,7 +408,11 @@ def test_runs_simulate_success_sets_simulation_flag(
         assert isinstance(payload, dict)
         return {
             "run_id": "replay-sim-1",
-            "report": {"executive_summary": "sim ok"},
+            "report": _agent_report(
+                incident_id=str(incident_id),
+                run_id="replay-sim-1",
+                executive_summary="sim ok",
+            ),
             "subsystem": "Power",
             "risk": "low",
             "escalated": False,
@@ -465,7 +493,11 @@ def test_runs_resume_triggers_pipeline_resume_with_same_run_id(api_client, monke
         captured["resume"] = resume
         return {
             "run_id": run_id,
-            "report": {"executive_summary": "resumed"},
+            "report": _agent_report(
+                incident_id=str(incident_id),
+                run_id=str(run_id),
+                executive_summary="resumed",
+            ),
         }
 
     monkeypatch.setattr("apps.agent.graph.run_pipeline", _fake_run_pipeline)

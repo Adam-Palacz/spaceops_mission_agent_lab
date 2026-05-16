@@ -5,6 +5,7 @@
 #   docker compose -f infra/docker-compose.yml --project-directory . up -d
 #
 # Without --project-directory ., Compose uses infra/ as project dir: .env is not found
+# POSTGRES_PASSWORD must be set in repo-root .env (no default; treated as a local secret).
 # and infra/otel-collector.yaml becomes infra/infra/otel-collector.yaml (missing),
 # so Docker mounts an empty directory and OTel fails with "is a directory".
 # If you saw that error, run: docker compose -f infra/docker-compose.yml --project-directory . down

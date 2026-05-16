@@ -31,14 +31,15 @@ Guardrail decisions are written to audit with:
 
 This enables clear root-cause attribution during incident review and replay diffing.
 
-## Output schema enforcement
+## Output schema enforcement (PS4.2)
 
 Before returning node outputs:
 
-- `check_escalation` validates escalation packet structure.
-- `report` validates report structure (including escalation payload when present).
+- `check_escalation`, `act`, and `report` validate envelopes via `apps/contracts/output_validation.py`.
+- Failures escalate with `output_schema_violation` (fail-closed); see [output_schema.md](../output_schema.md).
+- API returns HTTP 422 with stable `detail.error` when a report fails the boundary check.
 
-Schema validation failures are treated as code defects and should fail tests/CI.
+Schema validation failures must not silently pass; see `tests/test_output_schema_ps42.py`.
 
 ## Verification checklist
 

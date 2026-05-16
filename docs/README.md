@@ -12,6 +12,7 @@ The **docs/** directory holds project documentation that supports both humans an
 
 - **README.md** (this file) — Index of Mermaid diagrams; start here when looking for a flow, architecture, or schema.
 - **shadow_models.md** — Shadow-testing and model promotion gate (P4.8): when to run, how to read reports, who decides.
+- **output_schema.md** — Strict agent output envelopes (`AgentReportV1`, fail-closed `output_schema_violation`, PS4.2).
 - **workflow/** — High-level pipeline (Ingest to Post-incident) and escalation path; aligns with `roadmap/01-core-roadmap.md` and `roadmap/goals.md` F1–F10.
 - **architecture/** — System boundaries (API, Agent, MCP, OPA, storage, observability), repo layout, and production-ready criteria from `goals.md` §4.5.
 - **agent/** — LangGraph state machine and Act logic (safe vs restricted, OPA, approval); implements behaviour described in `roadmap/01-core-roadmap.md` and policy in `roadmap/goals.md` §4.3.

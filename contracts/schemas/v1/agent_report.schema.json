@@ -1,5 +1,160 @@
 {
+  "$defs": {
+    "ApprovalRequestV1": {
+      "additionalProperties": false,
+      "description": "Pending restricted-action approval created during Act.",
+      "properties": {
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "step_index": {
+          "minimum": 0,
+          "title": "Step Index",
+          "type": "integer"
+        },
+        "step": {
+          "additionalProperties": true,
+          "title": "Step",
+          "type": "object"
+        },
+        "incident_id": {
+          "minLength": 1,
+          "title": "Incident Id",
+          "type": "string"
+        },
+        "reason": {
+          "default": "restricted",
+          "minLength": 1,
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "step_index",
+        "step",
+        "incident_id"
+      ],
+      "title": "ApprovalRequestV1",
+      "type": "object"
+    },
+    "EmbeddedEscalationPacketV1": {
+      "additionalProperties": false,
+      "description": "Escalation handoff packet embedded in agent state and reports.\n\nThe enclosing AgentReportV1 carries incident_id/run_id/schema_version.",
+      "properties": {
+        "reason": {
+          "minLength": 1,
+          "title": "Reason",
+          "type": "string"
+        },
+        "what_we_know": {
+          "items": {
+            "type": "string"
+          },
+          "title": "What We Know",
+          "type": "array"
+        },
+        "what_we_dont_know": {
+          "items": {
+            "type": "string"
+          },
+          "title": "What We Dont Know",
+          "type": "array"
+        },
+        "what_to_check": {
+          "items": {
+            "type": "string"
+          },
+          "title": "What To Check",
+          "type": "array"
+        }
+      },
+      "required": [
+        "reason"
+      ],
+      "title": "EmbeddedEscalationPacketV1",
+      "type": "object"
+    },
+    "EvidenceItemV1": {
+      "description": "Single evidence row in the run report.",
+      "properties": {
+        "hypothesis": {
+          "title": "Hypothesis",
+          "type": "string"
+        }
+      },
+      "required": [
+        "hypothesis"
+      ],
+      "title": "EvidenceItemV1",
+      "type": "object"
+    },
+    "ToolResultV1": {
+      "additionalProperties": false,
+      "description": "Normalized Act/MCP tool result row.",
+      "properties": {
+        "step_index": {
+          "minimum": 0,
+          "title": "Step Index",
+          "type": "integer"
+        },
+        "tool": {
+          "minLength": 1,
+          "title": "Tool",
+          "type": "string"
+        },
+        "outcome": {
+          "enum": [
+            "success",
+            "empty",
+            "failure"
+          ],
+          "title": "Outcome",
+          "type": "string"
+        },
+        "result": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "items": {},
+              "type": "array"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "integer"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Result"
+        }
+      },
+      "required": [
+        "step_index",
+        "tool",
+        "outcome"
+      ],
+      "title": "ToolResultV1",
+      "type": "object"
+    }
+  },
   "additionalProperties": false,
+  "description": "Canonical v1 report emitted by the agent pipeline and persisted by APIs.",
   "properties": {
     "schema_version": {
       "const": "v1",
@@ -17,27 +172,15 @@
       "title": "Run Id",
       "type": "string"
     },
-    "summary": {
-      "default": "",
-      "title": "Summary",
+    "executive_summary": {
+      "title": "Executive Summary",
       "type": "string"
     },
-    "subsystem": {
-      "default": "",
-      "title": "Subsystem",
-      "type": "string"
-    },
-    "risk": {
-      "default": "",
-      "title": "Risk",
-      "type": "string"
-    },
-    "plan": {
+    "evidence": {
       "items": {
-        "additionalProperties": true,
-        "type": "object"
+        "$ref": "#/$defs/EvidenceItemV1"
       },
-      "title": "Plan",
+      "title": "Evidence",
       "type": "array"
     },
     "citation_refs": {
@@ -47,12 +190,47 @@
       "title": "Citation Refs",
       "type": "array"
     },
-    "escalated": {
-      "default": false,
-      "title": "Escalated",
-      "type": "boolean"
+    "proposed_actions": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Proposed Actions",
+      "type": "array"
     },
-    "trace_url": {
+    "rollback": {
+      "title": "Rollback",
+      "type": "string"
+    },
+    "trace_link": {
+      "title": "Trace Link",
+      "type": "string"
+    },
+    "act_results": {
+      "items": {
+        "$ref": "#/$defs/ToolResultV1"
+      },
+      "title": "Act Results",
+      "type": "array"
+    },
+    "approval_requests": {
+      "items": {
+        "$ref": "#/$defs/ApprovalRequestV1"
+      },
+      "title": "Approval Requests",
+      "type": "array"
+    },
+    "escalation_packet": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/EmbeddedEscalationPacketV1"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "handoff": {
       "anyOf": [
         {
           "type": "string"
@@ -62,12 +240,29 @@
         }
       ],
       "default": null,
-      "title": "Trace Url"
+      "title": "Handoff"
+    },
+    "summary": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Deprecated compatibility alias; prefer executive_summary.",
+      "title": "Summary"
     }
   },
   "required": [
     "incident_id",
-    "run_id"
+    "run_id",
+    "executive_summary",
+    "evidence",
+    "rollback",
+    "trace_link"
   ],
   "title": "AgentReportV1",
   "type": "object"

@@ -74,7 +74,7 @@ def test_act_escalates_and_does_not_create_request_when_opa_denies(monkeypatch):
             {
                 "safe": False,
                 "action_type": "change_config",
-                "action": "Restart all services now",  # would be denied by policy
+                "action": "Apply restricted thermal config change",  # OPA mocked deny
                 "doc_ids": ["rb-2"],
                 "snippet_ids": [],
             }

@@ -4,7 +4,8 @@
     {
       "id": "golden-ci",
       "run_id": "r-golden-ci",
-      "description": "Synthetic fixture — pytest mocks pipeline; see docs/golden_run_baselines.md"
+      "replay_fixture": "replay_outcomes/r-golden-ci.json",
+      "description": "Synthetic fixture — deterministic replay outcome (PS4.5); no live LLM"
     }
   ]
 }

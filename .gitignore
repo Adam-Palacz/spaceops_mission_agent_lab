@@ -14,6 +14,7 @@ data/approvals/
 data/incidents/
 data/llm_runs/
 data/replay/runs/
+data/replay/golden/reports/
 data/audit.ndjson
 
 apps/ui/node_modules/

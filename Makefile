@@ -14,7 +14,7 @@ POSTGRES_PASSWORD ?= spaceops
 .DEFAULT_GOAL := help
 
 .PHONY: help install install-dev lint format typecheck check test migrate-smoke \
-	golden-check golden-update compose-config docker-build
+	golden-check golden-run golden-update compose-config docker-build
 
 help: ## Show this help (default goal)
 	@echo SpaceOps Makefile - targets mirror CI where practical.
@@ -51,12 +51,16 @@ for cmd in cmds: \
 print('Migration smoke passed')"
 
 golden-check: ## Synthetic golden baseline - same as CI golden path (no live LLM)
-	pytest tests/test_golden_baseline.py -v
+	pytest tests/test_golden_baseline.py tests/test_golden_runner_ps45.py -v
+
+# PS4.5: run fixture manifest + write diff report (no live LLM when using CI fixtures + mocks in tests).
+golden-run: ## Golden runner on CI fixtures; writes data/replay/golden/reports/latest
+	$(PYTHON) scripts/golden_runner.py run --manifest tests/fixtures/golden/manifest.json --baselines-dir tests/fixtures/golden/baselines --output-dir data/replay/golden/reports/latest
 
 # Refresh data/replay/golden/baselines/run_<RUN_ID>_baseline.json after replay (needs env/MCP).
 # Usage: make golden-update RUN_ID=<pipeline-run-uuid>
-golden-update: ## Update golden baseline JSON for a run id
-	$(PYTHON) scripts/golden_baseline.py update --run-id "$(RUN_ID)"
+golden-update: ## Update golden baseline JSON for a run id (requires explicit confirm)
+	$(PYTHON) scripts/golden_runner.py update --run-id "$(RUN_ID)" --confirm baseline-update
 
 compose-config: ## Validate docker compose file interpolation (like CI docker-build job)
 	$(PYTHON) -c "from pathlib import Path; import sys; ok=Path('.env').exists(); (not ok) and print('Missing .env - copy .env.example to .env for compose interpolation.'); sys.exit(0 if ok else 1)"

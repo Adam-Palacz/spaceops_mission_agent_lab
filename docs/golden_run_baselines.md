@@ -39,19 +39,50 @@ You may omit keys in `expected_outcome` that you do not want to enforce; only li
 ## Commands (repo root)
 
 ```bash
-# CI-equivalent check (mocked fixture + any other tests)
+# CI-equivalent check (mocked fixture + PS4.5 runner tests)
 make golden-check
 
+# PS4.5: run fixture set + write machine-readable diff report (no live LLM for CI manifest)
+make golden-run
+# → data/replay/golden/reports/latest/report.json
+# → data/replay/golden/reports/latest/cases/<case_id>_diff.json
+
+# Check with diff artifacts on failure
+python scripts/golden_runner.py check \
+  --manifest tests/fixtures/golden/manifest.json \
+  --baselines-dir tests/fixtures/golden/baselines \
+  --output-dir data/replay/golden/reports/latest
+
 # Optional: replay real pinned runs (needs MCP/.env/OpenAI like normal replay)
-python scripts/golden_baseline.py check \
+python scripts/golden_runner.py check \
   --manifest data/replay/golden/manifest.json \
   --baselines-dir data/replay/golden/baselines
 
-# Refresh one baseline after intentional behavior change (requires successful replay)
-python scripts/golden_baseline.py update --run-id '<uuid>'
+# Refresh baseline — requires explicit operator confirm (PS4.5)
+python scripts/golden_runner.py update --run-id '<uuid>' --confirm baseline-update
 ```
 
-Exit codes for `golden_baseline.py check`: `0` = match, `2` = mismatch, `1` = error.
+Exit codes for `golden_runner.py` / `golden_baseline.py check`: `0` = match, `2` = mismatch, `1` = error.
+
+## PS4.5 — Golden runner and diff artifacts
+
+| Artifact | Schema | Purpose |
+|----------|--------|---------|
+| `report.json` | `golden_diff_report_v1` | Suite summary + per-case status |
+| `cases/<case_id>_diff.json` | — | Semantic field diffs only |
+| `cases/<case_id>_snapshot.json` | — | Expected vs replay outcome snapshots |
+
+Manifest cases may set `replay_fixture` to a JSON path (relative to manifest dir) for
+**deterministic** runs without calling the live pipeline — used by `tests/fixtures/golden/`.
+
+### Check vs update policy
+
+| Action | When | Command |
+|--------|------|---------|
+| **Check** | Every PR / release gate | `make golden-check` or `golden_runner check` |
+| **Update** | Intentional model/prompt/guardrail change | `golden_runner update --confirm baseline-update` |
+
+Never refresh baselines to silence flakes; fix determinism or update with documented intent.
 
 ## Update policy
 

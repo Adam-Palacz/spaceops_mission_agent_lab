@@ -19,7 +19,6 @@ if str(REPO_ROOT) not in sys.path:
 
 # S2.8 / PS4.3: shared allowlist and phrase list (pipeline guard + eval MoE3).
 from apps.agent.prompt_injection import (  # noqa: E402
-    ALLOWED_ACTION_TYPES,
     UNSAFE_PHRASES,
     validate_plan_allowlist,
 )

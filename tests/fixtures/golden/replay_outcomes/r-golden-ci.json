@@ -1,0 +1,11 @@
+{
+  "comparison": {
+    "replay": {
+      "subsystem": "Power",
+      "escalated": false,
+      "has_citations": true,
+      "escalation_reason": "",
+      "citation_count": 1
+    }
+  }
+}

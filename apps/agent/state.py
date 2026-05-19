@@ -65,6 +65,9 @@ class AgentState(TypedDict, total=False):
     evidence_policy_reason: str
     output_schema_status: str
     output_schema_reason: str
+    injection_guard_status: str
+    injection_guard_reason: str
+    injection_detection_codes: list[str]
     stage_timings: list[StageTiming]
 
 

@@ -45,6 +45,16 @@ from apps.contracts.output_validation import (
     validate_escalation_packet,
     validate_run_report,
 )
+from apps.agent.prompt_injection import (
+    PROMPT_INJECTION_DETECTED,
+    format_detection_detail,
+    has_critical_injection,
+    merge_detection_codes,
+    sanitize_investigation_notes,
+    sanitize_payload_for_prompt,
+    scan_citations_and_hypotheses,
+    validate_plan_allowlist,
+)
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 DATA_INCIDENTS = REPO_ROOT / "data" / "incidents"
@@ -99,6 +109,12 @@ def annotate_span_with_observability_attrs(span, state: AgentState) -> None:
     osr = state.get("output_schema_reason")
     if isinstance(osr, str) and osr.strip():
         span.set_attribute("output_schema_reason", osr.strip()[:64])
+    igs = state.get("injection_guard_status")
+    if isinstance(igs, str) and igs.strip():
+        span.set_attribute("injection_guard_status", igs.strip()[:32])
+    igr = state.get("injection_guard_reason")
+    if isinstance(igr, str) and igr.strip():
+        span.set_attribute("injection_guard_reason", igr.strip()[:64])
     plan = state.get("plan")
     if isinstance(plan, list) and plan:
         span.set_attribute("plan_step_count", len(plan))
@@ -228,6 +244,59 @@ def _ensure_escalation_packet(
         )
 
 
+def _audit_prompt_injection(
+    *,
+    trace_id: str,
+    incident_id: str,
+    source: str,
+    codes: list[str],
+) -> None:
+    audit_append(
+        trace_id=trace_id,
+        incident_id=incident_id,
+        actor="agent",
+        tool="prompt_injection_guard",
+        args={
+            "reason": PROMPT_INJECTION_DETECTED,
+            "source": source[:64],
+            "detection_codes": codes[:20],
+        },
+        decision="escalate",
+        outcome="success",
+    )
+
+
+def _escalation_for_prompt_injection(
+    incident_id: str,
+    *,
+    detail: str,
+    codes: list[str],
+) -> dict:
+    """PS4.3: fail-closed escalation when untrusted input matches injection patterns."""
+    packet: EscalationPacket = {
+        "reason": PROMPT_INJECTION_DETECTED,
+        "what_we_know": [
+            f"Incident {incident_id}",
+            "Untrusted payload or evidence contained blocked instruction patterns.",
+            detail,
+        ],
+        "what_we_dont_know": [
+            "Whether proposed actions reflect legitimate operator intent.",
+        ],
+        "what_to_check": [
+            "Review raw payload, KB snippets, and audit prompt_injection_guard entries.",
+            "Re-run after sanitizing or removing poisoned knowledge-base documents.",
+        ],
+    }
+    return {
+        "escalated": True,
+        "escalation_packet": packet,
+        "injection_guard_status": "violation",
+        "injection_guard_reason": PROMPT_INJECTION_DETECTED,
+        "injection_detection_codes": codes,
+    }
+
+
 def _escalation_for_limit_or_timeout(
     incident_id: str, reason: str, detail: str
 ) -> dict:
@@ -332,9 +401,24 @@ def triage(state: AgentState) -> dict:
         incident_id=incident_id,
         node="triage",
     )
+    payload_for_prompt, payload_codes = sanitize_payload_for_prompt(
+        payload if isinstance(payload, dict) else {}
+    )
+    if has_critical_injection(payload_codes):
+        _audit_prompt_injection(
+            trace_id=trace_id,
+            incident_id=incident_id,
+            source="payload",
+            codes=payload_codes,
+        )
+        return _escalation_for_prompt_injection(
+            incident_id,
+            detail=format_detection_detail(payload_codes, extra="payload pre-triage"),
+            codes=payload_codes,
+        ) | {"tokens_used": tokens_used, "llm_calls_used": llm_calls_used}
     triage_prompt = get_prompt(TRIAGE_PROMPT_ID)
     prompt = triage_prompt.text.format(
-        payload=payload,
+        payload=payload_for_prompt,
         subsystems=", ".join(_SUBSYSTEMS),
     )
     try:
@@ -405,6 +489,9 @@ def triage(state: AgentState) -> dict:
         "risk": risk,
         "tokens_used": tokens_used,
         "llm_calls_used": llm_calls_used,
+        "injection_detection_codes": payload_codes,
+        "injection_guard_status": "ok",
+        "injection_guard_reason": "",
     }
 
 
@@ -543,6 +630,17 @@ def investigate(state: AgentState) -> dict:
             )
     if not hypotheses:
         hypotheses.append("No telemetry or KB hits; escalate for manual review.")
+    evidence_codes = scan_citations_and_hypotheses(hypotheses, citations)
+    injection_codes = merge_detection_codes(
+        list(state.get("injection_detection_codes") or []), evidence_codes
+    )
+    if evidence_codes:
+        _audit_prompt_injection(
+            trace_id=trace_id,
+            incident_id=incident_id,
+            source="investigate_evidence",
+            codes=evidence_codes,
+        )
     return {
         "hypotheses": hypotheses,
         "citations": citations,
@@ -551,6 +649,9 @@ def investigate(state: AgentState) -> dict:
             "search_runbooks": runbooks_outcome,
             "search_postmortems": postmortems_outcome,
         },
+        "injection_detection_codes": injection_codes,
+        "injection_guard_status": "ok",
+        "injection_guard_reason": "",
     }
 
 
@@ -584,6 +685,26 @@ def check_escalation(state: AgentState) -> dict:
     """S1.8: Evaluate escalation conditions; if met, set escalation_packet (F10). S1.12: preserve limit/timeout escalation."""
     incident_id = state.get("incident_id") or "unknown"
     trace_id = state.get("trace_id") or incident_id
+    injection_codes = list(state.get("injection_detection_codes") or [])
+    if has_critical_injection(injection_codes) and not state.get("escalated"):
+        _audit_prompt_injection(
+            trace_id=trace_id,
+            incident_id=incident_id,
+            source="check_escalation",
+            codes=injection_codes,
+        )
+        packet = _escalation_for_prompt_injection(
+            incident_id,
+            detail=format_detection_detail(injection_codes),
+            codes=injection_codes,
+        )
+        packet["escalation_packet"] = _ensure_escalation_packet(
+            incident_id,
+            packet["escalation_packet"],
+            trace_id=trace_id,
+            audit_on_fallback=False,
+        )
+        return packet
     # Preserve escalation already set by token_limit, llm_timeout, or run_timeout (NF6)
     if state.get("escalated") and state.get("escalation_packet", {}).get("reason") in (
         "token_limit",
@@ -784,7 +905,17 @@ def decide(state: AgentState) -> dict:
         node="decide",
     )
     decide_prompt = get_prompt(DECIDE_PROMPT_ID)
-    investigation_notes = "\n".join(hypotheses[:5])
+    investigation_notes, note_codes = sanitize_investigation_notes(hypotheses[:5])
+    injection_codes = merge_detection_codes(
+        list(state.get("injection_detection_codes") or []), note_codes
+    )
+    if note_codes:
+        _audit_prompt_injection(
+            trace_id=trace_id,
+            incident_id=incident_id,
+            source="decide_notes",
+            codes=note_codes,
+        )
     prompt = decide_prompt.text.format(
         subsystem=subsystem,
         risk=risk,
@@ -865,7 +996,31 @@ def decide(state: AgentState) -> dict:
     if not isinstance(plan, list):
         plan = [plan]
     _normalize_plan_steps(plan, doc_ids, snippet_ids)
-    return {"plan": plan, "tokens_used": tokens_used, "llm_calls_used": llm_calls_used}
+    plan_ok, plan_reasons = validate_plan_allowlist(plan)
+    if not plan_ok:
+        plan_codes = merge_detection_codes(
+            injection_codes,
+            [f"plan_allowlist:{r[:80]}" for r in plan_reasons],
+        )
+        _audit_prompt_injection(
+            trace_id=trace_id,
+            incident_id=incident_id,
+            source="decide_plan",
+            codes=plan_codes,
+        )
+        return _escalation_for_prompt_injection(
+            incident_id,
+            detail=format_detection_detail(plan_codes, extra="plan failed allowlist"),
+            codes=plan_codes,
+        ) | {"tokens_used": tokens_used, "llm_calls_used": llm_calls_used}
+    return {
+        "plan": plan,
+        "tokens_used": tokens_used,
+        "llm_calls_used": llm_calls_used,
+        "injection_detection_codes": injection_codes,
+        "injection_guard_status": "ok",
+        "injection_guard_reason": "",
+    }
 
 
 def act(state: AgentState) -> dict:
@@ -877,6 +1032,23 @@ def act(state: AgentState) -> dict:
     trace_id = state.get("trace_id") or incident_id
     plan = list(state.get("plan") or [])
     _normalize_plan_steps(plan)  # ensure "action" etc. present (CI/evals KeyError fix)
+    plan_ok, plan_reasons = validate_plan_allowlist(plan)
+    if not plan_ok:
+        plan_codes = merge_detection_codes(
+            list(state.get("injection_detection_codes") or []),
+            [f"plan_allowlist:{r[:80]}" for r in plan_reasons],
+        )
+        _audit_prompt_injection(
+            trace_id=trace_id,
+            incident_id=incident_id,
+            source="act_plan",
+            codes=plan_codes,
+        )
+        return _escalation_for_prompt_injection(
+            incident_id,
+            detail=format_detection_detail(plan_codes, extra="act blocked plan"),
+            codes=plan_codes,
+        )
     act_results: list[dict] = []
     approval_requests: list[dict] = []
     tracer = get_tracer("apps.agent")
@@ -1083,6 +1255,10 @@ def report(state: AgentState) -> dict:
     escalation_packet = state.get("escalation_packet") or {}
     evidence_policy_status = "n/a"
     evidence_policy_reason = ""
+    injection_guard_status = state.get("injection_guard_status") or "ok"
+    injection_guard_reason = state.get("injection_guard_reason") or ""
+    if escalated:
+        injection_guard_status = state.get("injection_guard_status") or "skipped_escalated"
     if not escalated:
         ok, reason, detail = _evaluate_evidence_policy(state)
         if not ok:
@@ -1208,4 +1384,6 @@ def report(state: AgentState) -> dict:
         "evidence_policy_reason": evidence_policy_reason,
         "output_schema_status": output_schema_status,
         "output_schema_reason": output_schema_reason,
+        "injection_guard_status": injection_guard_status,
+        "injection_guard_reason": injection_guard_reason,
     }

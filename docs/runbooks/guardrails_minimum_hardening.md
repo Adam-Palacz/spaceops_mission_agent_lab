@@ -41,6 +41,13 @@ Before returning node outputs:
 
 Schema validation failures must not silently pass; see `tests/test_output_schema_ps42.py`.
 
+## Prompt injection hardening (PS4.3)
+
+- Untrusted payload/KB text is scanned and sanitized before LLM prompts (`[BEGIN UNTRUSTED DATA]` fences).
+- Critical patterns escalate with `prompt_injection_detected` (not silent drop); audit tool `prompt_injection_guard`.
+- Plan `action_type` allowlist enforced at `decide` and `act`.
+- See [prompt_injection_threat_model.md](../prompt_injection_threat_model.md) and `tests/test_prompt_injection_ps43.py`.
+
 ## Verification checklist
 
 - Run `pytest tests/test_guardrails_ps17.py`.

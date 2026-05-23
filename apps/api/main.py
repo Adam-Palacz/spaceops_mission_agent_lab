@@ -37,6 +37,7 @@ from prometheus_client import (
 )
 
 from config import settings
+from apps.behavior_metrics import record_agent_run_behavior, record_agent_run_error
 from apps.contracts.v1 import TelemetryEventV1
 from apps.contracts.output_validation import (
     OutputSchemaViolation,
@@ -519,6 +520,7 @@ def trigger_run(payload: RunTriggerPayload) -> JSONResponse:
         calls = int(result.get("llm_calls_used") or 0)
         if calls >= 0:
             AGENT_TOOL_CALLS_PER_RUN.observe(calls)
+        record_agent_run_behavior(result, duration)
         with open(run_file, "w", encoding="utf-8") as f:
             json.dump(
                 {
@@ -550,6 +552,7 @@ def trigger_run(payload: RunTriggerPayload) -> JSONResponse:
         AGENT_RUNS_TOTAL.labels(status="error").inc()
         AGENT_RUN_DURATION_SECONDS.observe(duration)
         AGENT_ERRORS_TOTAL.labels(type=e.__class__.__name__).inc()
+        record_agent_run_error(duration)
         with open(run_file, "w", encoding="utf-8") as f:
             json.dump(
                 {
@@ -589,6 +592,7 @@ def resume_run(payload: ResumeRunPayload) -> JSONResponse:
         validate_run_report(report)
     except OutputSchemaViolation as exc:
         raise _schema_violation_response(exc) from exc
+    record_agent_run_behavior(result, 0.0)
     return JSONResponse(
         status_code=200,
         content={
@@ -633,6 +637,7 @@ def _simulate_run_core(
         calls = int(result.get("llm_calls_used") or 0)
         if calls >= 0:
             AGENT_TOOL_CALLS_PER_RUN.observe(calls)
+        record_agent_run_behavior(result, duration)
         with open(run_file, "w", encoding="utf-8") as f:
             json.dump(
                 {
@@ -671,6 +676,7 @@ def _simulate_run_core(
         AGENT_RUNS_TOTAL.labels(status="error").inc()
         AGENT_RUN_DURATION_SECONDS.observe(duration)
         AGENT_ERRORS_TOTAL.labels(type=e.__class__.__name__).inc()
+        record_agent_run_error(duration)
         with open(run_file, "w", encoding="utf-8") as f:
             json.dump(
                 {

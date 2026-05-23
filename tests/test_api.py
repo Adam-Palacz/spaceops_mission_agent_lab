@@ -53,6 +53,7 @@ def test_metrics_endpoint_exposes_prometheus_text(api_client):
     assert response.headers.get("content-type", "").startswith("text/plain")
     body = response.text
     assert "agent_runs_total" in body
+    assert "agent_behavior_runs_total" in body
 
 
 def test_ingest_accepts_valid_ndjson_and_persists(api_client, tmp_path: Path):

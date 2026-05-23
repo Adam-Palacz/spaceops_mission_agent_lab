@@ -66,6 +66,54 @@
           "refId": "A"
         }
       ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Escalation rate (PS4.6)",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 28 },
+      "targets": [
+        {
+          "expr": "sum(rate(agent_escalations_total[5m])) / sum(rate(agent_behavior_runs_total[5m]))",
+          "legendFormat": "escalation_rate",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Escalations by reason (PS4.6)",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 36 },
+      "targets": [
+        {
+          "expr": "sum by (reason) (rate(agent_escalations_total[5m]))",
+          "legendFormat": "{{reason}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Evidence coverage — policy OK share (PS4.6)",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 44 },
+      "targets": [
+        {
+          "expr": "sum(rate(agent_evidence_coverage_total{policy_status=\"ok\"}[5m])) / sum(rate(agent_evidence_coverage_total[5m]))",
+          "legendFormat": "ok_share",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Stage duration p95 (PS4.6)",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 52 },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (stage, le) (rate(agent_stage_duration_seconds_bucket[5m])))",
+          "legendFormat": "{{stage}} p95",
+          "refId": "A"
+        }
+      ]
     }
   ]
 }

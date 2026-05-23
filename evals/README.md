@@ -32,11 +32,20 @@ Examples of reasons:
 - `require_citations: expected citations but run escalated`
 - `require_citations: expected at least one citation or citation_ref`
 
-Quick local pre-PR check (same gates as CI):
+Quick local pre-PR check (same hard gates as CI `evals-hard` job):
 
 ```bash
 python -m evals.scoring --case-id must-escalate-no-evidence --case-id citation-present
+python -m evals.scoring --injection-only
 ```
+
+Full suite as a **soft signal** (non-blocking, exit 0 even on failures):
+
+```bash
+python -m evals.scoring --soft-signal
+```
+
+See [docs/runbooks/ci_gating_policy.md](../docs/runbooks/ci_gating_policy.md) (PS4.7).
 
 ## Case format
 

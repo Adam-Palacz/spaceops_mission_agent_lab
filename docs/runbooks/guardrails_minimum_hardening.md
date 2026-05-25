@@ -1,6 +1,6 @@
 # Guardrails minimum hardening (PS1.7)
 
-This runbook documents the fail-closed guardrails required in production-scale Sprint 1.
+Fail-closed guardrails for investigation and escalation. **For CI failures and step-by-step triage, start with [guardrails_quality_triage.md](guardrails_quality_triage.md) (PS4.8).**
 
 ## Escalation rules (must-escalate)
 
@@ -48,8 +48,18 @@ Schema validation failures must not silently pass; see `tests/test_output_schema
 - Plan `action_type` allowlist enforced at `decide` and `act`.
 - See [prompt_injection_threat_model.md](../prompt_injection_threat_model.md) and `tests/test_prompt_injection_ps43.py`.
 
+## Evidence policy (PS4.1)
+
+- Grounded citations required for actionable plan steps; violations → `evidence_policy_violation`.
+- See [evidence_policy.md](../evidence_policy.md) and `tests/test_evidence_policy_ps41.py`.
+
 ## Verification checklist
 
-- Run `pytest tests/test_guardrails_ps17.py`.
-- Run `pytest tests/test_agent_pipeline.py -k escalation`.
-- Optionally run full gate: `python -m evals.scoring`.
+```bash
+make safety-gates          # PS4.7: OPA, HITL, evidence, injection, schema (recommended)
+make check                 # lint + typecheck + golden
+pytest tests/test_guardrails_ps17.py -q
+```
+
+Full triage flow: [guardrails_quality_triage.md](guardrails_quality_triage.md).  
+CI gate policy: [ci_gating_policy.md](ci_gating_policy.md).

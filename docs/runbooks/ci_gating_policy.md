@@ -108,6 +108,7 @@ python -m evals.scoring --soft-signal
 
 ## Related docs
 
+- **[guardrails_quality_triage.md](guardrails_quality_triage.md)** — PS4.8 operator triage (decision tree, symptom → action)  
 - [evals/README.md](../../evals/README.md) — PS1.8 deterministic gates  
 - [docs/golden_run_baselines.md](../golden_run_baselines.md) — golden-check  
 - [docs/prompt_injection_threat_model.md](../prompt_injection_threat_model.md) — injection hard gate

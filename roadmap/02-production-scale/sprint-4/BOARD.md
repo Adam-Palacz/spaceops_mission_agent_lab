@@ -10,6 +10,6 @@
 | PS4.5 | Golden runs snapshot/diff runner | Done | [PS4.5-golden-runner-snapshot-diff.md](PS4.5-golden-runner-snapshot-diff.md) |
 | PS4.6 | Behavior metrics emission | Done | [PS4.6-behavior-metrics-emission.md](PS4.6-behavior-metrics-emission.md) |
 | PS4.7 | CI gating policy for safety/quality | Done | [PS4.7-ci-gating-policy-safety-quality.md](PS4.7-ci-gating-policy-safety-quality.md) |
-| PS4.8 | Guardrails/quality runbook update | Todo | [PS4.8-guardrails-quality-runbook-update.md](PS4.8-guardrails-quality-runbook-update.md) |
+| PS4.8 | Guardrails/quality runbook update | Done | [PS4.8-guardrails-quality-runbook-update.md](PS4.8-guardrails-quality-runbook-update.md) |
 
 **Status key:** Todo | In progress | Done | Blocked

@@ -37,6 +37,7 @@ CANONICAL_ESCALATION_REASONS = frozenset(
         "rate_limit",
         "llm_timeout",
         "llm_provider_error",
+        "budget_exceeded",
         "run_timeout",
         "other",
     }

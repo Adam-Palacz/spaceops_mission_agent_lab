@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 
 from apps.agent.graph import run_pipeline
-from apps.replay.metadata import load_replay_metadata
+from apps.replay.metadata import build_replay_metadata, load_replay_metadata
 
 
 class _FakeGraph:
@@ -66,6 +66,23 @@ def test_run_pipeline_persists_replay_metadata(monkeypatch, tmp_path: Path):
     assert metadata["payload_hash"]
     assert metadata["prompts"]["triage"] == "v1"
     assert metadata["prompts"]["decide"] == "v1"
+
+
+def test_replay_metadata_records_canonical_backend(monkeypatch):
+    monkeypatch.setattr("config.settings.llm_backend", "gpu")
+    monkeypatch.setattr("config.settings.llm_provider", "")
+    monkeypatch.setattr("config.settings.gpu_llm_model_id", "meta/llama")
+    metadata = build_replay_metadata(
+        run_id="run-gpu",
+        incident_id="inc-gpu",
+        payload={"ref": "test"},
+        trace_id="trace-gpu",
+        status="completed",
+        replay_source="api",
+        llm_calls_used=1,
+    )
+    assert metadata["model"]["provider"] == "gpu"
+    assert metadata["model"]["model_id"] == "meta/llama"
 
 
 def test_get_replay_metadata_endpoint_success(api_client, monkeypatch, tmp_path: Path):

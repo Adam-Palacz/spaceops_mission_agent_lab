@@ -41,8 +41,9 @@ def test_gateway_generate_success(monkeypatch):
             calls.append((args, kwargs))
             return _Resp()
 
-    monkeypatch.setattr("apps.llm_gateway.httpx.Client", _Client)
+    monkeypatch.setattr("apps.llm_backends.http_common.httpx.Client", _Client)
     monkeypatch.setattr("config.settings.openai_api_key", "test-key")
+    monkeypatch.setattr("config.settings.llm_backend", "openai")
     monkeypatch.setattr("config.settings.llm_provider", "openai")
     monkeypatch.setattr("config.settings.openai_base_url", "https://api.openai.com")
     monkeypatch.setattr(
@@ -52,6 +53,9 @@ def test_gateway_generate_success(monkeypatch):
     assert out["content"] == "Power medium"
     assert out["usage"]["total_tokens"] == 20
     assert out["model_id"] == "gpt-4o-mini"
+    assert out["backend_requested"] == "openai"
+    assert out["backend_actual"] == "openai"
+    assert out["fallback_used"] is False
     assert calls, "gateway should issue exactly one HTTP call"
     endpoint = calls[0][0][0]
     assert endpoint == "https://api.openai.com/v1/chat/completions"
@@ -71,8 +75,9 @@ def test_gateway_generate_timeout(monkeypatch):
         def post(self, *args, **kwargs):
             raise httpx.TimeoutException("timeout")
 
-    monkeypatch.setattr("apps.llm_gateway.httpx.Client", _Client)
+    monkeypatch.setattr("apps.llm_backends.http_common.httpx.Client", _Client)
     monkeypatch.setattr("config.settings.openai_api_key", "test-key")
+    monkeypatch.setattr("config.settings.llm_backend", "openai")
     with pytest.raises(LLMGatewayTimeoutError):
         generate(prompt="x", node="decide")
 
@@ -91,8 +96,9 @@ def test_gateway_generate_provider_error(monkeypatch):
         def post(self, *args, **kwargs):
             raise RuntimeError("provider boom")
 
-    monkeypatch.setattr("apps.llm_gateway.httpx.Client", _Client)
+    monkeypatch.setattr("apps.llm_backends.http_common.httpx.Client", _Client)
     monkeypatch.setattr("config.settings.openai_api_key", "test-key")
+    monkeypatch.setattr("config.settings.llm_backend", "openai")
     with pytest.raises(LLMGatewayProviderError):
         generate(prompt="x", node="decide")
 
@@ -124,7 +130,8 @@ def test_gateway_uses_custom_base_url_for_cursor(monkeypatch):
             calls.append((args, kwargs))
             return _Resp()
 
-    monkeypatch.setattr("apps.llm_gateway.httpx.Client", _Client)
+    monkeypatch.setattr("apps.llm_backends.http_common.httpx.Client", _Client)
+    monkeypatch.setattr("config.settings.llm_backend", "")
     monkeypatch.setattr("config.settings.llm_provider", "cursor_sh")
     monkeypatch.setattr("config.settings.cursor_sh_api_key", "cursor-key")
     monkeypatch.setattr(
@@ -135,5 +142,6 @@ def test_gateway_uses_custom_base_url_for_cursor(monkeypatch):
     )
     out = generate(prompt="x", node="decide")
     assert out["provider"] == "cursor_sh"
+    assert out["backend_actual"] == "cursor_sh"
     endpoint = calls[0][0][0]
     assert endpoint == "https://gateway.internal/v1/chat/completions"

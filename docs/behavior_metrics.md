@@ -16,7 +16,7 @@ Release-readiness counters and histograms complement S2.9 operational metrics (`
 
 ### Canonical `reason` values (`agent_escalations_total`)
 
-`no_evidence`, `conflicting_signals`, `tool_failure`, `policy_deny`, `prompt_injection_detected`, `evidence_policy_violation`, `output_schema_violation`, `token_limit`, `rate_limit`, `llm_timeout`, `llm_provider_error`, `run_timeout`, `other`.
+`no_evidence`, `conflicting_signals`, `tool_failure`, `policy_deny`, `prompt_injection_detected`, `evidence_policy_violation`, `output_schema_violation`, `token_limit`, `rate_limit`, `llm_timeout`, `llm_provider_error`, `budget_exceeded`, `run_timeout`, `other`.
 
 Unknown reasons are bucketed as `other` to avoid high-cardinality labels.
 

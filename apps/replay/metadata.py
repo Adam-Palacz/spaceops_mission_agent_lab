@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import Any
 
 from config import settings
+from apps.llm_backends.registry import resolve_llm_backend
 from apps.model_selection import get_current_model_id
 from prompts.registry import DECIDE_PROMPT_ID, TRIAGE_PROMPT_ID, get_prompt
 
@@ -72,6 +73,10 @@ def build_replay_metadata(
     llm_calls_used: int,
     original_outcome: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
+    backend = resolve_llm_backend()
+    model_id = get_current_model_id()
+    if backend == "gpu":
+        model_id = (getattr(settings, "gpu_llm_model_id", "") or "").strip() or model_id
     record: dict[str, Any] = {
         "schema_version": "v1",
         "captured_at": _now_iso(),
@@ -85,10 +90,8 @@ def build_replay_metadata(
         "audit_trace_id": trace_id,
         "replay_source": replay_source,
         "model": {
-            "provider": (
-                getattr(settings, "llm_provider", "openai") or "openai"
-            ).strip(),
-            "model_id": get_current_model_id(),
+            "provider": backend,
+            "model_id": model_id,
         },
         "prompts": {
             TRIAGE_PROMPT_ID: get_prompt(TRIAGE_PROMPT_ID).version,

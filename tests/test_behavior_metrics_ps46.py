@@ -53,6 +53,7 @@ def _sum_labels(body: str, metric: str, **want: str) -> float:
 
 def test_normalize_escalation_reason_maps_unknown_to_other():
     assert normalize_escalation_reason("no_evidence") == "no_evidence"
+    assert normalize_escalation_reason("budget_exceeded") == "budget_exceeded"
     assert normalize_escalation_reason("CUSTOM") == "other"
 
 

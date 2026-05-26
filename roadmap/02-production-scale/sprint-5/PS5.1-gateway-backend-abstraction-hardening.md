@@ -3,7 +3,7 @@
 | Field | Value |
 |-------|-------|
 | **Task ID** | PS5.1 |
-| **Status** | Todo |
+| **Status** | Done |
 
 ---
 
@@ -52,13 +52,13 @@ PS5.8 parity and PS5.4 resilience **require** these fields on **every** `generat
 
 ## Requirements
 
-- [ ] Single public entry point remains `generate()` (optional `trace_context: dict | None = None` for OTel/log correlation — **not** required on every caller in PS5.2).
-- [ ] Backend registry maps resolved `LLM_BACKEND` → adapter with uniform success/error types.
-- [ ] No direct provider HTTP calls from `apps/agent/nodes.py` or eval runners (grep gate in CI or test).
-- [ ] Normalized response shape: existing fields + `backend_requested`, `backend_actual`, `fallback_used`, `fallback_reason`.
-- [ ] Gateway errors: `LLMGatewayTimeoutError`, `LLMGatewayProviderError`, **`LLMBudgetExceededError`**
+- [x] Single public entry point remains `generate()` (optional `trace_context: dict | None = None` for OTel/log correlation — **not** required on every caller in PS5.2).
+- [x] Backend registry maps resolved `LLM_BACKEND` → adapter with uniform success/error types.
+- [x] No direct provider HTTP calls from `apps/agent/nodes.py` or eval runners (grep gate in CI or test).
+- [x] Normalized response shape: existing fields + `backend_requested`, `backend_actual`, `fallback_used`, `fallback_reason`.
+- [x] Gateway errors: `LLMGatewayTimeoutError`, `LLMGatewayProviderError`, **`LLMBudgetExceededError`**
       (budget deny — no fallback; nodes → `budget_exceeded`).
-- [ ] Backward-compat test: `LLM_PROVIDER=cursor_sh` only (no `LLM_BACKEND`) routes like `LLM_BACKEND=cursor_sh`.
+- [x] Backward-compat test: `LLM_PROVIDER=cursor_sh` only (no `LLM_BACKEND`) routes like `LLM_BACKEND=cursor_sh`.
 
 ---
 
@@ -71,20 +71,20 @@ PS5.8 parity and PS5.4 resilience **require** these fields on **every** `generat
 
 ## Checklist
 
-- [ ] Introduce backend protocol or small adapter module (`apps/llm_backends/` or equivalent).
-- [ ] Migrate `_provider_config()` into registry; implement precedence table above.
-- [ ] Centralize URL normalization and auth header construction per backend.
-- [ ] Update `docs/llm_gateway.md` with configuration table and migration from `LLM_PROVIDER`.
+- [x] Introduce backend protocol or small adapter module (`apps/llm_backends/` or equivalent).
+- [x] Migrate `_provider_config()` into registry; implement precedence table above.
+- [x] Centralize URL normalization and auth header construction per backend.
+- [x] Update `docs/llm_gateway.md` with configuration table and migration from `LLM_PROVIDER`.
 
 ---
 
 ## Test / acceptance
 
-- [ ] Existing `tests/test_llm_gateway.py` pass unchanged or updated for registry layout.
-- [ ] New test: unsupported `LLM_BACKEND` → clear `LLMGatewayProviderError`.
-- [ ] New test: `LLM_PROVIDER=cursor_sh` only → `backend_actual=cursor_sh`, deprecation logged once.
-- [ ] New test: `LLM_BACKEND=gpu` + `LLM_PROVIDER=cursor_sh` → GPU routing, provider ignored.
-- [ ] Agent e2e path still escalates on gateway timeout (no regression vs PS1.6).
+- [x] Existing `tests/test_llm_gateway.py` pass unchanged or updated for registry layout.
+- [x] New test: unsupported `LLM_BACKEND` → clear `LLMGatewayProviderError`.
+- [x] New test: `LLM_PROVIDER=cursor_sh` only → `backend_actual=cursor_sh`, deprecation logged once.
+- [x] New test: `LLM_BACKEND=gpu` + `LLM_PROVIDER=cursor_sh` → GPU routing, provider ignored.
+- [x] Agent e2e path still escalates on gateway timeout (no regression vs PS1.6).
 
 ---
 

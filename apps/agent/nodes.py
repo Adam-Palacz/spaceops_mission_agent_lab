@@ -24,6 +24,7 @@ from apps.agent.opa_client import opa_allow
 from apps.agent.approval_store import create as approval_store_create
 from apps.llm_observability import start_llm_run, log_llm_call
 from apps.llm_gateway import (
+    LLMBudgetExceededError,
     LLMGatewayProviderError,
     LLMGatewayTimeoutError,
     generate as gateway_generate,
@@ -437,6 +438,12 @@ def triage(state: AgentState) -> dict:
     except LLMGatewayTimeoutError:
         return _escalation_for_limit_or_timeout(
             incident_id, "llm_timeout", "LLM call timed out during triage."
+        ) | {"tokens_used": tokens_used, "llm_calls_used": llm_calls_used}
+    except LLMBudgetExceededError as exc:
+        return _escalation_for_limit_or_timeout(
+            incident_id,
+            "budget_exceeded",
+            f"LLM budget exceeded during triage: {exc}",
         ) | {"tokens_used": tokens_used, "llm_calls_used": llm_calls_used}
     except LLMGatewayProviderError as exc:
         return _escalation_for_limit_or_timeout(
@@ -956,6 +963,13 @@ def decide(state: AgentState) -> dict:
             sp.set_status(Status(StatusCode.ERROR, "llm timeout"))
             return _escalation_for_limit_or_timeout(
                 incident_id, "llm_timeout", "LLM call timed out during decide."
+            ) | {"tokens_used": tokens_used, "llm_calls_used": llm_calls_used}
+        except LLMBudgetExceededError as exc:
+            sp.set_status(Status(StatusCode.ERROR, "budget exceeded"))
+            return _escalation_for_limit_or_timeout(
+                incident_id,
+                "budget_exceeded",
+                f"LLM budget exceeded during decide: {exc}",
             ) | {"tokens_used": tokens_used, "llm_calls_used": llm_calls_used}
         except LLMGatewayProviderError as exc:
             sp.set_status(Status(StatusCode.ERROR, "llm provider error"))

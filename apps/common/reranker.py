@@ -17,6 +17,7 @@ from typing import Any, Literal
 
 from config import settings
 from apps.llm_gateway import (
+    LLMBudgetExceededError,
     LLMGatewayProviderError,
     LLMGatewayTimeoutError,
     generate as gateway_generate,
@@ -90,7 +91,12 @@ def rerank_llm(query: str, chunks: list[dict[str, Any]]) -> list[dict[str, Any]]
             temperature=0,
         )
         text = str(out.get("content") or "")
-    except (LLMGatewayTimeoutError, LLMGatewayProviderError, Exception):
+    except (
+        LLMGatewayTimeoutError,
+        LLMGatewayProviderError,
+        LLMBudgetExceededError,
+        Exception,
+    ):
         # Fail open: keep original order if LLM reranking fails or is unavailable.
         return chunks
 

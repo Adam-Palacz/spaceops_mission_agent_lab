@@ -8,7 +8,7 @@ import sys
 from pathlib import Path
 import time
 
-from apps.llm_gateway import LLMGatewayProviderError
+from apps.llm_gateway import LLMBudgetExceededError, LLMGatewayProviderError
 
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -147,3 +147,19 @@ def test_run_provider_error_escalates_fail_closed(monkeypatch):
     assert result.get("escalated") is True
     packet = result.get("escalation_packet") or {}
     assert packet.get("reason") == "llm_provider_error"
+
+
+def test_run_budget_error_escalates_with_dedicated_reason(monkeypatch):
+    """PS5.1: budget denial has a distinct fail-closed escalation reason."""
+    from apps.agent import nodes
+
+    def _budget_error(**_kwargs) -> dict:
+        raise LLMBudgetExceededError("daily limit reached")
+
+    monkeypatch.setattr(nodes, "gateway_generate", _budget_error)
+    from apps.agent.graph import run_pipeline
+
+    result = run_pipeline("budget-error-test", {"ref": "test"})
+    assert result.get("escalated") is True
+    packet = result.get("escalation_packet") or {}
+    assert packet.get("reason") == "budget_exceeded"

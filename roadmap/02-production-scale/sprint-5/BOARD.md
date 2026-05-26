@@ -2,7 +2,7 @@
 
 | Task | Title | Status | Spec |
 |------|-------|--------|------|
-| PS5.1 | Gateway backend abstraction hardening | Todo | [PS5.1](PS5.1-gateway-backend-abstraction-hardening.md) |
+| PS5.1 | Gateway backend abstraction hardening | Done | [PS5.1](PS5.1-gateway-backend-abstraction-hardening.md) |
 | PS5.2 | OpenAI backend adapter parity tests | Todo | [PS5.2](PS5.2-openai-backend-adapter-parity-tests.md) |
 | PS5.3 | Optional GPU backend adapter (NIM) | Todo | [PS5.3](PS5.3-optional-gpu-backend-adapter.md) |
 | PS5.4 | Backend healthcheck + circuit breaker | Todo | [PS5.4](PS5.4-backend-healthcheck-circuit-breaker.md) |

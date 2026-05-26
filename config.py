@@ -33,9 +33,31 @@ class Settings(BaseSettings):
         default_factory=lambda: get_secret("OPENAI_API_KEY", ""),
         description="OpenAI API key; required for KB and agent.",
     )
+    llm_backend: str = Field(
+        default="",
+        description=(
+            "LLM routing backend: openai | cursor_sh | gpu. "
+            "When set, overrides deprecated LLM_PROVIDER."
+        ),
+    )
     llm_provider: str = Field(
-        default="openai",
-        description="LLM provider for agent calls: 'openai' or 'cursor_sh'.",
+        default="",
+        description=(
+            "Deprecated: use LLM_BACKEND. Legacy alias for openai | cursor_sh when "
+            "llm_backend is unset."
+        ),
+    )
+    gpu_llm_base_url: str = Field(
+        default="http://localhost:8005",
+        description="NIM/OpenAI-compatible base URL when LLM_BACKEND=gpu.",
+    )
+    gpu_llm_model_id: str = Field(
+        default="",
+        description="Default model id for GPU backend when LLM_BACKEND=gpu.",
+    )
+    gpu_llm_api_key: str = Field(
+        default_factory=lambda: get_secret("GPU_LLM_API_KEY", ""),
+        description="Optional bearer token for GPU/NIM endpoint.",
     )
     openai_base_url: str = Field(
         default="https://api.openai.com",
@@ -43,7 +65,7 @@ class Settings(BaseSettings):
     )
     cursor_sh_api_key: str = Field(
         default_factory=lambda: get_secret("CURSOR_SH_API_KEY", ""),
-        description="Cursor.sh API key for agent chat completions when llm_provider='cursor_sh'.",
+        description="Cursor.sh API key for agent chat completions when LLM_BACKEND='cursor_sh'.",
     )
     cursor_sh_base_url: str = Field(
         default="https://api.cursor.sh",

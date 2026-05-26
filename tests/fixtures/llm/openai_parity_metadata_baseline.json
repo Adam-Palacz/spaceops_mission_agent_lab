@@ -1,0 +1,35 @@
+{
+  "description": "PS5.2 / PS5.8 — expected generate() keys when LLM_BACKEND=openai (reference cloud arm).",
+  "backend_arm": "openai",
+  "required_response_keys": [
+    "content",
+    "model_id",
+    "provider",
+    "latency_ms",
+    "usage",
+    "backend_requested",
+    "backend_actual",
+    "fallback_used",
+    "fallback_reason",
+    "estimated_cost_usd"
+  ],
+  "usage_keys": ["prompt_tokens", "completion_tokens", "total_tokens"],
+  "log_fields": [
+    "node",
+    "provider",
+    "backend_requested",
+    "backend_actual",
+    "outcome",
+    "model_id",
+    "latency_ms",
+    "total_tokens",
+    "estimated_cost_usd"
+  ],
+  "env": {
+    "OPENAI_API_KEY": "required",
+    "OPENAI_BASE_URL": "optional, default https://api.openai.com",
+    "LLM_CHAT_COMPLETIONS_PATH": "optional, default /v1/chat/completions",
+    "LLM_OPENAI_COST_PER_1K_TOKENS": "optional, 0 disables cost estimate",
+    "AGENT_MODEL_ID": "production model when model_id not passed to generate()"
+  }
+}

@@ -31,7 +31,7 @@ def chat_completion(
     prompt: str,
     temperature: float,
     timeout_s: float,
-) -> tuple[dict[str, Any], int]:
+) -> tuple[Any, int]:
     """POST chat/completions; return (parsed_json, latency_ms)."""
     headers = {"Content-Type": "application/json"}
     if api_key:
@@ -58,12 +58,47 @@ def chat_completion(
     return data, latency_ms
 
 
-def parse_chat_response(data: dict[str, Any]) -> tuple[str, dict[str, int]]:
+def parse_chat_response(data: Any) -> tuple[str, dict[str, int]]:
+    """Normalize an OpenAI-compatible payload or raise a gateway-level contract error."""
+    if not isinstance(data, dict):
+        raise LLMGatewayProviderError(
+            "Invalid chat completion response: expected JSON object"
+        )
+
     usage_raw = data.get("usage") or {}
-    usage = {
-        "prompt_tokens": int(usage_raw.get("prompt_tokens") or 0),
-        "completion_tokens": int(usage_raw.get("completion_tokens") or 0),
-        "total_tokens": int(usage_raw.get("total_tokens") or 0),
-    }
-    content = (data.get("choices") or [{}])[0].get("message", {}).get("content") or ""
-    return str(content), usage
+    if not isinstance(usage_raw, dict):
+        raise LLMGatewayProviderError(
+            "Invalid chat completion response: usage must be an object"
+        )
+
+    choices = data.get("choices") or []
+    if not isinstance(choices, list):
+        raise LLMGatewayProviderError(
+            "Invalid chat completion response: choices must be a list"
+        )
+
+    content = ""
+    if choices:
+        first_choice = choices[0]
+        if not isinstance(first_choice, dict):
+            raise LLMGatewayProviderError(
+                "Invalid chat completion response: choice must be an object"
+            )
+        message = first_choice.get("message")
+        if not isinstance(message, dict):
+            raise LLMGatewayProviderError(
+                "Invalid chat completion response: message must be an object"
+            )
+        content = str(message.get("content") or "")
+
+    try:
+        usage = {
+            "prompt_tokens": int(usage_raw.get("prompt_tokens") or 0),
+            "completion_tokens": int(usage_raw.get("completion_tokens") or 0),
+            "total_tokens": int(usage_raw.get("total_tokens") or 0),
+        }
+    except (TypeError, ValueError) as exc:
+        raise LLMGatewayProviderError(
+            "Invalid chat completion response: token usage must be numeric"
+        ) from exc
+    return content, usage

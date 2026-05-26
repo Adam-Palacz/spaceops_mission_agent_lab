@@ -35,6 +35,30 @@ generate(
 | `backend_actual` | Adapter that served the call |
 | `fallback_used` | `false` in PS5.1 (PS5.4 sets fallback) |
 | `fallback_reason` | Empty when no fallback |
+| `estimated_cost_usd` | OpenAI arm only when rate card set (PS5.2); else `0.0` |
+
+## OpenAI backend (PS5.2 — reference cloud arm)
+
+Implementation: `apps/llm_backends/openai.py`. Selected when `LLM_BACKEND=openai`, unset config
+(default), or legacy `LLM_PROVIDER=openai` only.
+
+| Env | Required | Description |
+|-----|----------|-------------|
+| `OPENAI_API_KEY` | yes | Bearer token for chat completions |
+| `OPENAI_BASE_URL` | no | Default `https://api.openai.com` |
+| `LLM_CHAT_COMPLETIONS_PATH` | no | Default `/v1/chat/completions` |
+| `LLM_OPENAI_COST_PER_1K_TOKENS` | no | USD per 1k tokens → `estimated_cost_usd`; `0` = disabled |
+| `AGENT_MODEL_ID` | no | Default model when `generate(model_id=None)` |
+
+**Logging:** `apps/llm_gateway.py` logs `node`, `provider`, `backend_requested`, `backend_actual`,
+`outcome`, `model_id`, `latency_ms`, `total_tokens`, `estimated_cost_usd`. Failed attempts log
+`backend_actual=unserved`, `outcome=error`, and `error_type`, because no backend successfully
+served that call. Run correlation uses existing `llm_observability` / OTel at the node layer.
+
+**PS5.8 parity baseline:** `tests/fixtures/llm/openai_parity_metadata_baseline.json`
+
+**Manual smoke:** `LLM_BACKEND=openai` + `POST /runs` → log line contains
+`llm_gateway_call ... backend_actual=openai ... estimated_cost_usd=`.
 
 ## Configuration (PS5.1)
 

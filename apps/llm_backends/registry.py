@@ -7,11 +7,9 @@ from typing import Any, Callable
 
 from config import settings
 
-from apps.llm_backends.openai_compatible import (
-    generate_cursor_sh,
-    generate_gpu,
-    generate_openai,
-)
+from apps.llm_backends.cursor_sh import generate_cursor_sh
+from apps.llm_backends.gpu import generate_gpu
+from apps.llm_backends.openai import generate_openai
 from apps.llm_gateway_errors import LLMGatewayProviderError
 
 _logger = logging.getLogger(__name__)

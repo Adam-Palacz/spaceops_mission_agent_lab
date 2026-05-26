@@ -59,6 +59,13 @@ class Settings(BaseSettings):
         default_factory=lambda: get_secret("GPU_LLM_API_KEY", ""),
         description="Optional bearer token for GPU/NIM endpoint.",
     )
+    llm_openai_cost_per_1k_tokens: float = Field(
+        default=0.0,
+        description=(
+            "Optional USD rate per 1k tokens for OpenAI backend cost estimates (PS5.2); "
+            "0 disables estimated_cost_usd."
+        ),
+    )
     openai_base_url: str = Field(
         default="https://api.openai.com",
         description="OpenAI API base URL (root or full chat completions URL).",

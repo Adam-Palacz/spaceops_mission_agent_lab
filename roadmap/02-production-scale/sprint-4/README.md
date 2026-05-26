@@ -22,7 +22,8 @@ and human gates.
 
 ## Tasks
 
-See **[BOARD.md](BOARD.md)** for status of PS4.1–PS4.8 (plus PS4.1.1 DX).
+See **[BOARD.md](BOARD.md)** for status of PS4.1–PS4.8 (plus PS4.1.1 DX).  
+**Retrospective:** [SPRINT_REVIEW.md](SPRINT_REVIEW.md).
 
 | Task | Spec |
 |------|------|
@@ -40,12 +41,15 @@ See **[BOARD.md](BOARD.md)** for status of PS4.1–PS4.8 (plus PS4.1.1 DX).
 
 ## Definition of done (sprint)
 
-- [ ] CI fails on evidence/citation regressions with clear diagnostics.
-- [ ] Tool failure outcomes are explicit in audit and metrics.
-- [ ] Golden-run suite can be re-executed and compared across revisions.
-- [ ] Escalation-rate/evidence-coverage/p95-stage metrics are available.
-- [ ] **OPA + approvals:** at least one automated path proves fail-closed and HITL before unsafe MCP
-      side effects (see BOARD notes on PS4.4 / PS4.7).
+- [x] CI fails on evidence/citation regressions with clear diagnostics (`evals-hard`, PS4.7).
+- [x] Tool failure outcomes are explicit in audit and metrics (`agent_tool_outcome_total`, PS4.6).
+- [x] Golden-run suite can be re-executed and compared across revisions (PS4.5, `make golden-check`).
+- [x] Escalation-rate/evidence-coverage/p95-stage metrics are available (PS4.6, Grafana).
+- [x] **OPA + approvals:** automated fail-closed + HITL path (`safety-gates`, `test_act_opa_policy`).
+- [x] **PS4.4:** deterministic semantic evals (`make semantic-check`, CI `semantic-evals`).
+- [x] **PS4.1 evidence policy:** model-supplied grounding only (`fill_grounding=False`); see [SPRINT_REVIEW.md](SPRINT_REVIEW.md).
+
+**Sprint review:** [SPRINT_REVIEW.md](SPRINT_REVIEW.md) (2026-05-19, updated after audit).
 
 ---
 

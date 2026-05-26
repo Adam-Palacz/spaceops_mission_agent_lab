@@ -1,0 +1,30 @@
+{
+  "subsystem": "Comms",
+  "escalated": false,
+  "citations": [{"doc_id": "rb-comms", "snippet_id": "c1"}],
+  "plan": [
+    {
+      "action": "Document comms check",
+      "action_type": "report",
+      "safe": true,
+      "doc_ids": ["rb-comms"],
+      "snippet_ids": []
+    }
+  ],
+  "report": {
+    "schema_version": "v1",
+    "incident_id": "semantic-tool-empty",
+    "run_id": "00000000-0000-4000-8000-000000000004",
+    "executive_summary": "Empty telemetry is not tool_failure.",
+    "citation_refs": ["rb-comms"],
+    "evidence": [],
+    "proposed_actions": [],
+    "rollback": "N/A",
+    "trace_link": ""
+  },
+  "tool_outcomes": {
+    "query_telemetry": "empty",
+    "search_runbooks": "success",
+    "search_postmortems": "empty"
+  }
+}

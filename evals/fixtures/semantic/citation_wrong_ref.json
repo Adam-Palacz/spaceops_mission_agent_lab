@@ -1,0 +1,26 @@
+{
+  "subsystem": "Thermal",
+  "escalated": false,
+  "citations": [{"doc_id": "rb-thermal", "snippet_id": "t1"}],
+  "plan": [
+    {
+      "action": "Open PR with bad ref",
+      "action_type": "create_pr",
+      "safe": true,
+      "doc_ids": ["rb-unknown"],
+      "snippet_ids": []
+    }
+  ],
+  "report": {
+    "schema_version": "v1",
+    "incident_id": "semantic-citation-wrong",
+    "run_id": "00000000-0000-4000-8000-000000000003",
+    "executive_summary": "Unsupported citation ref on step.",
+    "citation_refs": ["rb-thermal"],
+    "evidence": [],
+    "proposed_actions": [],
+    "rollback": "N/A",
+    "trace_link": ""
+  },
+  "tool_outcomes": {"query_telemetry": "empty", "search_runbooks": "success", "search_postmortems": "empty"}
+}

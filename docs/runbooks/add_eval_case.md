@@ -55,6 +55,16 @@ Fields:
 
 Scoring logic for these fields lives in `score_case` in `evals/scoring.py`.
 
+### PS4.4 semantic cases (no LLM)
+
+For citation/audit semantics that must run on **every PR** without API keys, add a fixture case:
+
+1. Add JSON under `evals/fixtures/semantic/<name>.json` (pipeline result shape).
+2. Add entry to `evals/semantic_cases.yaml` with `fixture`, `expect_scoring_pass`, optional `expected_escalation_reason`, `expected_tool_outcomes`, `triage_gate`.
+3. Run `python -m evals.semantic` and `pytest tests/test_semantic_evals_ps44.py`.
+
+See [evals/README.md](../../evals/README.md) and [guardrails_quality_triage.md](guardrails_quality_triage.md#semantic-eval-case--triage-ps44).
+
 ---
 
 ## 3. Adding a new standard eval case

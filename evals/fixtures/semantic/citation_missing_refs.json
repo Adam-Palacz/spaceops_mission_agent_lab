@@ -1,0 +1,26 @@
+{
+  "subsystem": "Power",
+  "escalated": false,
+  "citations": [{"doc_id": "rb-power", "snippet_id": "s1"}],
+  "plan": [
+    {
+      "action": "Change config without refs",
+      "action_type": "change_config",
+      "safe": false,
+      "doc_ids": [],
+      "snippet_ids": []
+    }
+  ],
+  "report": {
+    "schema_version": "v1",
+    "incident_id": "semantic-citation-missing",
+    "run_id": "00000000-0000-4000-8000-000000000002",
+    "executive_summary": "Plan missing grounding.",
+    "citation_refs": ["rb-power"],
+    "evidence": [],
+    "proposed_actions": [],
+    "rollback": "N/A",
+    "trace_link": ""
+  },
+  "tool_outcomes": {"query_telemetry": "success", "search_runbooks": "success", "search_postmortems": "empty"}
+}

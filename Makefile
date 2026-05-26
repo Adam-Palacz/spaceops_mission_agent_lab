@@ -13,7 +13,7 @@ POSTGRES_PASSWORD ?= spaceops
 
 .DEFAULT_GOAL := help
 
-.PHONY: help install install-dev lint format typecheck check safety-gates test migrate-smoke \
+.PHONY: help install install-dev lint format typecheck check safety-gates semantic-check test migrate-smoke \
 	golden-check golden-run golden-update compose-config docker-build
 
 help: ## Show this help (default goal)
@@ -45,6 +45,9 @@ safety-gates: ## PS4.7 hard gate: OPA/HITL/guardrails + ci gating tests (no Post
 		tests/test_evidence_policy_ps41.py tests/test_prompt_injection_ps43.py \
 		tests/test_guardrails_ps17.py tests/test_output_schema_ps42.py \
 		tests/test_behavior_metrics_ps46.py tests/test_ci_gating_ps47.py -v
+
+semantic-check: ## PS4.4 deterministic semantic evals (fixtures, no LLM)
+	$(PYTHON) -m evals.semantic
 
 test: ## pytest tests/ (needs Postgres; env matches CI test job)
 	$(PYTHON) -c "import os,subprocess,sys; env=os.environ.copy(); env['DATABASE_URL']='$(DATABASE_URL)'; env['POSTGRES_PASSWORD']='$(POSTGRES_PASSWORD)'; sys.exit(subprocess.call(['pytest','tests/','-v'], env=env))"

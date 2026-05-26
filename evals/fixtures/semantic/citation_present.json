@@ -1,0 +1,31 @@
+{
+  "subsystem": "Power",
+  "escalated": false,
+  "citations": [{"doc_id": "rb-power", "snippet_id": "s1", "content": "Runbook excerpt"}],
+  "plan": [
+    {
+      "action": "Create ticket for power team",
+      "action_type": "create_ticket",
+      "safe": true,
+      "doc_ids": ["rb-power"],
+      "snippet_ids": ["s1"]
+    },
+    {"action": "Summarize findings", "action_type": "report", "safe": true}
+  ],
+  "report": {
+    "schema_version": "v1",
+    "incident_id": "semantic-citation-present",
+    "run_id": "00000000-0000-4000-8000-000000000001",
+    "executive_summary": "Grounded power anomaly.",
+    "citation_refs": ["rb-power"],
+    "evidence": [],
+    "proposed_actions": [],
+    "rollback": "N/A",
+    "trace_link": ""
+  },
+  "tool_outcomes": {
+    "query_telemetry": "success",
+    "search_runbooks": "success",
+    "search_postmortems": "empty"
+  }
+}

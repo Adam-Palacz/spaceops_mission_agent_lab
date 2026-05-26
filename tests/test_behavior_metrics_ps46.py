@@ -100,6 +100,42 @@ def test_record_completed_run_emits_behavior_metrics():
     assert 'stage="triage"' in after
 
 
+def test_record_emits_tool_outcome_metrics():
+    before = generate_latest(REGISTRY).decode()
+    b_before = _sum_labels(
+        before, "agent_tool_outcome_total", tool="create_ticket", outcome="failure"
+    )
+
+    record_agent_run_behavior(
+        {
+            "escalated": False,
+            "evidence_policy_status": "ok",
+            "citations": [],
+            "tool_outcomes": {"query_telemetry": "failure", "search_runbooks": "empty"},
+            "act_results": [
+                {"tool": "create_ticket", "outcome": "failure"},
+                {"tool": "create_pr", "outcome": "success"},
+            ],
+            "stage_timings": [],
+        },
+        1.0,
+    )
+
+    after = generate_latest(REGISTRY).decode()
+    assert (
+        _sum_labels(
+            after, "agent_tool_outcome_total", tool="create_ticket", outcome="failure"
+        )
+        == b_before + 1
+    )
+    assert (
+        _sum_labels(
+            after, "agent_tool_outcome_total", tool="query_telemetry", outcome="failure"
+        )
+        >= 1
+    )
+
+
 def test_record_escalated_run_increments_escalation_counter():
     before = generate_latest(REGISTRY).decode()
     b_esc_before = _sum_labels(

@@ -1,0 +1,23 @@
+{
+  "subsystem": "Power",
+  "escalated": true,
+  "escalation_packet": {
+    "reason": "policy_deny",
+    "what_we_know": ["Restricted step denied by policy"],
+    "what_we_dont_know": ["OPA denied step"],
+    "what_to_check": ["Review OPA policy"]
+  },
+  "citations": [{"doc_id": "rb-power", "snippet_id": "s1"}],
+  "plan": [
+    {
+      "action": "Restricted thermal change",
+      "action_type": "change_config",
+      "safe": false,
+      "doc_ids": ["rb-power"],
+      "snippet_ids": ["s1"]
+    }
+  ],
+  "approval_requests": [],
+  "act_results": [],
+  "tool_outcomes": {"query_telemetry": "success", "search_runbooks": "success", "search_postmortems": "empty"}
+}

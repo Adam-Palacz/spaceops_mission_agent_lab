@@ -172,6 +172,17 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         action="store_true",
         help="PS4.7 soft gate: print failures but exit 0 (non-blocking quality signal).",
     )
+    parser.add_argument(
+        "--semantic-only",
+        action="store_true",
+        help="PS4.4 hard gate: score fixture results (no LLM).",
+    )
+    parser.add_argument(
+        "--write-summary",
+        type=Path,
+        default=None,
+        help="Write JSON eval summary (semantic suite or full run metadata).",
+    )
     return parser.parse_args(argv)
 
 
@@ -273,6 +284,36 @@ def score_case(case: dict, result: dict) -> tuple[bool, list[str]]:
                         f"citation_precision: step[{idx}] references unsupported citations"
                     )
 
+    # PS4.4: audit / escalation semantics on fixture or live results.
+    if case.get("expected_escalation_reason"):
+        expected_reason = str(case["expected_escalation_reason"]).strip()
+        actual_reason = str(escalation_packet.get("reason") or "").strip()
+        if actual_reason != expected_reason:
+            failures.append(
+                f"escalation_reason: expected {expected_reason!r}, got {actual_reason!r}"
+            )
+
+    if case.get("forbid_escalation_reason"):
+        forbidden = str(case["forbid_escalation_reason"]).strip()
+        actual_reason = str(escalation_packet.get("reason") or "").strip()
+        if actual_reason == forbidden:
+            failures.append(
+                f"forbid_escalation_reason: must not escalate as {forbidden!r}"
+            )
+
+    expected_tools = case.get("expected_tool_outcomes") or {}
+    if isinstance(expected_tools, dict) and expected_tools:
+        outcomes = result.get("tool_outcomes") or {}
+        if not isinstance(outcomes, dict):
+            outcomes = {}
+        for tool, expected_outcome in expected_tools.items():
+            actual_outcome = str(outcomes.get(tool) or "").strip().lower()
+            want = str(expected_outcome or "").strip().lower()
+            if actual_outcome != want:
+                failures.append(
+                    f"tool_outcomes[{tool}]: expected {want!r}, got {actual_outcome!r}"
+                )
+
     passed = len(failures) == 0
     return passed, failures
 
@@ -308,6 +349,15 @@ def run_injection_suite_only() -> int:
 
 def main(argv: list[str] | None = None) -> int:
     args = _parse_args(argv)
+    if args.semantic_only:
+        from evals.semantic import run_semantic_suite
+
+        code, _ = run_semantic_suite(write_summary=args.write_summary)
+        if args.soft_signal and code != 0:
+            print("SOFT_SIGNAL semantic-suite: failures present (non-blocking).")
+            return 0
+        return code
+
     if args.injection_only:
         code = run_injection_suite_only()
         if args.soft_signal and code != 0:

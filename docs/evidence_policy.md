@@ -5,7 +5,7 @@ This policy defines minimum grounding requirements for non-escalated agent outpu
 ## Rules
 
 1. Non-escalated runs must include at least one valid citation identifier (`doc_id` or `snippet_id`).
-2. Any non-report plan step (for example `create_ticket`, `create_pr`, `change_config`) must reference grounding identifiers.
+2. Any non-report plan step (for example `create_ticket`, `create_pr`, `change_config`) must reference grounding identifiers **supplied on the plan step** (model/output). The pipeline does not invent `doc_ids` / `snippet_ids` before this check.
 3. Plan step references must map to known identifiers from retrieved citations.
 4. If grounding checks fail, the pipeline fails closed with escalation reason `evidence_policy_violation`.
 

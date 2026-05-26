@@ -797,15 +797,26 @@ def _normalize_plan_steps(
     plan: list,
     default_doc_ids: list[str] | None = None,
     default_snippet_ids: list[str] | None = None,
+    *,
+    fill_grounding: bool = False,
 ) -> None:
-    """Ensure every plan step dict has action, action_type, doc_ids, snippet_ids (avoids KeyError in evals/CI)."""
+    """
+    Ensure plan step dicts have action and action_type.
+
+    PS4.1: ``fill_grounding`` must stay False before evidence policy checks. Auto-inserting
+    citation IDs would bypass grounding validation (model must supply doc_ids/snippet_ids).
+    """
     doc_ids = default_doc_ids or []
     snippet_ids = default_snippet_ids or []
     for step in plan:
         if isinstance(step, dict):
             step["action"] = step.get("action") or ""
             step["action_type"] = step.get("action_type") or "report"
-            if not step.get("doc_ids") and not step.get("snippet_ids"):
+            if (
+                fill_grounding
+                and not step.get("doc_ids")
+                and not step.get("snippet_ids")
+            ):
                 step["doc_ids"] = doc_ids[:1] if doc_ids else []
                 step["snippet_ids"] = snippet_ids[:1] if snippet_ids else []
 
@@ -995,7 +1006,7 @@ def decide(state: AgentState) -> dict:
         ]
     if not isinstance(plan, list):
         plan = [plan]
-    _normalize_plan_steps(plan, doc_ids, snippet_ids)
+    _normalize_plan_steps(plan, doc_ids, snippet_ids, fill_grounding=False)
     plan_ok, plan_reasons = validate_plan_allowlist(plan)
     if not plan_ok:
         plan_codes = merge_detection_codes(
@@ -1031,7 +1042,36 @@ def act(state: AgentState) -> dict:
     incident_id = state.get("incident_id") or "unknown"
     trace_id = state.get("trace_id") or incident_id
     plan = list(state.get("plan") or [])
-    _normalize_plan_steps(plan)  # ensure "action" etc. present (CI/evals KeyError fix)
+    _normalize_plan_steps(plan, fill_grounding=False)
+    if not state.get("escalated"):
+        ok, reason, detail = _evaluate_evidence_policy(state)
+        if not ok:
+            packet = {
+                "reason": reason,
+                "what_we_know": [
+                    f"Incident {incident_id}",
+                    "Evidence policy rejected plan before Act execution.",
+                    detail,
+                ],
+                "what_we_dont_know": [
+                    "Proposed actions cannot be trusted without valid grounding.",
+                ],
+                "what_to_check": [
+                    "Inspect investigation citations and plan references.",
+                    "Ensure decide output includes doc_ids/snippet_ids per step.",
+                ],
+            }
+            packet = _ensure_escalation_packet(
+                incident_id, packet, trace_id=trace_id, audit_on_fallback=False
+            )
+            return {
+                "escalated": True,
+                "escalation_packet": packet,
+                "evidence_policy_status": "violation",
+                "evidence_policy_reason": reason,
+                "act_results": [],
+                "approval_requests": [],
+            }
     plan_ok, plan_reasons = validate_plan_allowlist(plan)
     if not plan_ok:
         plan_codes = merge_detection_codes(
@@ -1243,8 +1283,6 @@ def act(state: AgentState) -> dict:
 
 def report(state: AgentState) -> dict:
     """Format summary, evidence, actions, rollback, trace link. Include escalation packet when escalated (F10)."""
-    # Ensure plan steps have "action" (avoids KeyError in downstream/CI)
-    _normalize_plan_steps(state.get("plan") or [])
     incident_id = state.get("incident_id") or "unknown"
     subsystem = state.get("subsystem") or ""
     risk = state.get("risk") or ""
@@ -1258,9 +1296,14 @@ def report(state: AgentState) -> dict:
     injection_guard_status = state.get("injection_guard_status") or "ok"
     injection_guard_reason = state.get("injection_guard_reason") or ""
     if escalated:
-        injection_guard_status = state.get("injection_guard_status") or "skipped_escalated"
+        injection_guard_status = (
+            state.get("injection_guard_status") or "skipped_escalated"
+        )
+    plan_for_policy = list(state.get("plan") or [])
+    _normalize_plan_steps(plan_for_policy, fill_grounding=False)
     if not escalated:
-        ok, reason, detail = _evaluate_evidence_policy(state)
+        policy_state: AgentState = {**state, "plan": plan_for_policy}
+        ok, reason, detail = _evaluate_evidence_policy(policy_state)
         if not ok:
             evidence_policy_status = "violation"
             evidence_policy_reason = reason

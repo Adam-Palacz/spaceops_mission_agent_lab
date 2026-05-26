@@ -11,6 +11,7 @@ Release-readiness counters and histograms complement S2.9 operational metrics (`
 | `agent_behavior_runs_total` | Counter | `outcome` | Run ended as `completed`, `escalated`, or `error` (pipeline exception). Denominator for escalation rate. |
 | `agent_escalations_total` | Counter | `reason` | One increment per escalated run; `reason` is canonical (see below). |
 | `agent_evidence_coverage_total` | Counter | `policy_status`, `has_citations` | Evidence policy outcome plus whether any citations were present (`true` / `false`). |
+| `agent_tool_outcome_total` | Counter | `tool`, `outcome` | Per-tool results: investigation `tool_outcomes` (`query_telemetry`, `search_runbooks`, …) and Act `act_results` (`create_ticket`, `create_pr`, …). `outcome` is `success`, `empty`, or `failure`. |
 | `agent_stage_duration_seconds` | Histogram | `stage` | Wall time per LangGraph node from `stage_timings` (seconds). Use for p50/p95 per stage. |
 
 ### Canonical `reason` values (`agent_escalations_total`)
@@ -26,6 +27,17 @@ Unknown reasons are bucketed as `other` to avoid high-cardinality labels.
 ### `policy_status` values (`agent_evidence_coverage_total`)
 
 `ok`, `violation`, `skipped_escalated`, `unknown` (from `evidence_policy_status` on agent state).
+
+### `tool` / `outcome` values (`agent_tool_outcome_total`)
+
+Tools: `query_telemetry`, `search_runbooks`, `search_postmortems`, `create_ticket`, `create_pr`, `opa_check`, `other`.  
+Outcomes: `success`, `empty`, `failure` (same semantics as audit `tool_outcomes` / `act_results`).
+
+**Tool failure rate (5m) — investigate telemetry:**
+
+```promql
+sum(rate(agent_tool_outcome_total{tool="query_telemetry",outcome="failure"}[5m]))
+```
 
 ## Example PromQL
 

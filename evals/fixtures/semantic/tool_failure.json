@@ -1,0 +1,16 @@
+{
+  "subsystem": "Thermal",
+  "escalated": true,
+  "escalation_packet": {
+    "reason": "tool_failure",
+    "what_we_know": ["Investigation tool failed"],
+    "what_we_dont_know": ["Evidence incomplete"],
+    "what_to_check": ["Restore MCP health"]
+  },
+  "citations": [{"doc_id": "rb-thermal", "snippet_id": "t1"}],
+  "tool_outcomes": {
+    "query_telemetry": "failure",
+    "search_runbooks": "success",
+    "search_postmortems": "empty"
+  }
+}

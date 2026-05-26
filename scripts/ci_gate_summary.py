@@ -22,6 +22,12 @@ GITHUB_JOB_GATES: tuple[tuple[str, str, str, str], ...] = (
     ("lint", "lint-ruff", "Ruff + Mypy (lint job)", "hard"),
     ("golden-check", "golden-baseline", "Golden replay baseline", "hard"),
     ("safety-gates", "safety-opa-hitl", "OPA / HITL / guardrails tests", "hard"),
+    (
+        "semantic-evals",
+        "eval-semantic-ps44",
+        "Semantic eval fixtures (PS4.4, no LLM)",
+        "hard",
+    ),
     ("test", "pytest-full", "Pytest full suite + migrations", "hard"),
     (
         "evals-hard",
@@ -37,6 +43,7 @@ RECOVERY = {
     "lint-ruff": "See lint job log; run `make lint` and `make typecheck`.",
     "golden-baseline": "Run `make golden-check`; update baselines only with confirm token.",
     "safety-opa-hitl": "Fix OPA/HITL/guardrail tests; see docs/runbooks/ci_gating_policy.md.",
+    "eval-semantic-ps44": "Run `python -m evals.semantic`; see evals/semantic_cases.yaml.",
     "pytest-full": "Run `make test` with Postgres; fix failing tests.",
     "evals-deterministic": "Run evals.scoring --case-id gates; ensure OPENAI_API_KEY in CI secrets.",
     "evals-full-suite": "Non-blocking; review full eval log and cases.yaml.",
@@ -50,16 +57,28 @@ def _job_result(job_key: str) -> str:
     ).lower()
 
 
+LIVE_EVAL_GATE_IDS = frozenset({"evals-deterministic", "evals-full-suite"})
+
+
 def main() -> int:
     results: list[GateResult] = []
     hard_failed: list[str] = []
     soft_failed: list[str] = []
+    skipped_live: list[str] = []
 
     for job_key, gate_id, title, tier in GITHUB_JOB_GATES:
         status = _job_result(job_key)
-        passed = status == "success"
-        if status == "skipped":
+        recovery = RECOVERY.get(gate_id, "See job log in GitHub Actions.")
+        display_status = status.upper() if status else "UNKNOWN"
+
+        if gate_id in LIVE_EVAL_GATE_IDS and status == "skipped":
+            recovery = "Live eval job skipped: set OPENAI_API_KEY repo secret to run LLM gates."
+            display_status = "SKIPPED (no API key)"
+            skipped_live.append(gate_id)
             passed = True
+        else:
+            passed = status == "success"
+
         results.append(
             GateResult(
                 gate_id=gate_id,
@@ -67,8 +86,8 @@ def main() -> int:
                 tier=tier,  # type: ignore[arg-type]
                 passed=passed,
                 exit_code=0 if passed else 1,
-                recovery=RECOVERY.get(gate_id, "See job log in GitHub Actions."),
-                output_tail=f"GitHub job `{job_key}` result: {status}",
+                recovery=recovery,
+                output_tail=f"GitHub job `{job_key}`: {display_status}",
             )
         )
         if not passed:
@@ -81,6 +100,12 @@ def main() -> int:
         results=results, hard_failed=hard_failed, soft_failed=soft_failed
     )
     summary = format_gate_summary(report)
+    if skipped_live:
+        summary += (
+            "\n\n**LIVE EVAL GATES SKIPPED (non-blocking):** "
+            + ", ".join(skipped_live)
+            + " — configure `OPENAI_API_KEY` to run live must-escalate / citation / injection gates."
+        )
     print(summary)
 
     summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
@@ -95,6 +120,10 @@ def main() -> int:
         return 1
     if report.soft_failed:
         print("\nCI GATE POLICY: soft signals present (non-blocking).")
+    elif skipped_live:
+        print(
+            "\nCI GATE POLICY: merge allowed; live LLM eval jobs were skipped (no API key)."
+        )
     else:
         print("\nCI GATE POLICY: all gates passed.")
     return 0

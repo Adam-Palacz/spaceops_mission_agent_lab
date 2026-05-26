@@ -13,13 +13,25 @@ from typing import Any
 from apps.agent.nodes import act
 
 
-def _make_state(plan: list[dict[str, Any]]) -> dict[str, Any]:
+def _make_state(
+    plan: list[dict[str, Any]],
+    *,
+    citations: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    """PS4.1: include citations so act() evidence policy does not preempt OPA tests."""
+    if citations is None:
+        citations = [
+            {"doc_id": "rb-1", "snippet_id": "s1"},
+            {"doc_id": "rb-2", "snippet_id": "s2"},
+        ]
     return {
         "incident_id": "inc-opa",
         "trace_id": "trace-opa",
         "plan": plan,
+        "citations": citations,
         "act_results": [],
         "approval_requests": [],
+        "escalated": False,
     }
 
 

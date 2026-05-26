@@ -1,0 +1,18 @@
+{
+  "subsystem": "Power",
+  "escalated": true,
+  "escalation_packet": {
+    "reason": "no_evidence",
+    "what_we_know": ["Incident semantic-no-evidence"],
+    "what_we_dont_know": ["No telemetry or KB hits"],
+    "what_to_check": ["Verify ingest window"]
+  },
+  "citations": [],
+  "hypotheses": ["No telemetry or KB hits; escalate for manual review."],
+  "plan": [{"action": "Escalate to ops", "action_type": "report", "safe": true}],
+  "tool_outcomes": {
+    "query_telemetry": "empty",
+    "search_runbooks": "empty",
+    "search_postmortems": "empty"
+  }
+}

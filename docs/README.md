@@ -17,6 +17,7 @@ The **docs/** directory holds project documentation that supports both humans an
 - **behavior_metrics.md** — Escalation rate, evidence coverage, stage latency metrics (PS4.6).
 - **[runbooks/ci_gating_policy.md](runbooks/ci_gating_policy.md)** — Hard vs soft CI gates, OPA/HITL criteria, recovery (PS4.7).
 - **[runbooks/guardrails_quality_triage.md](runbooks/guardrails_quality_triage.md)** — Failed-gate triage, decision tree, PS4 symptom → action (PS4.8).
+- **[evals_llm_judge_hooks.md](evals_llm_judge_hooks.md)** — Optional future LLM-as-judge eval hooks (PS4.4, non-blocking).
 - **workflow/** — High-level pipeline (Ingest to Post-incident) and escalation path; aligns with `roadmap/01-core-roadmap.md` and `roadmap/goals.md` F1–F10.
 - **architecture/** — System boundaries (API, Agent, MCP, OPA, storage, observability), repo layout, and production-ready criteria from `goals.md` §4.5.
 - **agent/** — LangGraph state machine and Act logic (safe vs restricted, OPA, approval); implements behaviour described in `roadmap/01-core-roadmap.md` and policy in `roadmap/goals.md` §4.3.

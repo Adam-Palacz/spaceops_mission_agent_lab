@@ -46,6 +46,20 @@ CANONICAL_EVIDENCE_POLICY_STATUSES = frozenset(
     {"ok", "violation", "skipped_escalated", "unknown"}
 )
 
+CANONICAL_TOOL_NAMES = frozenset(
+    {
+        "query_telemetry",
+        "search_runbooks",
+        "search_postmortems",
+        "create_ticket",
+        "create_pr",
+        "opa_check",
+        "other",
+    }
+)
+
+CANONICAL_TOOL_OUTCOMES = frozenset({"success", "empty", "failure"})
+
 AGENT_BEHAVIOR_RUNS_TOTAL = Counter(
     "agent_behavior_runs_total",
     "Agent runs by behavioral outcome (PS4.6). Use for escalation rate denominators.",
@@ -62,6 +76,12 @@ AGENT_EVIDENCE_COVERAGE_TOTAL = Counter(
     "agent_evidence_coverage_total",
     "Runs by evidence policy status and whether citations were present (PS4.6).",
     ["policy_status", "has_citations"],
+)
+
+AGENT_TOOL_OUTCOME_TOTAL = Counter(
+    "agent_tool_outcome_total",
+    "Per-tool outcomes from investigation tool_outcomes and act_results (PS4.6).",
+    ["tool", "outcome"],
 )
 
 AGENT_STAGE_DURATION_SECONDS = Histogram(
@@ -82,6 +102,20 @@ def normalize_escalation_reason(reason: str | None) -> str:
 def normalize_stage(node: str | None) -> str:
     value = (node or "").strip().lower()
     if value in CANONICAL_STAGES:
+        return value
+    return "other"
+
+
+def normalize_tool_name(tool: str | None) -> str:
+    value = (tool or "").strip().lower()[:64]
+    if value in CANONICAL_TOOL_NAMES:
+        return value
+    return "other"
+
+
+def normalize_tool_outcome(outcome: str | None) -> str:
+    value = (outcome or "").strip().lower()
+    if value in CANONICAL_TOOL_OUTCOMES:
         return value
     return "other"
 
@@ -125,6 +159,21 @@ def record_agent_run_behavior(result: dict[str, Any], duration_seconds: float) -
         policy_status=policy_status,
         has_citations=has_citations,
     ).inc()
+
+    tool_outcomes = result.get("tool_outcomes") or {}
+    if isinstance(tool_outcomes, dict):
+        for tool, outcome in tool_outcomes.items():
+            AGENT_TOOL_OUTCOME_TOTAL.labels(
+                tool=normalize_tool_name(str(tool)),
+                outcome=normalize_tool_outcome(str(outcome)),
+            ).inc()
+    for entry in result.get("act_results") or []:
+        if not isinstance(entry, dict):
+            continue
+        AGENT_TOOL_OUTCOME_TOTAL.labels(
+            tool=normalize_tool_name(str(entry.get("tool") or "")),
+            outcome=normalize_tool_outcome(str(entry.get("outcome") or "")),
+        ).inc()
 
     for entry in result.get("stage_timings") or []:
         if not isinstance(entry, dict):

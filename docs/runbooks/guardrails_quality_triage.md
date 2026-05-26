@@ -18,7 +18,7 @@ Operator runbook for **failed CI gates**, **unexpected escalations**, and **qual
 
 - A **GitHub Actions** job failed (`gate-summary`, `safety-gates`, `evals-hard`, `golden-check`, …).
 - A **production or staging run** escalated and you need to classify *why* (evidence vs injection vs OPA vs schema).
-- **Grafana** behavior metrics show rising escalation rate or evidence violations ([behavior_metrics.md](../behavior_metrics.md)).
+- **Grafana** behavior metrics show rising escalation rate, evidence violations, or tool failures ([behavior_metrics.md](../behavior_metrics.md), incl. `agent_tool_outcome_total`).
 
 ---
 
@@ -64,6 +64,20 @@ flowchart TD
 
 ---
 
+## Semantic eval case → triage (PS4.4)
+
+Fixture suite (`python -m evals.semantic`) — no LLM; maps to sections below.
+
+| Case ID | Failure class | Runbook section |
+|---------|---------------|-----------------|
+| `semantic-citation-present` | (pass) citation OK | — |
+| `semantic-citation-missing-refs` | Citation / evidence | [Evidence failures](#evidence-failures) |
+| `semantic-citation-wrong-ref` | Citation / evidence | [Evidence failures](#evidence-failures) |
+| `semantic-no-evidence` | `no_evidence` | [Evidence failures](#evidence-failures) |
+| `semantic-tool-failure` | `tool_failure` | [MCP / tool_failure](#mcp--tool_failure-infra) |
+| `semantic-tool-empty-not-failure` | empty ≠ failure | [MCP / tool_failure](#mcp--tool_failure-infra) |
+| `semantic-policy-deny` | OPA / HITL | [OPA / MCP policy](#opa--mcp-policy-restricted-actions-hitl) |
+
 ## CI gate ID → first action
 
 Maps to [PS4.7 gate matrix](ci_gating_policy.md#gate-matrix). **Recovery detail** stays in PS4.7; here is *where to look first*.
@@ -74,6 +88,7 @@ Maps to [PS4.7 gate matrix](ci_gating_policy.md#gate-matrix). **Recovery detail*
 | `eval-must-escalate` | Evidence / escalation | `python -m evals.scoring --case-id must-escalate-no-evidence` | [§ Evidence](#evidence-failures) |
 | `eval-citation-present` | Evidence / citations | Same with `citation-present` | [§ Evidence](#evidence-failures) |
 | `eval-injection-suite` | Injection / unsafe action | `python -m evals.scoring --injection-only` | [§ Injection](#injection--unsafe-action) |
+| `eval-semantic-ps44` | Fixture citation/audit semantics | `python -m evals.semantic` | [Semantic eval table](#semantic-eval-case--triage-ps44) |
 | `safety-opa-hitl` | OPA / schema / injection / evidence tests | `make safety-gates` → read failing test file name | Tables below |
 | `evals-full-suite` (soft) | Quality drift | `python -m evals.scoring --soft-signal` | [add_eval_case.md](add_eval_case.md) |
 | `lint-ruff` / `lint-mypy` | Code quality | `make lint` / `make typecheck` | — |
@@ -258,6 +273,7 @@ docker compose -f infra/docker-compose.yml --project-directory . up -d prometheu
 # Fast CI parity (host Python)
 make check
 make safety-gates
+make semantic-check
 ```
 
 Host-run API (Prometheus scrape target on :8000):

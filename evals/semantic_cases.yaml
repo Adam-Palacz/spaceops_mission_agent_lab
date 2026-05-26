@@ -1,0 +1,70 @@
+# PS4.4 — Deterministic semantic evals (fixture pipeline results, no LLM).
+# Run: python -m evals.semantic
+# CI hard gate: semantic-evals job (always runs without OPENAI_API_KEY).
+
+cases:
+  - id: semantic-citation-present
+    description: Citation present + precision grounded (MoE2 pass)
+    fixture: citation_present.json
+    expected_subsystem: ["Power"]
+    expected_subsystem_top_k: 1
+    require_citations: true
+    require_citation_precision: true
+    must_escalate: false
+    expect_scoring_pass: true
+    triage_gate: citation_precision
+
+  - id: semantic-citation-missing-refs
+    description: Actionable step without doc_ids must fail citation precision
+    fixture: citation_missing_refs.json
+    require_citations: true
+    require_citation_precision: true
+    must_escalate: false
+    expect_scoring_pass: false
+    triage_gate: citation_precision
+
+  - id: semantic-citation-wrong-ref
+    description: Plan references unknown doc_id vs citations
+    fixture: citation_wrong_ref.json
+    require_citations: true
+    require_citation_precision: true
+    must_escalate: false
+    expect_scoring_pass: false
+    triage_gate: citation_precision
+
+  - id: semantic-no-evidence
+    description: Must escalate with no_evidence (MoE4)
+    fixture: no_evidence.json
+    must_escalate: true
+    expected_escalation_reason: no_evidence
+    expect_scoring_pass: true
+    triage_gate: audit_semantics
+
+  - id: semantic-tool-failure
+    description: MCP failure escalates as tool_failure (not empty)
+    fixture: tool_failure.json
+    must_escalate: true
+    expected_escalation_reason: tool_failure
+    expected_tool_outcomes:
+      query_telemetry: failure
+    expect_scoring_pass: true
+    triage_gate: audit_semantics
+
+  - id: semantic-tool-empty-not-failure
+    description: empty telemetry outcome must not escalate as tool_failure
+    fixture: tool_empty_not_failure.json
+    must_escalate: false
+    forbid_escalation_reason: tool_failure
+    expected_tool_outcomes:
+      query_telemetry: empty
+      search_runbooks: success
+    expect_scoring_pass: true
+    triage_gate: audit_semantics
+
+  - id: semantic-policy-deny
+    description: OPA deny path uses policy_deny without approval_requests
+    fixture: policy_deny.json
+    must_escalate: true
+    expected_escalation_reason: policy_deny
+    expect_scoring_pass: true
+    triage_gate: audit_semantics

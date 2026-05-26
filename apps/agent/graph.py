@@ -381,7 +381,7 @@ def run_pipeline(
                 )
                 raise
         # Guarantee plan steps have "action" so evals/consumers never see KeyError
-        _normalize_plan_steps(result.get("plan") or [])
+        _normalize_plan_steps(result.get("plan") or [], fill_grounding=False)
         result["run_id"] = result.get("run_id") or run_id
         _persist_replay_metadata_best_effort(
             run_id=result["run_id"],

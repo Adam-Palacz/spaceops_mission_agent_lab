@@ -16,6 +16,8 @@ from typing import Literal
 GateTier = Literal["hard", "soft"]
 
 # OPA fail-closed, approval/HITL, evidence, injection, output schema (PS4.7 matrix).
+SEMANTIC_EVAL_TEST_PATHS: tuple[str, ...] = ("tests/test_semantic_evals_ps44.py",)
+
 OPA_HITL_SAFETY_TEST_PATHS: tuple[str, ...] = (
     "tests/test_act_opa_policy.py",
     "tests/test_opa_client.py",
@@ -81,10 +83,24 @@ def default_hard_gates() -> list[Gate]:
             recovery="Run `make golden-check`. If intentional drift: `make golden-update RUN_ID=...` with confirm.",
         ),
         Gate(
+            gate_id="eval-semantic-ps44",
+            title="Semantic eval fixtures (PS4.4, no LLM)",
+            tier="hard",
+            command=[py, "-m", "evals.semantic"],
+            recovery="Run `python -m evals.semantic` or `make semantic-check`; see evals/semantic_cases.yaml.",
+        ),
+        Gate(
             gate_id="safety-opa-hitl",
             title="OPA fail-closed + HITL/guardrails unit tests",
             tier="hard",
-            command=[py, "-m", "pytest", *OPA_HITL_SAFETY_TEST_PATHS, "-q"],
+            command=[
+                py,
+                "-m",
+                "pytest",
+                *SEMANTIC_EVAL_TEST_PATHS,
+                *OPA_HITL_SAFETY_TEST_PATHS,
+                "-q",
+            ],
             recovery=(
                 "Inspect tests/test_act_opa_policy.py and related safety tests. "
                 "OPA deny must escalate (policy_deny); restricted steps need approval when OPA allows."

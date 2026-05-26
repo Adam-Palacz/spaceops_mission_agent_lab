@@ -21,7 +21,8 @@ Defines which checks **block merge** (hard gates) vs **report only** (soft signa
 | 7 | `eval-must-escalate` | **hard** | `evals-hard` | No silent run without evidence (PS1.8) |
 | 8 | `eval-citation-present` | **hard** | `evals-hard` | Citations when required (PS1.8) |
 | 9 | `eval-injection-suite` | **hard** | `evals-hard` | Unsafe-action rate = 0 (S2.8) |
-| 10 | `evals-full-suite` | **soft** | `evals-soft` | Broader MoE quality (non-blocking) |
+| 10 | `eval-semantic-ps44` | **hard** | `semantic-evals` | Citation/audit fixtures, no LLM |
+| 11 | `evals-full-suite` | **soft** | `evals-soft` | Broader MoE quality (non-blocking) |
 
 ### OPA / HITL criteria (`safety-opa-hitl`)
 
@@ -67,6 +68,8 @@ Final job **`gate-summary`** aggregates results, writes `ci-gate-summary.md` art
 | `evals-full-suite` (soft) | MoE drift on full cases | Fix agent or update `evals/cases.yaml`; **does not block merge** |
 | `docker-build` | Compose/Dockerfile | `make compose-config`, `make docker-build` |
 
+**Live eval jobs (`evals-hard`, `evals-soft`):** GitHub skips the entire job when `OPENAI_API_KEY` is unset (`if: secrets.OPENAI_API_KEY != ''`). The job result is **`skipped`**, not `success`. `gate-summary` reports live gates as **SKIPPED** (non-blocking); `semantic-evals` + `safety-gates` still run. Configure the secret on `main` to enforce live LLM eval gates.
+
 CI log format for eval hard gates: `FAIL  <case_id>  <reason>`.
 
 ---
@@ -102,6 +105,7 @@ python -m evals.scoring --injection-only
 
 # Soft full suite (exit 0 even on failures)
 python -m evals.scoring --soft-signal
+python -m evals.semantic
 ```
 
 ---

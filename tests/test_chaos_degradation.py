@@ -35,14 +35,25 @@ def _investigate_state(
 
 
 def _act_state(
-    plan: list[dict[str, Any]], incident_id: str = "chaos-act"
+    plan: list[dict[str, Any]],
+    incident_id: str = "chaos-act",
+    *,
+    citations: list[dict[str, Any]] | None = None,
 ) -> AgentState:
+    """PS4.1: grounded citations so chaos OPA tests reach opa_allow, not evidence policy."""
+    if citations is None:
+        citations = [
+            {"doc_id": "rb-1", "snippet_id": "s1"},
+            {"doc_id": "rb-2", "snippet_id": "s2"},
+        ]
     return {
         "incident_id": incident_id,
         "trace_id": incident_id,
         "plan": plan,
+        "citations": citations,
         "act_results": [],
         "approval_requests": [],
+        "escalated": False,
     }
 
 
@@ -176,7 +187,7 @@ def test_chaos_opa_timeout_via_resilience_act_still_fails_closed(monkeypatch):
                 "safe": False,
                 "action_type": "restart_service",
                 "action": "Restart heater controller",
-                "doc_ids": [],
+                "doc_ids": ["rb-1"],
                 "snippet_ids": [],
             }
         ],

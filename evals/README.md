@@ -47,6 +47,38 @@ python -m evals.scoring --soft-signal
 
 See [docs/runbooks/ci_gating_policy.md](../docs/runbooks/ci_gating_policy.md) (PS4.7).
 
+## Semantic eval suite (PS4.4, no LLM)
+
+Deterministic **fixture-based** scoring for citation precision and audit semantics. Does **not** call the LLM — safe on every PR/fork.
+
+```bash
+python -m evals.semantic
+# or
+make semantic-check
+```
+
+Cases: `evals/semantic_cases.yaml` · Fixtures: `evals/fixtures/semantic/*.json`
+
+Covers:
+
+- Citation present / missing refs / wrong ref (`require_citation_precision`)
+- `no_evidence`, `tool_failure`, `policy_deny` escalation reasons
+- **empty vs failure:** `semantic-tool-empty-not-failure` (empty telemetry ≠ `tool_failure`)
+
+CI job **`semantic-evals`** writes artifact `eval-semantic-summary.json` (per-case pass/fail).
+
+Optional fields in semantic cases (also supported in `score_case` for live runs):
+
+| Field | Description |
+|-------|-------------|
+| `expected_escalation_reason` | Exact `escalation_packet.reason` required |
+| `forbid_escalation_reason` | Run must not escalate with this reason |
+| `expected_tool_outcomes` | Map of tool → `success` / `empty` / `failure` |
+| `expect_scoring_pass` | If false, rubric must fail (negative fixtures) |
+| `triage_gate` | Runbook routing hint (`citation_precision`, `audit_semantics`) |
+
+Future LLM-as-judge hooks: [docs/evals_llm_judge_hooks.md](../docs/evals_llm_judge_hooks.md) (non-blocking).
+
 ## Case format
 
 Cases live in `evals/cases.yaml`. Each case has:

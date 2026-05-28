@@ -6,7 +6,7 @@
 | PS5.2 | OpenAI backend adapter parity tests | Done | [PS5.2](PS5.2-openai-backend-adapter-parity-tests.md) |
 | PS5.3 | Optional GPU backend adapter (NIM) | Done | [PS5.3](PS5.3-optional-gpu-backend-adapter.md) |
 | PS5.4 | Backend healthcheck + circuit breaker | Done | [PS5.4](PS5.4-backend-healthcheck-circuit-breaker.md) |
-| PS5.5 | Backend feature flags and rollout policy | Todo | [PS5.5](PS5.5-backend-feature-flags-rollout-policy.md) |
+| PS5.5 | Backend feature flags and rollout policy | Done | [PS5.5](PS5.5-backend-feature-flags-rollout-policy.md) |
 | PS5.6 | Cost telemetry and guardrails | Todo | [PS5.6](PS5.6-cost-telemetry-guardrails.md) |
 | PS5.7 | Idle TTL and scale-to-zero workflow | Todo | [PS5.7](PS5.7-idle-ttl-scale-to-zero.md) |
 | PS5.8 | Parity eval suite and tolerance definition | Todo | [PS5.8](PS5.8-parity-eval-suite-tolerance.md) |

@@ -72,6 +72,13 @@ Final job **`gate-summary`** aggregates results, writes `ci-gate-summary.md` art
 
 CI log format for eval hard gates: `FAIL  <case_id>  <reason>`.
 
+**GPU backend promotion (PS5.5 / PS5.8):** backend parity is a promotion/nightly
+signal, not a default PR merge gate. GPU promotion is blocked when any required
+GPU arm has `valid_for_parity=false`, including `invalid_fallback`,
+`invalid_mixed_backends`, or `invalid_gpu_unavailable`; an invalid OpenAI
+baseline (`invalid_backend_mismatch`) or a missing required arm also blocks
+promotion.
+
 ---
 
 ## Emergency release override
@@ -113,6 +120,7 @@ python -m evals.semantic
 ## Related docs
 
 - **[guardrails_quality_triage.md](guardrails_quality_triage.md)** — PS4.8 operator triage (decision tree, symptom → action)  
+- **[llm_backend_rollout.md](llm_backend_rollout.md)** — PS5.5 backend rollout/rollback and canary policy  
 - [evals/README.md](../../evals/README.md) — PS1.8 deterministic gates  
 - [docs/golden_run_baselines.md](../golden_run_baselines.md) — golden-check  
 - [docs/prompt_injection_threat_model.md](../prompt_injection_threat_model.md) — injection hard gate

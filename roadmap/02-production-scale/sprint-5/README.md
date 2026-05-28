@@ -64,7 +64,7 @@ See **[BOARD.md](BOARD.md)** for status.
 
 ## Definition of done (sprint)
 
-- [ ] `LLM_BACKEND=openai|cursor_sh|gpu` works through one gateway contract (PS5.1/PS5.5).
+- [x] `LLM_BACKEND=openai|cursor_sh|gpu` works through one gateway contract (PS5.1/PS5.5).
 - [x] **`LLM_BACKEND=gpu` proven with NIM:** manual smoke checklist in PS5.3 completed (health + `generate()`, `backend_actual=gpu`).
 - [x] GPU outage falls back to `openai` with `fallback_used=true`; incident flow continues (PS5.4).
 - [ ] Cost guardrails documented with explicit **`LLM_BUDGET_MODE`** semantics (PS5.6).

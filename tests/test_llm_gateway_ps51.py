@@ -95,6 +95,8 @@ def test_llm_backend_gpu_ignores_provider(monkeypatch):
     monkeypatch.setattr("config.settings.gpu_llm_base_url", "http://nim.local:8005")
     monkeypatch.setattr("config.settings.gpu_llm_model_id", "meta/llama")
     monkeypatch.setattr("config.settings.gpu_llm_api_key", "")
+    monkeypatch.setattr("apps.llm_gateway.can_use_gpu_backend", lambda: (True, ""))
+    monkeypatch.setattr("apps.llm_gateway.mark_gpu_backend_success", lambda: None)
     out = generate(prompt="hi", node="triage", model_id="ignored")
     assert out["backend_requested"] == "gpu"
     assert out["backend_actual"] == "gpu"

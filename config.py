@@ -66,6 +66,21 @@ class Settings(BaseSettings):
             "defaults to repo var/ on the host and /app/var in the API image."
         ),
     )
+    llm_gpu_healthcheck_timeout_seconds: float = Field(
+        default=3.0,
+        description="PS5.4: timeout for NIM readiness probe before GPU calls.",
+    )
+    llm_gpu_circuit_breaker_failures: int = Field(
+        default=3,
+        description="PS5.4: consecutive GPU backend failures before opening circuit.",
+    )
+    llm_gpu_circuit_breaker_reset_seconds: float = Field(
+        default=60.0,
+        description=(
+            "PS5.4: seconds before GPU circuit transitions open->half_open and "
+            "probes health again."
+        ),
+    )
     nim_image: str = Field(
         default="nvcr.io/nim/microsoft/phi-4-mini-instruct:1.12.0",
         description="Pinned NIM container image for compose profile gpu (PS5.3).",

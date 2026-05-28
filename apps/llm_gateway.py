@@ -10,6 +10,14 @@ import logging
 import time
 from typing import Any
 
+from prometheus_client import Counter
+
+from config import settings
+from apps.llm_backends.resilience import (
+    can_use_gpu_backend,
+    mark_gpu_backend_failure,
+    mark_gpu_backend_success,
+)
 from apps.llm_backends.registry import get_backend_generator, resolve_llm_backend
 from apps.llm_gateway_errors import (
     LLMBudgetExceededError,
@@ -19,6 +27,12 @@ from apps.llm_gateway_errors import (
 from apps.model_selection import get_current_model_id
 
 _logger = logging.getLogger(__name__)
+
+LLM_BACKEND_FALLBACK_TOTAL = Counter(
+    "llm_backend_fallback_total",
+    "LLM backend fallbacks by backend pair and reason (PS5.4).",
+    ["from_backend", "to_backend", "reason"],
+)
 
 __all__ = [
     "LLMBudgetExceededError",
@@ -46,14 +60,60 @@ def generate(
     resolved_model = (model_id or "").strip() or get_current_model_id()
     started = time.perf_counter()
     backend_requested = "unresolved"
+    fallback_used = False
+    fallback_reason = ""
     try:
         backend_requested = resolve_llm_backend()
-        backend_fn = get_backend_generator(backend_requested)
-        raw = backend_fn(
-            prompt=prompt,
-            model_id=resolved_model,
-            temperature=temperature,
-        )
+        raw: dict[str, Any]
+        if backend_requested != "gpu":
+            backend_fn = get_backend_generator(backend_requested)
+            raw = backend_fn(
+                prompt=prompt,
+                model_id=resolved_model,
+                temperature=temperature,
+            )
+        else:
+            can_use, preflight_reason = can_use_gpu_backend()
+            if not can_use:
+                fallback_used = True
+                fallback_reason = preflight_reason
+                raw = _fallback_to_openai_or_raise(
+                    prompt=prompt,
+                    model_id=resolved_model,
+                    temperature=temperature,
+                    fallback_reason=preflight_reason,
+                )
+            else:
+                backend_fn = get_backend_generator("gpu")
+                try:
+                    raw = backend_fn(
+                        prompt=prompt,
+                        model_id=resolved_model,
+                        temperature=temperature,
+                    )
+                    mark_gpu_backend_success()
+                except LLMBudgetExceededError:
+                    raise
+                except LLMGatewayTimeoutError:
+                    mark_gpu_backend_failure()
+                    fallback_used = True
+                    fallback_reason = "gpu_timeout"
+                    raw = _fallback_to_openai_or_raise(
+                        prompt=prompt,
+                        model_id=resolved_model,
+                        temperature=temperature,
+                        fallback_reason=fallback_reason,
+                    )
+                except LLMGatewayProviderError:
+                    mark_gpu_backend_failure()
+                    fallback_used = True
+                    fallback_reason = "gpu_error"
+                    raw = _fallback_to_openai_or_raise(
+                        prompt=prompt,
+                        model_id=resolved_model,
+                        temperature=temperature,
+                        fallback_reason=fallback_reason,
+                    )
     except Exception as exc:
         latency_ms = int((time.perf_counter() - started) * 1000)
         _logger.warning(
@@ -82,7 +142,8 @@ def generate(
     estimated_cost = float(raw.get("estimated_cost_usd") or 0)
     _logger.info(
         "llm_gateway_call node=%s provider=%s backend_requested=%s backend_actual=%s "
-        "outcome=success model_id=%s latency_ms=%d total_tokens=%d estimated_cost_usd=%.6f",
+        "outcome=success model_id=%s latency_ms=%d total_tokens=%d "
+        "fallback_used=%s fallback_reason=%s estimated_cost_usd=%.6f",
         node,
         backend_actual,
         backend_requested,
@@ -90,6 +151,8 @@ def generate(
         out_model,
         latency_ms,
         int(usage.get("total_tokens") or 0),
+        fallback_used,
+        fallback_reason,
         estimated_cost,
     )
     return {
@@ -100,7 +163,30 @@ def generate(
         "usage": usage,
         "backend_requested": backend_requested,
         "backend_actual": backend_actual,
-        "fallback_used": False,
-        "fallback_reason": "",
+        "fallback_used": fallback_used,
+        "fallback_reason": fallback_reason,
         "estimated_cost_usd": estimated_cost,
     }
+
+
+def _fallback_to_openai_or_raise(
+    *,
+    prompt: str,
+    model_id: str,
+    temperature: float,
+    fallback_reason: str,
+) -> dict[str, Any]:
+    openai_api_key = (getattr(settings, "openai_api_key", "") or "").strip()
+    if not openai_api_key:
+        raise LLMGatewayProviderError(
+            "GPU backend unavailable and OPENAI_API_KEY missing; cannot fallback to openai."
+        )
+    LLM_BACKEND_FALLBACK_TOTAL.labels(
+        from_backend="gpu", to_backend="openai", reason=fallback_reason
+    ).inc()
+    openai_fn = get_backend_generator("openai")
+    return openai_fn(
+        prompt=prompt,
+        model_id=model_id,
+        temperature=temperature,
+    )

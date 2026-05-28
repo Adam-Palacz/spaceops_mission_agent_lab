@@ -3,7 +3,7 @@
 | Field | Value |
 |-------|-------|
 | **Task ID** | PS5.4 |
-| **Status** | Todo |
+| **Status** | Done |
 
 ---
 
@@ -36,12 +36,12 @@ Only **health / circuit / transport failures** on the requested GPU backend trig
 
 ## Requirements
 
-- [ ] On-demand health check for NIM before first `LLM_BACKEND=gpu` call in a process (and after circuit half-open).
-- [ ] Circuit breaker keyed `llm_gpu` with configurable failure threshold and reset window (reuse `http_resilience` patterns).
-- [ ] When circuit open or health fails: fallback to **openai** adapter only if `OPENAI_API_KEY` present; else `LLMGatewayProviderError` → escalation.
-- [ ] Every `generate()` returns PS5.1 fields: `backend_requested`, `backend_actual`, `fallback_used`, `fallback_reason`.
-- [ ] Structured logs mirror response metadata (no silent backend swap).
-- [ ] Metric: `llm_backend_fallback_total{from,to,reason}` (low cardinality).
+- [x] On-demand health check for NIM before first `LLM_BACKEND=gpu` call in a process (and after circuit half-open).
+- [x] Circuit breaker keyed `llm_gpu` with configurable failure threshold and reset window (reuse `http_resilience` patterns).
+- [x] When circuit open or health fails: fallback to **openai** adapter only if `OPENAI_API_KEY` present; else `LLMGatewayProviderError` → escalation.
+- [x] Every `generate()` returns PS5.1 fields: `backend_requested`, `backend_actual`, `fallback_used`, `fallback_reason`.
+- [x] Structured logs mirror response metadata (no silent backend swap).
+- [x] Metric: `llm_backend_fallback_total{from,to,reason}` (low cardinality).
 
 ---
 
@@ -55,22 +55,22 @@ Only **health / circuit / transport failures** on the requested GPU backend trig
 
 ## Checklist
 
-- [ ] Implement `healthcheck_gpu()` against NIM ready endpoint.
-- [ ] Wire breaker around GPU adapter; set metadata on fallback path.
-- [ ] Document fallback order: `gpu` → `openai` → escalate if both unavailable.
-- [ ] Runbook: operators distinguish “GPU down + fallback OK” vs “GPU serving”.
+- [x] Implement `healthcheck_gpu()` against NIM ready endpoint.
+- [x] Wire breaker around GPU adapter; set metadata on fallback path.
+- [x] Document fallback order: `gpu` → `openai` → escalate if both unavailable.
+- [x] Runbook: operators distinguish “GPU down + fallback OK” vs “GPU serving”.
 
 ---
 
 ## Test / acceptance
 
-- [ ] Unit: simulated NIM 503 → breaker opens → next call has `fallback_used=true`, `backend_actual=openai`.
-- [ ] Unit: response metadata on success path has `fallback_used=false`, `backend_actual=gpu`.
-- [ ] Unit: breaker half-open recovery after reset interval.
+- [x] Unit: simulated NIM 503 → breaker opens → next call has `fallback_used=true`, `backend_actual=openai`.
+- [x] Unit: response metadata on success path has `fallback_used=false`, `backend_actual=gpu`.
+- [x] Unit: breaker half-open recovery after reset interval.
 - [ ] Chaos test (optional): GPU timeout does not exceed `agent_llm_call_timeout_seconds`.
-- [ ] Unit: budget exceeded with `LLM_BACKEND=gpu` → `LLMBudgetExceededError`, **no** fallback,
+- [x] Unit: budget exceeded with `LLM_BACKEND=gpu` → `LLMBudgetExceededError`, **no** fallback,
       `llm_backend_fallback_total` not incremented for budget reason.
-- [ ] Unit: budget exceeded with `LLM_BACKEND=openai` → same; no cross-backend retry.
+- [x] Unit: budget exceeded with `LLM_BACKEND=openai` → same; no cross-backend retry.
 
 ---
 

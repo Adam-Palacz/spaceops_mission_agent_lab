@@ -66,7 +66,7 @@ See **[BOARD.md](BOARD.md)** for status.
 
 - [ ] `LLM_BACKEND=openai|cursor_sh|gpu` works through one gateway contract (PS5.1/PS5.5).
 - [x] **`LLM_BACKEND=gpu` proven with NIM:** manual smoke checklist in PS5.3 completed (health + `generate()`, `backend_actual=gpu`).
-- [ ] GPU outage falls back to `openai` with `fallback_used=true`; incident flow continues (PS5.4).
+- [x] GPU outage falls back to `openai` with `fallback_used=true`; incident flow continues (PS5.4).
 - [ ] Cost guardrails documented with explicit **`LLM_BUDGET_MODE`** semantics (PS5.6).
 - [ ] Idle shutdown uses mandatory `last_gpu_call_at`; host scripts with bash + PowerShell dry-run (PS5.7).
 - [ ] Parity report promotes GPU only for complete case pairs where both `openai` and `gpu` arms

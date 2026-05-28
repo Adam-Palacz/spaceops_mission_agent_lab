@@ -18,6 +18,7 @@ from apps.llm_backends.resilience import (
     mark_gpu_backend_failure,
     mark_gpu_backend_success,
 )
+from apps.llm_cost import enforce_budget_before_generate, record_llm_usage
 from apps.llm_backends.registry import get_backend_generator, resolve_llm_backend
 from apps.llm_gateway_errors import (
     LLMBudgetExceededError,
@@ -63,6 +64,7 @@ def generate(
     fallback_used = False
     fallback_reason = ""
     try:
+        enforce_budget_before_generate(node=node)
         backend_requested = resolve_llm_backend()
         raw: dict[str, Any]
         if backend_requested != "gpu":
@@ -140,6 +142,13 @@ def generate(
         )
 
     estimated_cost = float(raw.get("estimated_cost_usd") or 0)
+    record_llm_usage(
+        node=node,
+        backend_actual=backend_actual,
+        model_id=out_model,
+        total_tokens=int(usage.get("total_tokens") or 0),
+        estimated_cost_usd=estimated_cost,
+    )
     _logger.info(
         "llm_gateway_call node=%s provider=%s backend_requested=%s backend_actual=%s "
         "outcome=success model_id=%s latency_ms=%d total_tokens=%d "

@@ -3,7 +3,7 @@
 | Field | Value |
 |-------|-------|
 | **Task ID** | PS5.6 |
-| **Status** | Todo |
+| **Status** | Done |
 
 ---
 
@@ -43,11 +43,11 @@ This prevents budget guardrails from being bypassed via fallback.
 
 ## Requirements
 
-- [ ] Emit `llm_tokens_total{backend_actual,model_id,node}` (or equivalent; avoid per-incident labels).
-- [ ] Optional `llm_estimated_cost_usd` when rate card configured (estimates ≠ cloud invoice).
-- [ ] **`process` mode:** soft warning at threshold; hard refuse further `generate()` in **this process** with **`LLMBudgetExceededError` only**.
-- [ ] **`postgres` mode (if implemented):** same thresholds but ledger keyed by UTC date + optional scope; tests: restart does not reset count; two processes share ledger.
-- [ ] Document which mode is enabled in compose/README defaults.
+- [x] Emit `llm_tokens_total{backend_actual,model_id,node}` (or equivalent; avoid per-incident labels).
+- [x] Optional `llm_estimated_cost_usd` when rate card configured (estimates ≠ cloud invoice).
+- [x] **`process` mode:** soft warning at threshold; hard refuse further `generate()` in **this process** with **`LLMBudgetExceededError` only**.
+- [x] **`postgres` mode (if implemented):** deferred to PS6; selecting postgres raises explicit unsupported-mode error (no fake shared-cap semantics).
+- [x] Document which mode is enabled in compose/README defaults.
 
 ---
 
@@ -60,20 +60,20 @@ This prevents budget guardrails from being bypassed via fallback.
 
 ## Checklist
 
-- [ ] Rate table in config with safe defaults (empty = no cost estimate).
-- [ ] `docs/llm_cost_guardrails.md` — mode table above copied verbatim.
-- [ ] Runbook: respond to alert (gpu-down, lower `AGENT_MAX_LLM_CALLS`, switch `LLM_BUDGET_MODE`).
+- [x] Rate table in config with safe defaults (empty = no cost estimate).
+- [x] `docs/llm_cost_guardrails.md` — mode table above copied verbatim.
+- [x] Runbook: respond to alert (gpu-down, lower `AGENT_MAX_LLM_CALLS`, switch `LLM_BUDGET_MODE`).
 
 ---
 
 ## Test / acceptance
 
-- [ ] Unit (`process`): token counter increments; hard cap blocks next call in same process.
-- [ ] Unit (`process`): new process resets counter (documents non-persistence).
-- [ ] Integration (`postgres`, if built): insert usage → restart app → cap still enforced.
-- [ ] No high-cardinality Prometheus labels.
-- [ ] Unit: `LLM_BACKEND=gpu`, budget exceeded → `LLMBudgetExceededError`; assert fallback adapter **not** invoked.
-- [ ] Unit: `LLM_BACKEND=openai`, budget exceeded → same; no GPU path attempted.
+- [x] Unit (`process`): token counter increments; hard cap blocks next call in same process.
+- [x] Unit (`process`): new process resets counter (documents non-persistence).
+- [x] Integration (`postgres`, if built): deferred to PS6 (ledger migration not shipped in PS5.6 baseline).
+- [x] No high-cardinality Prometheus labels.
+- [x] Unit: `LLM_BACKEND=gpu`, budget exceeded → `LLMBudgetExceededError`; assert fallback adapter **not** invoked.
+- [x] Unit: `LLM_BACKEND=openai`, budget exceeded → same; no GPU path attempted.
 
 ---
 

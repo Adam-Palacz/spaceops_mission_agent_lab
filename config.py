@@ -92,6 +92,24 @@ class Settings(BaseSettings):
             "0 disables estimated_cost_usd."
         ),
     )
+    llm_budget_mode: str = Field(
+        default="process",
+        description=(
+            "PS5.6 budget mode: process|postgres. process is per-process and resets on restart; "
+            "postgres is deferred to PS6."
+        ),
+    )
+    llm_daily_token_budget: int = Field(
+        default=0,
+        description=(
+            "PS5.6 token budget cap. 0 disables budget enforcement. In process mode this is "
+            "a per-process session guard, not an org-wide daily financial cap."
+        ),
+    )
+    llm_budget_soft_warning_ratio: float = Field(
+        default=0.8,
+        description="PS5.6 process-mode soft warning threshold ratio before hard deny.",
+    )
     openai_base_url: str = Field(
         default="https://api.openai.com",
         description="OpenAI API base URL (root or full chat completions URL).",

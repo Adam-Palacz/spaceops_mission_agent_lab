@@ -14,7 +14,7 @@ POSTGRES_PASSWORD ?= spaceops
 .DEFAULT_GOAL := help
 
 .PHONY: help install install-dev lint format typecheck check safety-gates semantic-check test migrate-smoke \
-	golden-check golden-run golden-update compose-config docker-build
+	golden-check golden-run golden-update compose-config docker-build gpu-up gpu-down gpu-smoke
 
 help: ## Show this help (default goal)
 	@echo SpaceOps Makefile - targets mirror CI where practical.
@@ -78,3 +78,15 @@ compose-config: ## Validate docker compose file interpolation (like CI docker-bu
 docker-build: ## Build api, ui, MCP images (compose profile; like CI)
 	$(PYTHON) -c "from pathlib import Path; import sys; ok=Path('.env').exists(); (not ok) and print('Missing .env - copy .env.example to .env'); sys.exit(0 if ok else 1)"
 	$(COMPOSE) --profile ui build api ui telemetry-mcp kb-mcp ticket-mcp gitops-mcp
+
+gpu-up: ## PS5.3 Start NIM (profile gpu), wait for health, optional API with gpu profile
+	@$(PYTHON) -c "from pathlib import Path; Path('var').mkdir(parents=True, exist_ok=True)"
+	$(COMPOSE) --profile gpu up -d nim-llm
+	$(PYTHON) scripts/llm_gpu_smoke.py --wait-health --timeout 600
+	@echo "NIM is up on http://localhost:8005 — set LLM_BACKEND=gpu in .env for host runs."
+
+gpu-down: ## PS5.3 Stop NIM container
+	$(COMPOSE) --profile gpu stop nim-llm
+
+gpu-smoke: ## PS5.3 Health + generate on host (requires LLM_BACKEND=gpu in .env)
+	$(PYTHON) scripts/llm_gpu_smoke.py --health-only --generate

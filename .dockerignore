@@ -14,6 +14,7 @@
 **/node_modules
 apps/ui/.next
 data
+var/nim-cache
 tests
 docs
 roadmap

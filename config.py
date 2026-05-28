@@ -59,6 +59,17 @@ class Settings(BaseSettings):
         default_factory=lambda: get_secret("GPU_LLM_API_KEY", ""),
         description="Optional bearer token for GPU/NIM endpoint.",
     )
+    gpu_activity_file: str = Field(
+        default=str(_REPO_ROOT / "var" / "llm_last_gpu_call_at"),
+        description=(
+            "Timestamp file updated on each successful GPU backend call (PS5.7); "
+            "defaults to repo var/ on the host and /app/var in the API image."
+        ),
+    )
+    nim_image: str = Field(
+        default="nvcr.io/nim/microsoft/phi-4-mini-instruct:1.12.0",
+        description="Pinned NIM container image for compose profile gpu (PS5.3).",
+    )
     llm_openai_cost_per_1k_tokens: float = Field(
         default=0.0,
         description=(

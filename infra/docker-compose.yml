@@ -34,9 +34,14 @@ services:
       OPA_URL: http://opa:8181/v1/data/agent/allow
       # PS3.2 — JetStream ingest when set (e.g. nats://nats:4222). Empty = NDJSON files only.
       NATS_URL: ${NATS_URL:-}
+      # PS5.3 - keep the in-container NIM route independent of host smoke configuration.
+      GPU_LLM_BASE_URL: ${GPU_LLM_CONTAINER_BASE_URL:-http://nim-llm:8000}
+      GPU_ACTIVITY_FILE: ${GPU_ACTIVITY_FILE:-/app/var/llm_last_gpu_call_at}
     volumes:
       - ./data:/app/data
       - ./ops-config:/app/ops-config
+      # PS5.3/PS5.7: host-visible GPU activity for idle TTL scripts (./var on repo root).
+      - ./var:/app/var
     depends_on:
       postgres:
         condition: service_healthy
@@ -54,6 +59,47 @@ services:
         condition: service_started
     profiles:
       - ui
+      - gpu
+
+  # PS5.3 — NVIDIA NIM (optional; requires NVIDIA GPU + NGC_API_KEY). Not started without --profile gpu.
+  nim-llm:
+    image: ${NIM_IMAGE:-nvcr.io/nim/microsoft/phi-4-mini-instruct:1.12.0}
+    container_name: spaceops-nim-llm
+    profiles:
+      - gpu
+    ports:
+      - "8005:8000"
+    environment:
+      NGC_API_KEY: ${NGC_API_KEY:-}
+      # Local GPU smoke uses NVIDIA's constrained-memory mode with a minimal KV cache.
+      NIM_RELAX_MEM_CONSTRAINTS: ${NIM_RELAX_MEM_CONSTRAINTS:-1}
+      NIM_NUM_KV_CACHE_SEQ_LENS: ${NIM_NUM_KV_CACHE_SEQ_LENS:-1}
+      # The small Hugging Face model is served through a compatible generic NIM profile.
+      NIM_MODEL_PROFILE: ${NIM_MODEL_PROFILE:-default}
+      NIM_MODEL_NAME: ${NIM_MODEL_NAME:-hf://Qwen/Qwen2.5-0.5B-Instruct}
+      NIM_SERVED_MODEL_NAME: ${NIM_SERVED_MODEL_NAME:-qwen/qwen2.5-0.5b-instruct}
+      HF_TOKEN: ${HF_TOKEN:-}
+    volumes:
+      - ./var/nim-cache:/opt/nim/.cache
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/v1/health/ready').read()",
+        ]
+      interval: 15s
+      timeout: 10s
+      retries: 40
+      start_period: 180s
 
   nats:
     image: nats:2.10-alpine

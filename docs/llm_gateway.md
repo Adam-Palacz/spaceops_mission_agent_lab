@@ -91,6 +91,10 @@ served that call. Run correlation uses existing `llm_observability` / OTel at th
 
 - `LLM_CHAT_COMPLETIONS_PATH` appended when base URL is not already a full `/chat/completions` endpoint.
 
+## GPU / NIM (PS5.3)
+
+See **[llm_gpu_backend.md](llm_gpu_backend.md)** for Compose profile `gpu`, `make gpu-up`, and smoke checklist.
+
 ## Extension
 
 - Add backends in `apps/llm_backends/` and register in `registry.py`.

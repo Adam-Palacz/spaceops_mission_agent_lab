@@ -17,6 +17,11 @@ data/replay/runs/
 data/replay/golden/reports/
 data/audit.ndjson
 
+# PS5.7 GPU activity timestamp (host ./var bind mount)
+var/llm_last_gpu_call_at
+# PS5.3 NIM downloaded model/build cache
+var/nim-cache/
+
 apps/ui/node_modules/
 apps/ui/.next/
 apps/ui/.env.local

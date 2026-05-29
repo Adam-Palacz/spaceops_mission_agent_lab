@@ -115,6 +115,32 @@ operator note: GNU Make was not installed on the Windows host; documented equiva
 Default PR CI does **not** start NIM (no GPU on runners). Optional workflow:
 `.github/workflows/gpu-smoke.yml` (`workflow_dispatch` only).
 
+For PS5.7 containerized API activity acceptance:
+
+```bash
+make gpu-idle-integration
+```
+
+This starts `nim-llm` and `api` under the `gpu` profile, posts one `/runs` request, verifies that
+host file `./var/llm_last_gpu_call_at` is fresh, and confirms `gpu_idle_shutdown.py --dry-run`
+reports `would_stop=false`.
+
+## Idle TTL (PS5.7)
+
+Use host-side scripts to decide whether NIM should be stopped after inactivity:
+
+```bash
+scripts/gpu_idle_shutdown.sh --dry-run
+```
+
+```powershell
+.\scripts\gpu_idle_shutdown.ps1 -DryRun
+```
+
+Both read host file `./var/llm_last_gpu_call_at` (container path `/app/var/llm_last_gpu_call_at`
+through `./var:/app/var` bind mount). Dry-run prints last activity, TTL, and `would_stop` decision
+without stopping containers.
+
 ## Related
 
 - Gateway contract: [llm_gateway.md](llm_gateway.md)

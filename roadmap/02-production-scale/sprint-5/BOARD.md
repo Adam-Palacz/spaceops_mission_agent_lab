@@ -8,7 +8,7 @@
 | PS5.4 | Backend healthcheck + circuit breaker | Done | [PS5.4](PS5.4-backend-healthcheck-circuit-breaker.md) |
 | PS5.5 | Backend feature flags and rollout policy | Done | [PS5.5](PS5.5-backend-feature-flags-rollout-policy.md) |
 | PS5.6 | Cost telemetry and guardrails | Done | [PS5.6](PS5.6-cost-telemetry-guardrails.md) |
-| PS5.7 | Idle TTL and scale-to-zero workflow | Todo | [PS5.7](PS5.7-idle-ttl-scale-to-zero.md) |
+| PS5.7 | Idle TTL and scale-to-zero workflow | Done | [PS5.7](PS5.7-idle-ttl-scale-to-zero.md) |
 | PS5.8 | Parity eval suite and tolerance definition | Todo | [PS5.8](PS5.8-parity-eval-suite-tolerance.md) |
 
 **Status key:** Todo | In progress | Done | Blocked

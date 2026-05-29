@@ -14,7 +14,8 @@ POSTGRES_PASSWORD ?= spaceops
 .DEFAULT_GOAL := help
 
 .PHONY: help install install-dev lint format typecheck check safety-gates semantic-check test migrate-smoke \
-	golden-check golden-run golden-update compose-config docker-build gpu-up gpu-down gpu-smoke
+	golden-check golden-run golden-update compose-config docker-build gpu-up gpu-down gpu-smoke gpu-idle-check \
+	gpu-idle-integration
 
 help: ## Show this help (default goal)
 	@echo SpaceOps Makefile - targets mirror CI where practical.
@@ -90,3 +91,12 @@ gpu-down: ## PS5.3 Stop NIM container
 
 gpu-smoke: ## PS5.3 Health + generate on host (requires LLM_BACKEND=gpu in .env)
 	$(PYTHON) scripts/llm_gpu_smoke.py --health-only --generate
+
+gpu-idle-check: ## PS5.7 Dry-run idle TTL decision (no container stop)
+	$(PYTHON) scripts/gpu_idle_shutdown.py --dry-run
+
+gpu-idle-integration: ## PS5.7 Real compose/API GPU activity acceptance (requires GPU/NIM)
+	$(PYTHON) -c "from pathlib import Path; import sys; ok=Path('.env').exists(); (not ok) and print('Missing .env - copy .env.example to .env and set LLM_BACKEND=gpu / NGC_API_KEY.'); sys.exit(0 if ok else 1)"
+	@$(PYTHON) -c "from pathlib import Path; Path('var').mkdir(parents=True, exist_ok=True)"
+	$(COMPOSE) --profile gpu up -d nim-llm api
+	$(PYTHON) scripts/gpu_activity_integration.py

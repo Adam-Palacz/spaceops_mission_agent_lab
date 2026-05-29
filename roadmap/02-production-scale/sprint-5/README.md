@@ -68,7 +68,7 @@ See **[BOARD.md](BOARD.md)** for status.
 - [x] **`LLM_BACKEND=gpu` proven with NIM:** manual smoke checklist in PS5.3 completed (health + `generate()`, `backend_actual=gpu`).
 - [x] GPU outage falls back to `openai` with `fallback_used=true`; incident flow continues (PS5.4).
 - [x] Cost guardrails documented with explicit **`LLM_BUDGET_MODE`** semantics (PS5.6).
-- [ ] Idle shutdown uses mandatory `last_gpu_call_at`; host scripts with bash + PowerShell dry-run (PS5.7).
+- [x] Idle shutdown uses mandatory `last_gpu_call_at`; host scripts with bash + PowerShell dry-run (PS5.7).
 - [ ] Parity report promotes GPU only for complete case pairs where both `openai` and `gpu` arms
       have `valid_for_parity=true` (PS5.8).
 - [ ] **PS5.8** documents optional tracing SaaS as nightly/trend only (not merge gate).

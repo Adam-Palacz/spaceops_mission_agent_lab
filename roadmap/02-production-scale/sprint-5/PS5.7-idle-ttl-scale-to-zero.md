@@ -3,7 +3,7 @@
 | Field | Value |
 |-------|-------|
 | **Task ID** | PS5.7 |
-| **Status** | Todo |
+| **Status** | Done |
 
 ---
 
@@ -47,12 +47,12 @@ after a request through the **containerized** API.
 
 ## Requirements
 
-- [ ] Default: no `gpu` profile on plain `docker compose up`.
-- [ ] `GPU_IDLE_TTL_MINUTES` (default 45): host script stops NIM service after idle period.
-- [ ] `make gpu-up` / `make gpu-down` idempotent (bash + PowerShell documented).
-- [ ] Scripts: `scripts/gpu_idle_shutdown.sh` and `scripts/gpu_idle_shutdown.ps1` with **`--dry-run`**.
-- [ ] Dry-run prints: last activity timestamp, TTL, would-stop yes/no — **no** container stop.
-- [ ] After real stop, next `LLM_BACKEND=gpu` call → PS5.4 fallback or explicit error (documented).
+- [x] Default: no `gpu` profile on plain `docker compose up`.
+- [x] `GPU_IDLE_TTL_MINUTES` (default 45): host script stops NIM service after idle period.
+- [x] `make gpu-up` / `make gpu-down` idempotent (bash + PowerShell documented).
+- [x] Scripts: `scripts/gpu_idle_shutdown.sh` and `scripts/gpu_idle_shutdown.ps1` with **`--dry-run`**.
+- [x] Dry-run prints: last activity timestamp, TTL, would-stop yes/no — **no** container stop.
+- [x] After real stop, next `LLM_BACKEND=gpu` call → PS5.4 fallback or explicit error (documented).
 
 ---
 
@@ -65,22 +65,22 @@ after a request through the **containerized** API.
 
 ## Checklist
 
-- [ ] Gateway writes `last_gpu_call_at` on `backend_actual=gpu`.
-- [ ] `.gitignore` includes `var/llm_last_gpu_call_at` (or chosen path).
-- [ ] Runbook: demo day vs overnight — `make gpu-down` or idle script.
-- [ ] CI does not start GPU (comment in `ci.yml`).
+- [x] Gateway writes `last_gpu_call_at` on `backend_actual=gpu`.
+- [x] `.gitignore` includes `var/llm_last_gpu_call_at` (or chosen path).
+- [x] Runbook: demo day vs overnight — `make gpu-down` or idle script.
+- [x] CI does not start GPU (comment in `ci.yml`).
 
 ---
 
 ## Test / acceptance
 
-- [ ] Automated: dry-run bash script exits 0 with fixture timestamp (no docker required).
-- [ ] Automated: dry-run PowerShell script same scenario.
-- [ ] **Integration (required):** with `api` up under `gpu` profile and `./var:/app/var` mounted —
+- [x] Automated: dry-run bash script exits 0 with fixture timestamp (no docker required).
+- [x] Automated: dry-run PowerShell script same scenario.
+- [x] **Integration (required):** with `api` up under `gpu` profile and `./var:/app/var` mounted —
       one LLM call via containerized API (e.g. `POST /runs` or `scripts/llm_gpu_smoke` against API) →
       host reads `./var/llm_last_gpu_call_at` with fresh timestamp → `gpu_idle_shutdown.* --dry-run`
-      reports would-not-stop.
-- [ ] Manual: stale timestamp → dry-run → would-stop; then real run stops NIM (record in PR).
+      reports would-not-stop. Operator command: `make gpu-idle-integration`.
+- [x] Manual: stale timestamp → dry-run → would-stop; then real run stops NIM (record in PR).
 
 ---
 

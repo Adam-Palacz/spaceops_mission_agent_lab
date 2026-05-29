@@ -1,4 +1,5 @@
 # S1.13 / PS4.7 — CI: lint, safety gates, pytest, golden, evals (hard + soft), gate summary.
+# PS5.7: default CI is GPU-free; NIM/GPU smoke runs only via workflow_dispatch gpu-smoke workflow.
 name: CI
 
 on:

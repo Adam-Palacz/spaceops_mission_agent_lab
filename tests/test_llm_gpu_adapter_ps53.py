@@ -106,6 +106,8 @@ def test_gateway_gpu_backend_metadata(monkeypatch, tmp_path):
     monkeypatch.setattr("config.settings.gpu_llm_base_url", "http://nim:8000")
     monkeypatch.setattr("config.settings.gpu_llm_model_id", "meta/llama")
     monkeypatch.setattr("config.settings.gpu_activity_file", str(tmp_path / "act"))
+    monkeypatch.setattr("apps.llm_gateway.can_use_gpu_backend", lambda: (True, ""))
+    monkeypatch.setattr("apps.llm_gateway.mark_gpu_backend_success", lambda: None)
     out = generate(prompt="p", node="triage", model_id="ignored")
     assert out["backend_requested"] == "gpu"
     assert out["backend_actual"] == "gpu"

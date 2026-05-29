@@ -26,4 +26,5 @@ jobs:
           echo "Configure NGC_API_KEY, NVIDIA runtime, then run:"
           echo "  make gpu-up"
           echo "  python scripts/llm_gpu_smoke.py --wait-health --generate"
+          echo "  make gpu-idle-integration"
           echo "See docs/llm_gpu_backend.md"

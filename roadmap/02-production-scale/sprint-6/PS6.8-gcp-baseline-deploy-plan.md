@@ -15,7 +15,7 @@ Artifact Registry design, optional small GKE cluster. Not a full production land
 **Done levels (see sprint README DoD):**
 
 - **Minimum (no live GCP):** ADR + `infra/terraform/gcp/` skeleton; `terraform validate`; README for vars/state; portability narrative.
-- **Stretch:** reproducible deploy to stage GKE using PS6.3 Helm + values overlays.
+- **Stretch:** reproducible deploy to stage GKE using PS6.2 Helm + values overlays.
 
 ---
 
@@ -23,7 +23,7 @@ Artifact Registry design, optional small GKE cluster. Not a full production land
 
 - [ ] Terraform (or documented equivalent) for: project vars, GKE cluster (small), Artifact Registry,
       service accounts for deploy.
-- [ ] **(Stretch)** Deploy PS6.3 chart to GKE using same values overlays as local (portability proof).
+- [ ] **(Stretch)** Deploy PS6.2 chart to GKE using same values overlays as local (portability proof).
 - [ ] **No cloud lock-in in app layer** — no GKE-only APIs in application code.
 - [ ] Document optional Cloud Run path as **fallback/showcase** (parent Phase 7 note).
 - [ ] Ingress: minimal (LoadBalancer or Ingress) for API; document TLS deferral for lab.
@@ -34,7 +34,7 @@ Artifact Registry design, optional small GKE cluster. Not a full production land
 ## Dependencies
 
 - **PS6.1** — stage/prod env definitions.
-- **PS6.3** — Helm package.
+- **PS6.2** — Helm package.
 - **PS6.6** — secrets in cloud (GSM + ESO design note minimum).
 
 ---

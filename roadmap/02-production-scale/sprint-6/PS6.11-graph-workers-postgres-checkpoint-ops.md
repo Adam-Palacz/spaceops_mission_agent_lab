@@ -43,7 +43,7 @@ Today’s compose/API path is **variant B**; variant A is additional scope (queu
 ## Dependencies
 
 - **PS3.9** — `apps/agent/checkpointing.py`, ADR 0003, resume API.
-- **PS6.3** — selected deployment manifest (api for B, worker for A).
+- **PS6.2** — selected deployment manifest (api for B, worker for A).
 - **PS6.4** — rollout procedures.
 
 ---
@@ -67,7 +67,7 @@ Today’s compose/API path is **variant B**; variant A is additional scope (queu
 
 ## Deliverables (expected)
 
-- Selected deploy templates (api for B, worker for A) in PS6.3 package
+- Selected deploy templates (api for B, worker for A) in PS6.2 package
 - `docs/runbooks/graph_worker_checkpoint_ops.md`
 - `tests/test_k8s_checkpoint_resume_integration.py` (optional; may be manual gate)
 

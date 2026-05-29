@@ -48,3 +48,13 @@ For fallback triage details see:
 - CI default should remain GPU-free. Optional GPU smoke stays manual (`workflow_dispatch`).
 - Budget guardrail (`LLMBudgetExceededError`) is not a fallback condition.
 - In parity (PS5.8), GPU arm is invalid when fallback occurs.
+
+## Kubernetes / GitOps path (PS6)
+
+Per [ADR 0005](../adr/0005-environment-strategy-dev-stage-prod.md):
+
+- Set `LLM_BACKEND` in Helm **values overlay** (`values-dev.yaml`, `values-stage.yaml`, `values-prod.yaml`) — not `LLM_PROVIDER`.
+- Stage GPU canary: change values + rolling restart; attach PS5.8 parity report when promoting GPU.
+- Emergency rollback: patch values to `LLM_BACKEND=openai`, redeploy or restart affected Deployment; disable NIM Helm profile if enabled.
+
+Full promotion gates: [environment_promotion.md](environment_promotion.md).

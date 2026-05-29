@@ -28,8 +28,8 @@ K8s path. Operators must not guess `helm upgrade` flags under incident pressure.
 
 ## Dependencies
 
-- **PS6.2** — local cluster for demonstration.
-- **PS6.3** — packaged release name and revision history.
+- **PS6.3** — local cluster for demonstration.
+- **PS6.2** — packaged release name and revision history.
 - **PS5.5** — backend rollback runbook cross-link.
 
 ---

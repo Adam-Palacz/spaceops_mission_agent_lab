@@ -22,6 +22,8 @@ The **docs/** directory holds project documentation that supports both humans an
 - **[llm_gpu_backend.md](llm_gpu_backend.md)** — Optional NVIDIA NIM backend, `gpu` compose profile, and manual smoke checklist (PS5.3 / PS5.7).
 - **[llm_cost_guardrails.md](llm_cost_guardrails.md)** — Cost telemetry and process/postgres budget modes (PS5.6).
 - **[evals_backend_parity.md](evals_backend_parity.md)** — OpenAI vs GPU parity reports, invalid-arm rules, and promotion criteria (PS5.8).
+- **[adr/0005-environment-strategy-dev-stage-prod.md](adr/0005-environment-strategy-dev-stage-prod.md)** — `dev` / `stage` / `prod` model, promotion gates, checkpoint fork (PS6.1).
+- **[runbooks/environment_promotion.md](runbooks/environment_promotion.md)** — Promote releases and GPU canaries across environments (PS6.1).
 - **workflow/** — High-level pipeline (Ingest to Post-incident) and escalation path; aligns with `roadmap/01-foundation-mvp.md` and `roadmap/goals.md` F1–F10.
 - **architecture/** — System boundaries (API, Agent, MCP, OPA, storage, observability), repo layout, and production-ready criteria from `goals.md` §4.5.
 - **agent/** — LangGraph state machine and Act logic (safe vs restricted, OPA, approval); implements behaviour described in `roadmap/01-foundation-mvp.md` and policy in `roadmap/goals.md` §4.3.

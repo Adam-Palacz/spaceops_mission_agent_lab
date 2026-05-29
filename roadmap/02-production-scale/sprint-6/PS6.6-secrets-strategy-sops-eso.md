@@ -29,7 +29,7 @@ enterprise upgrade (ESO + GSM/Vault).
 ## Dependencies
 
 - **PS6.1** — per-env secret paths.
-- **PS6.3** — chart secretRef wiring.
+- **PS6.2** — chart secretRef wiring.
 
 ---
 

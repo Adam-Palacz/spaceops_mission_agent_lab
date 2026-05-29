@@ -19,7 +19,19 @@ optional GCP), and a **local K8s proof** as the hard gate; cloud live deploy is 
 | **`LLM_BACKEND`** | per env values | From PS5.5 matrix — `openai` default; `gpu` canary only where approved |
 | **Secrets** | SOPS / ESO / GSM | No plain-text keys in Git (PS6.6) |
 | **`AGENT_DURABLE_CHECKPOINT_ENABLED`** | api or worker deploy | PS3.9 resume after rollout/OOM (PS6.11 fork) |
-| **`LLM_BUDGET_MODE`** | process (default) \| postgres | Shared ledger — PS5.6 defer decision closed in PS6.1 |
+| **`LLM_BUDGET_MODE`** | process (default) \| postgres | Shared ledger — **deferred** (ADR 0005); all PS6 envs use `process` |
+
+### Environment matrix (PS6.1 — [ADR 0005](../../../docs/adr/0005-environment-strategy-dev-stage-prod.md))
+
+| | **dev** | **stage** | **prod** |
+|---|---------|-----------|----------|
+| Runtime | Compose, local kind/k3d | Shared K8s namespace | Shared or dedicated K8s |
+| `LLM_BACKEND` | `openai`; `gpu` local smoke only | `openai`; GPU canary after PS5.8 | `openai`; GPU by approver + parity only |
+| Secrets | `.env` | ESO / SOPS (PS6.6) | ESO / SOPS (required) |
+| Checkpoint (PS6.11) | off default | Variant **B** (api pod + resume) | after stage proof |
+| Promotion | — | CI + manifest lint | + manual approver |
+
+Promotion runbook: [environment_promotion.md](../../../docs/runbooks/environment_promotion.md).
 
 ---
 
@@ -36,8 +48,8 @@ optional GCP), and a **local K8s proof** as the hard gate; cloud live deploy is 
 ## Suggested implementation order
 
 1. **PS6.1** — environment ADR + LLM/budget matrix + **PS6.11 fork** + portfolio checklist stub (blocks everything else).
-2. **PS6.3** — Helm package (portable manifests; **minimal dev profile** first).
-3. **PS6.2** — local kind/k3d proof using PS6.3.
+2. **PS6.2** — Helm package (portable manifests; **minimal dev profile** first).
+3. **PS6.3** — local kind/k3d proof using PS6.2.
 4. **PS6.6** + **PS6.5** — secrets refs first, then isolation on local cluster.
 5. **PS6.4** — rollout/rollback demos on local cluster.
 6. **PS6.11** — checkpoint ops per ADR from PS6.1 (depends on PS6.4 rollout procedures).
@@ -47,7 +59,7 @@ optional GCP), and a **local K8s proof** as the hard gate; cloud live deploy is 
 
 ### Minimal local K8s profile (PS6.2 / PS6.3)
 
-First `make k8s-up` uses a **safe platform baseline**, not full compose parity:
+First `make k8s-up` (PS6.3) deploys the **PS6.2** Helm **minimal dev** profile — a safe platform baseline, not full compose parity:
 
 | Tier | Workloads | Notes |
 |------|-----------|--------|
@@ -64,8 +76,8 @@ See **[BOARD.md](BOARD.md)** for status.
 | Task | Spec |
 |------|------|
 | PS6.1 | [Environment strategy](PS6.1-environment-strategy-dev-stage-prod.md) |
-| PS6.2 | [Local K8s baseline](PS6.2-local-k8s-baseline-kind-k3d.md) |
-| PS6.3 | [Deployment packaging](PS6.3-deployment-packaging-helm-kustomize.md) |
+| PS6.2 | [Deployment packaging](PS6.2-deployment-packaging-helm.md) |
+| PS6.3 | [Local K8s baseline](PS6.3-local-k8s-baseline-kind-k3d.md) |
 | PS6.4 | [Rollout / rollback playbook](PS6.4-rollout-rollback-playbook.md) |
 | PS6.5 | [Isolation controls](PS6.5-isolation-controls-rbac-network-quotas.md) |
 | PS6.6 | [Secrets strategy](PS6.6-secrets-strategy-sops-eso.md) |
@@ -81,7 +93,7 @@ See **[BOARD.md](BOARD.md)** for status.
 
 **Hard gates (local / docs)**
 
-- [ ] Local K8s deploy works with safe rollback and documented procedures (PS6.2 + PS6.4).
+- [ ] Local K8s deploy works with safe rollback and documented procedures (PS6.3 + PS6.4).
 - [ ] Environment isolation controls defined and verified on local/stage form (PS6.5).
 - [ ] Secrets enter cluster without plain-text Git commits (PS6.6 minimal path).
 - [ ] **PS6.11:** checkpoint pattern validated in-cluster per PS6.1 ADR (**worker split** or **API-only resume**) — or explicit defer ADR with trigger.
@@ -94,7 +106,7 @@ See **[BOARD.md](BOARD.md)** for status.
 
 **Cloud — stretch (requires GCP credentials + budget)**
 
-- [ ] PS6.8: reproducible deploy to stage GKE using PS6.3 chart + values overlays.
+- [ ] PS6.8: reproducible deploy to stage GKE using PS6.2 chart + values overlays.
 - [ ] PS6.9: live budget alert wired in cloud project.
 
 ---

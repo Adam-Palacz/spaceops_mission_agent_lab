@@ -19,7 +19,7 @@ Lab may remain Makefile/Helm imperative; GitOps proves promotion model from PS6.
 ## Requirements
 
 - [ ] Bootstrap guide: install GitOps controller on local/stage cluster.
-- [ ] App-of-apps or equivalent: deploy SpaceOps chart from PS6.3 with env overlay.
+- [ ] App-of-apps or equivalent: deploy SpaceOps chart from PS6.2 with env overlay.
 - [ ] Sync policy documented: manual vs auto; **prod** requires manual sync or approval (PS6.1).
 - [ ] Rollback = Git revert + sync (cross-link PS6.4).
 - [ ] Secrets: integrate with PS6.6 (SOPS/ESO); no plain secrets in Application spec.
@@ -29,7 +29,7 @@ Lab may remain Makefile/Helm imperative; GitOps proves promotion model from PS6.
 
 ## Dependencies
 
-- **PS6.3** — chart source and values paths.
+- **PS6.2** — chart source and values paths.
 - **PS6.4** — rollback semantics.
 - **PS6.1** — promotion gates.
 

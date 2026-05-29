@@ -29,13 +29,13 @@ NetworkPolicy, ResourceQuota, LimitRange. Matches Phase 6 “shared compute, iso
 ## Dependencies
 
 - **PS6.1** — namespace naming and env boundaries.
-- **PS6.3** — manifests accept namespace and SA wiring.
+- **PS6.2** — manifests accept namespace and SA wiring.
 
 ---
 
 ## Checklist
 
-- [ ] Policy manifests in deploy package (PS6.3).
+- [ ] Policy manifests in deploy package (PS6.2).
 - [ ] Runbook: verify isolation (`kubectl auth can-i`, cross-namespace curl should fail).
 - [ ] Test script or doc steps for quota enforcement (optional automated test).
 

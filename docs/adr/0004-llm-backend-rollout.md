@@ -54,7 +54,7 @@ PS5.3 proved GPU runtime, and PS5.4 added health/circuit fallback semantics. We 
 ## Migration timeline for `LLM_PROVIDER`
 
 - **Now (PS5.5)**: keep support with deprecation warning.
-- **Next phase (PS6 planning)**: remove `LLM_PROVIDER` from environment templates and deployment manifests.
+- **Next phase (PS6):** [ADR 0005](0005-environment-strategy-dev-stage-prod.md) — `LLM_PROVIDER` frozen in K8s manifests; `.env.example` deprecated only.
 - **Removal gate**: no active environment should rely on provider-only config.
 
 ## Consequences

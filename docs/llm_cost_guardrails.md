@@ -28,7 +28,7 @@ All labels are bounded and exclude incident/run identifiers.
 
 ## Postgres mode status
 
-`LLM_BUDGET_MODE=postgres` is **deferred to PS6** in this repo baseline. Selecting it currently raises a clear configuration/runtime error instead of silently pretending to enforce a shared budget.
+`LLM_BUDGET_MODE=postgres` is **deferred** per [ADR 0005](adr/0005-environment-strategy-dev-stage-prod.md): all PS6 environments use **`process`**. Selecting `postgres` raises an explicit configuration/runtime error until ledger + Helm wiring ship (trigger: shared org cap across replicas required).
 
 ## Defaults
 

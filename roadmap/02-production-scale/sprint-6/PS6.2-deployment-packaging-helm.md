@@ -1,8 +1,8 @@
-# PS6.3 — Deployment packaging (Helm)
+# PS6.2 — Deployment packaging (Helm)
 
 | Field | Value |
 |-------|-------|
-| **Task ID** | PS6.3 |
+| **Task ID** | PS6.2 |
 | **Status** | Todo |
 
 ---
@@ -54,7 +54,7 @@ for full compose parity (kb-mcp, jaeger, nats, NIM).
 ## Test / acceptance
 
 - [ ] Render manifests for all three env overlays without error.
-- [ ] Deploy on local cluster (PS6.2) using packaged manifests.
+- [ ] Deploy on local cluster (PS6.3) using packaged manifests.
 - [ ] Changing `LLM_BACKEND` in values and redeploying does not require image rebuild.
 
 ---

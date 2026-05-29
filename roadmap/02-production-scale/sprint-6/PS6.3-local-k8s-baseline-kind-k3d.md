@@ -1,8 +1,8 @@
-# PS6.2 — Local K8s baseline (kind / k3d)
+# PS6.3 — Local K8s baseline (kind / k3d)
 
 | Field | Value |
 |-------|-------|
-| **Task ID** | PS6.2 |
+| **Task ID** | PS6.3 |
 | **Status** | Todo |
 
 ---
@@ -10,14 +10,14 @@
 ## Description
 
 Prove the stack runs on a **local Kubernetes cluster** (kind or k3d) using the same packaging as
-stage/prod (PS6.3). Operator entrypoint: **`make k8s-up`** / **`make k8s-down`**.
+stage/prod (PS6.2). Operator entrypoint: **`make k8s-up`** / **`make k8s-down`**.
 
 ---
 
 ## Requirements
 
 - [ ] Choose default local tool: **kind** or **k3d** (document why; single default in Makefile).
-- [ ] One-command cluster create + deploy **minimal dev profile** from PS6.3 Helm chart.
+- [ ] One-command cluster create + deploy **minimal dev profile** from PS6.2 Helm chart.
 - [ ] **Required** in minimal profile: **api**, **postgres**, **opa**, **telemetry-mcp** (or slim mock),
       **telemetry-persister** worker. OPA is not optional — safe baseline includes fail-closed policy path.
 - [ ] **Optional** via Helm values (off by default locally): kb-mcp, full MCP set, otel-collector, jaeger,
@@ -34,7 +34,7 @@ stage/prod (PS6.3). Operator entrypoint: **`make k8s-up`** / **`make k8s-down`**
 ## Dependencies
 
 - **PS6.1** — namespace names and env overlay selection.
-- **PS6.3** — deploy manifests exist before `k8s-up` can succeed.
+- **PS6.2** — deploy manifests exist before `k8s-up` can succeed.
 
 ---
 

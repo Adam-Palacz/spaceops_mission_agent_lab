@@ -11,5 +11,6 @@ ADR entries are **append-only**: superseded documents keep full text; status upd
 | [0003-langgraph-durable-checkpoint-postgres.md](0003-langgraph-durable-checkpoint-postgres.md) | **Durable agent checkpoint in Postgres** | **Accepted** |
 | [0004-llm-backend-rollout.md](0004-llm-backend-rollout.md) | **LLM backend rollout policy (`LLM_BACKEND`)** | **Accepted** |
 | [0005-environment-strategy-dev-stage-prod.md](0005-environment-strategy-dev-stage-prod.md) | **Environment strategy (`dev` / `stage` / `prod`)** | **Accepted** |
+| [0006-kubernetes-packaging-helm.md](0006-kubernetes-packaging-helm.md) | **Kubernetes packaging (Helm)** | **Accepted** |
 
 **Current ingest / queue strategy:** read **ADR 0002** first.

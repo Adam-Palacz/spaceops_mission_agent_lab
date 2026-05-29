@@ -1,0 +1,41 @@
+{{- if .Values.agentWorker.enabled }}
+# Variant A — queue-driven agent graph worker (Phase 7). PS6.1 selected Variant B for PS6 Done.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "spaceops.fullname" . }}-agent-worker
+  namespace: {{ include "spaceops.namespace" . }}
+  labels:
+    {{- include "spaceops.labels" . | nindent 4 }}
+    app.kubernetes.io/component: agent-worker
+spec:
+  replicas: {{ .Values.agentWorker.replicas }}
+  selector:
+    matchLabels:
+      {{- include "spaceops.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: agent-worker
+  template:
+    metadata:
+      labels:
+        {{- include "spaceops.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: agent-worker
+    spec:
+      serviceAccountName: {{ include "spaceops.serviceAccountName" . }}
+      containers:
+        - name: agent-worker
+          image: {{ include "spaceops.image" (dict "repository" .Values.images.api.repository "tag" .Values.images.api.tag) }}
+          imagePullPolicy: {{ .Values.images.api.pullPolicy }}
+          command: ["python", "-m", "apps.workers.agent_graph"]
+          env:
+            {{- include "spaceops.apiEnv" . | nindent 12 }}
+          readinessProbe:
+            exec:
+              command: ["python", "-c", "import sys; sys.exit(0)"]
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            exec:
+              command: ["python", "-c", "import sys; sys.exit(0)"]
+            initialDelaySeconds: 15
+            periodSeconds: 20
+{{- end }}

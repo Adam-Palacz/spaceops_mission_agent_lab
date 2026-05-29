@@ -1,0 +1,25 @@
+# dev overlay — local kind/k3d and engineer namespaces (ADR 0005).
+
+global:
+  namespace: spaceops-dev
+
+images:
+  api:
+    tag: local
+  mcp:
+    tag: local
+
+api:
+  llm:
+    backend: openai
+  replicas: 1
+
+secrets:
+  create: true
+  # Override at install: --set secrets.postgresPassword=..., secrets.openaiApiKey=...
+  postgresPassword: changeme-dev
+  openaiApiKey: ""
+
+postgres:
+  persistence:
+    size: 2Gi

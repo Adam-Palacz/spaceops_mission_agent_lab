@@ -1,0 +1,62 @@
+# PS6.2 — Lightweight Helm manifest lint (GPU-free; no cluster required).
+name: K8s manifest lint
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "deploy/helm/**"
+      - ".github/workflows/k8s-manifest-lint.yml"
+      - "tests/test_helm_ps62.py"
+  pull_request:
+    branches: [main]
+    paths:
+      - "deploy/helm/**"
+      - ".github/workflows/k8s-manifest-lint.yml"
+      - "tests/test_helm_ps62.py"
+
+jobs:
+  helm-template:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.16.4
+
+      - name: Helm lint
+        run: helm lint deploy/helm/spaceops -f deploy/helm/spaceops/values.yaml
+
+      - name: Template dev minimal overlay
+        run: |
+          helm template spaceops deploy/helm/spaceops \
+            -f deploy/helm/spaceops/values.yaml \
+            -f deploy/helm/spaceops/values-dev.yaml \
+            -f deploy/helm/spaceops/values-minimal-dev.yaml \
+            --set secrets.postgresPassword=ci-dev-only \
+            > /dev/null
+
+      - name: Template stage overlay
+        run: |
+          helm template spaceops deploy/helm/spaceops \
+            -f deploy/helm/spaceops/values.yaml \
+            -f deploy/helm/spaceops/values-stage.yaml \
+            > /dev/null
+
+      - name: Template prod overlay
+        run: |
+          helm template spaceops deploy/helm/spaceops \
+            -f deploy/helm/spaceops/values.yaml \
+            -f deploy/helm/spaceops/values-prod.yaml \
+            > /dev/null
+
+      - name: Pytest helm render checks
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - run: pip install pytest pyyaml
+
+      - run: pytest tests/test_helm_ps62.py -v

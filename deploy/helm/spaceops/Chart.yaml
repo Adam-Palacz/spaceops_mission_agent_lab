@@ -1,0 +1,12 @@
+apiVersion: v2
+name: spaceops
+description: SpaceOps Mission Agent Lab — Kubernetes packaging (PS6.2)
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+keywords:
+  - spaceops
+  - agent
+  - helm
+maintainers:
+  - name: spaceops-maintainers

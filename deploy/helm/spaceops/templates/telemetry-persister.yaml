@@ -1,0 +1,50 @@
+{{- if .Values.telemetryPersister.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "spaceops.fullname" . }}-telemetry-persister
+  namespace: {{ include "spaceops.namespace" . }}
+  labels:
+    {{- include "spaceops.labels" . | nindent 4 }}
+    app.kubernetes.io/component: telemetry-persister
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "spaceops.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: telemetry-persister
+  template:
+    metadata:
+      labels:
+        {{- include "spaceops.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: telemetry-persister
+    spec:
+      serviceAccountName: {{ include "spaceops.serviceAccountName" . }}
+      containers:
+        - name: telemetry-persister
+          image: {{ include "spaceops.image" (dict "repository" .Values.images.api.repository "tag" .Values.images.api.tag) }}
+          imagePullPolicy: {{ .Values.images.api.pullPolicy }}
+          command: ["python", "-m", "apps.workers.telemetry_persister"]
+          env:
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "spaceops.secretName" . }}
+                  key: {{ .Values.postgres.auth.secretKeys.password }}
+            - name: DATABASE_URL
+              value: {{ include "spaceops.postgresUrl" . | quote }}
+            - name: NATS_URL
+              value: {{ printf "nats://%s-nats:%v" (include "spaceops.fullname" .) .Values.nats.port | quote }}
+          readinessProbe:
+            exec:
+              command: ["python", "-c", "import sys; sys.exit(0)"]
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            exec:
+              command: ["python", "-c", "import sys; sys.exit(0)"]
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            {{- toYaml .Values.telemetryPersister.resources | nindent 12 }}
+{{- end }}

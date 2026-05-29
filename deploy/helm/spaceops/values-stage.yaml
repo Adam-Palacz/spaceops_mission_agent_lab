@@ -1,0 +1,35 @@
+# stage overlay — integration / GPU canary / checkpoint proof (ADR 0005).
+
+global:
+  namespace: spaceops-stage
+
+secrets:
+  create: false
+  name: spaceops-stage-secrets
+  # Wire via External Secrets / SOPS in PS6.6:
+  # existingSecret: spaceops-stage-secrets
+
+postgres:
+  auth:
+    existingSecret: spaceops-stage-secrets
+  persistence:
+    size: 10Gi
+
+api:
+  replicas: 2
+  llm:
+    backend: openai
+  checkpoint:
+    enabled: true
+
+observability:
+  otelCollector:
+    enabled: true
+  jaeger:
+    enabled: true
+
+nats:
+  enabled: true
+
+telemetryPersister:
+  enabled: true

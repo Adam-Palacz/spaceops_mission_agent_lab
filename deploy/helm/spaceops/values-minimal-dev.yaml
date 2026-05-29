@@ -1,0 +1,33 @@
+# Minimal safe platform baseline (PS6.2 / sprint README):
+# api + postgres + opa + telemetry-mcp + telemetry-persister (+ nats for persister).
+
+nats:
+  enabled: true
+
+telemetryPersister:
+  enabled: true
+
+kbMcp:
+  enabled: false
+
+ticketMcp:
+  enabled: false
+
+gitopsMcp:
+  enabled: false
+
+observability:
+  otelCollector:
+    enabled: false
+  jaeger:
+    enabled: false
+
+nim:
+  enabled: false
+
+agentWorker:
+  enabled: false
+
+api:
+  checkpoint:
+    enabled: false

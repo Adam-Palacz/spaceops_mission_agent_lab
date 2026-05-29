@@ -15,7 +15,7 @@ POSTGRES_PASSWORD ?= spaceops
 
 .PHONY: help install install-dev lint format typecheck check safety-gates semantic-check test migrate-smoke \
 	golden-check golden-run golden-update compose-config docker-build gpu-up gpu-down gpu-smoke gpu-idle-check \
-	gpu-idle-integration backend-parity-check
+	gpu-idle-integration backend-parity-check helm-template helm-lint
 
 help: ## Show this help (default goal)
 	@echo SpaceOps Makefile - targets mirror CI where practical.
@@ -103,3 +103,15 @@ gpu-idle-integration: ## PS5.7 Real compose/API GPU activity acceptance (require
 
 backend-parity-check: ## PS5.8 Fixture parity tests (no live LLM)
 	pytest tests/test_backend_parity_ps58.py -v
+
+HELM_CHART := deploy/helm/spaceops
+
+helm-lint: ## PS6.2 Validate Helm chart (requires helm CLI)
+	helm lint $(HELM_CHART) -f $(HELM_CHART)/values.yaml
+
+helm-template: ## PS6.2 Render minimal dev manifests to stdout
+	helm template spaceops $(HELM_CHART) \
+		-f $(HELM_CHART)/values.yaml \
+		-f $(HELM_CHART)/values-dev.yaml \
+		-f $(HELM_CHART)/values-minimal-dev.yaml \
+		--set secrets.postgresPassword=local-dev-only

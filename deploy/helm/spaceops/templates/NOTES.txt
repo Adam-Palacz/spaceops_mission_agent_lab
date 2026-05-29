@@ -1,0 +1,12 @@
+SpaceOps Helm release {{ .Release.Name }} ({{ .Chart.AppVersion }})
+
+Namespace: {{ include "spaceops.namespace" . }}
+
+API (when enabled):
+  kubectl port-forward -n {{ include "spaceops.namespace" . }} svc/{{ include "spaceops.fullname" . }}-api {{ .Values.api.port }}:{{ .Values.api.port }}
+  curl http://127.0.0.1:{{ .Values.api.port }}/health
+
+Render-only check:
+  helm template {{ .Release.Name }} {{ .Chart.Name }} -f values.yaml -f values-dev.yaml -f values-minimal-dev.yaml
+
+See deploy/helm/spaceops/README.md for compose mapping and env overlays.

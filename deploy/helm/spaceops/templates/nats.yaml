@@ -1,0 +1,67 @@
+{{- if .Values.nats.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "spaceops.fullname" . }}-nats
+  namespace: {{ include "spaceops.namespace" . }}
+  labels:
+    {{- include "spaceops.labels" . | nindent 4 }}
+    app.kubernetes.io/component: nats
+spec:
+  type: ClusterIP
+  ports:
+    - name: client
+      port: {{ .Values.nats.port }}
+      targetPort: client
+    - name: monitoring
+      port: {{ .Values.nats.monitoringPort }}
+      targetPort: monitoring
+  selector:
+    {{- include "spaceops.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: nats
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "spaceops.fullname" . }}-nats
+  namespace: {{ include "spaceops.namespace" . }}
+  labels:
+    {{- include "spaceops.labels" . | nindent 4 }}
+    app.kubernetes.io/component: nats
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "spaceops.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: nats
+  template:
+    metadata:
+      labels:
+        {{- include "spaceops.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: nats
+    spec:
+      containers:
+        - name: nats
+          image: {{ .Values.nats.image }}
+          imagePullPolicy: IfNotPresent
+          args: ["-js", "-m", "8222"]
+          ports:
+            - name: client
+              containerPort: {{ .Values.nats.port }}
+            - name: monitoring
+              containerPort: {{ .Values.nats.monitoringPort }}
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: monitoring
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: monitoring
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+            {{- toYaml .Values.nats.resources | nindent 12 }}
+{{- end }}

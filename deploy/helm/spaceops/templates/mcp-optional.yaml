@@ -1,0 +1,206 @@
+{{- if .Values.kbMcp.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "spaceops.fullname" . }}-kb-mcp
+  namespace: {{ include "spaceops.namespace" . }}
+  labels:
+    {{- include "spaceops.labels" . | nindent 4 }}
+    app.kubernetes.io/component: kb-mcp
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: {{ .Values.kbMcp.port }}
+      targetPort: http
+  selector:
+    {{- include "spaceops.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: kb-mcp
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "spaceops.fullname" . }}-kb-mcp
+  namespace: {{ include "spaceops.namespace" . }}
+  labels:
+    {{- include "spaceops.labels" . | nindent 4 }}
+    app.kubernetes.io/component: kb-mcp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "spaceops.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: kb-mcp
+  template:
+    metadata:
+      labels:
+        {{- include "spaceops.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: kb-mcp
+    spec:
+      containers:
+        - name: kb-mcp
+          image: {{ include "spaceops.image" (dict "repository" .Values.images.mcp.repository "tag" .Values.images.mcp.tag) }}
+          imagePullPolicy: {{ .Values.images.mcp.pullPolicy }}
+          command: ["python", "-m", "apps.mcp.kb_server.main"]
+          ports:
+            - name: http
+              containerPort: {{ .Values.kbMcp.port }}
+          env:
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "spaceops.secretName" . }}
+                  key: {{ .Values.postgres.auth.secretKeys.password }}
+            - name: DATABASE_URL
+              value: {{ include "spaceops.postgresUrl" . | quote }}
+          readinessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          volumeMounts:
+            - name: data
+              mountPath: /app/data
+            - name: kb
+              mountPath: /app/kb
+      volumes:
+        - name: data
+          emptyDir: {}
+        - name: kb
+          emptyDir: {}
+{{- end }}
+{{- if .Values.ticketMcp.enabled }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "spaceops.fullname" . }}-ticket-mcp
+  namespace: {{ include "spaceops.namespace" . }}
+  labels:
+    {{- include "spaceops.labels" . | nindent 4 }}
+    app.kubernetes.io/component: ticket-mcp
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: {{ .Values.ticketMcp.port }}
+      targetPort: http
+  selector:
+    {{- include "spaceops.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: ticket-mcp
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "spaceops.fullname" . }}-ticket-mcp
+  namespace: {{ include "spaceops.namespace" . }}
+  labels:
+    {{- include "spaceops.labels" . | nindent 4 }}
+    app.kubernetes.io/component: ticket-mcp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "spaceops.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: ticket-mcp
+  template:
+    metadata:
+      labels:
+        {{- include "spaceops.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: ticket-mcp
+    spec:
+      containers:
+        - name: ticket-mcp
+          image: {{ include "spaceops.image" (dict "repository" .Values.images.mcp.repository "tag" .Values.images.mcp.tag) }}
+          imagePullPolicy: {{ .Values.images.mcp.pullPolicy }}
+          command: ["python", "-m", "apps.mcp.ticket_server.main"]
+          ports:
+            - name: http
+              containerPort: {{ .Values.ticketMcp.port }}
+          readinessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          volumeMounts:
+            - name: data
+              mountPath: /app/data
+      volumes:
+        - name: data
+          emptyDir: {}
+{{- end }}
+{{- if .Values.gitopsMcp.enabled }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "spaceops.fullname" . }}-gitops-mcp
+  namespace: {{ include "spaceops.namespace" . }}
+  labels:
+    {{- include "spaceops.labels" . | nindent 4 }}
+    app.kubernetes.io/component: gitops-mcp
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: {{ .Values.gitopsMcp.port }}
+      targetPort: http
+  selector:
+    {{- include "spaceops.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: gitops-mcp
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "spaceops.fullname" . }}-gitops-mcp
+  namespace: {{ include "spaceops.namespace" . }}
+  labels:
+    {{- include "spaceops.labels" . | nindent 4 }}
+    app.kubernetes.io/component: gitops-mcp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "spaceops.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: gitops-mcp
+  template:
+    metadata:
+      labels:
+        {{- include "spaceops.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: gitops-mcp
+    spec:
+      containers:
+        - name: gitops-mcp
+          image: {{ include "spaceops.image" (dict "repository" .Values.images.mcp.repository "tag" .Values.images.mcp.tag) }}
+          imagePullPolicy: {{ .Values.images.mcp.pullPolicy }}
+          command: ["python", "-m", "apps.mcp.gitops_server.main"]
+          ports:
+            - name: http
+              containerPort: {{ .Values.gitopsMcp.port }}
+          readinessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          volumeMounts:
+            - name: ops-config
+              mountPath: /app/ops-config
+      volumes:
+        - name: ops-config
+          emptyDir: {}
+{{- end }}

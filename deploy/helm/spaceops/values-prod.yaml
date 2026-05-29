@@ -1,0 +1,49 @@
+# prod overlay — manual approver path only (ADR 0005).
+
+global:
+  namespace: spaceops-prod
+
+secrets:
+  create: false
+  name: spaceops-prod-secrets
+
+postgres:
+  auth:
+    existingSecret: spaceops-prod-secrets
+  persistence:
+    size: 20Gi
+
+api:
+  replicas: 2
+  llm:
+    backend: openai
+  checkpoint:
+    enabled: true
+  persistence:
+    var:
+      emptyDir: false
+      existingClaim: spaceops-api-var
+
+nim:
+  enabled: false
+
+observability:
+  otelCollector:
+    enabled: true
+  jaeger:
+    enabled: true
+
+nats:
+  enabled: true
+
+telemetryPersister:
+  enabled: true
+
+kbMcp:
+  enabled: true
+
+ticketMcp:
+  enabled: true
+
+gitopsMcp:
+  enabled: true

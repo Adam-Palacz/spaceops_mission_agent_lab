@@ -1,0 +1,105 @@
+{{- if .Values.api.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "spaceops.fullname" . }}-api
+  namespace: {{ include "spaceops.namespace" . }}
+  labels:
+    {{- include "spaceops.labels" . | nindent 4 }}
+    app.kubernetes.io/component: api
+spec:
+  type: {{ .Values.api.service.type }}
+  ports:
+    - name: http
+      port: {{ .Values.api.port }}
+      targetPort: http
+  selector:
+    {{- include "spaceops.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: api
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "spaceops.fullname" . }}-api
+  namespace: {{ include "spaceops.namespace" . }}
+  labels:
+    {{- include "spaceops.labels" . | nindent 4 }}
+    app.kubernetes.io/component: api
+spec:
+  replicas: {{ .Values.api.replicas }}
+  selector:
+    matchLabels:
+      {{- include "spaceops.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: api
+  template:
+    metadata:
+      labels:
+        {{- include "spaceops.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: api
+    spec:
+      serviceAccountName: {{ include "spaceops.serviceAccountName" . }}
+      containers:
+        - name: api
+          image: {{ include "spaceops.image" (dict "repository" .Values.images.api.repository "tag" .Values.images.api.tag) }}
+          imagePullPolicy: {{ .Values.images.api.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.api.port }}
+          env:
+            {{- include "spaceops.apiEnv" . | nindent 12 }}
+            {{- if or .Values.secrets.create .Values.secrets.openaiApiKey }}
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "spaceops.secretName" . }}
+                  key: OPENAI_API_KEY
+                  optional: true
+            {{- end }}
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          resources:
+            {{- toYaml .Values.api.resources | nindent 12 }}
+          volumeMounts:
+            {{- if .Values.api.persistence.data.enabled }}
+            - name: data
+              mountPath: /app/data
+            {{- end }}
+            {{- if .Values.api.persistence.opsConfig.enabled }}
+            - name: ops-config
+              mountPath: /app/ops-config
+            {{- end }}
+            {{- if .Values.api.persistence.var.enabled }}
+            - name: var
+              mountPath: /app/var
+            {{- end }}
+      volumes:
+        {{- if .Values.api.persistence.data.enabled }}
+        - name: data
+          {{- if .Values.api.persistence.data.emptyDir }}
+          emptyDir: {}
+          {{- end }}
+        {{- end }}
+        {{- if .Values.api.persistence.opsConfig.enabled }}
+        - name: ops-config
+          emptyDir: {}
+        {{- end }}
+        {{- if .Values.api.persistence.var.enabled }}
+        - name: var
+          {{- if .Values.api.persistence.var.existingClaim }}
+          persistentVolumeClaim:
+            claimName: {{ .Values.api.persistence.var.existingClaim }}
+          {{- else if .Values.api.persistence.var.emptyDir }}
+          emptyDir: {}
+          {{- end }}
+        {{- end }}
+{{- end }}

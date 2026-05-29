@@ -1,0 +1,71 @@
+{{- if .Values.telemetryMcp.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "spaceops.fullname" . }}-telemetry-mcp
+  namespace: {{ include "spaceops.namespace" . }}
+  labels:
+    {{- include "spaceops.labels" . | nindent 4 }}
+    app.kubernetes.io/component: telemetry-mcp
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: {{ .Values.telemetryMcp.port }}
+      targetPort: http
+  selector:
+    {{- include "spaceops.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: telemetry-mcp
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "spaceops.fullname" . }}-telemetry-mcp
+  namespace: {{ include "spaceops.namespace" . }}
+  labels:
+    {{- include "spaceops.labels" . | nindent 4 }}
+    app.kubernetes.io/component: telemetry-mcp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "spaceops.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: telemetry-mcp
+  template:
+    metadata:
+      labels:
+        {{- include "spaceops.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: telemetry-mcp
+    spec:
+      containers:
+        - name: telemetry-mcp
+          image: {{ include "spaceops.image" (dict "repository" .Values.images.mcp.repository "tag" .Values.images.mcp.tag) }}
+          imagePullPolicy: {{ .Values.images.mcp.pullPolicy }}
+          command: ["python", "-m", "apps.mcp.telemetry_server.main"]
+          ports:
+            - name: http
+              containerPort: {{ .Values.telemetryMcp.port }}
+          {{- if .Values.observability.otelCollector.enabled }}
+          env:
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: {{ printf "http://%s-otel-collector:4317" (include "spaceops.fullname" .) | quote }}
+          {{- end }}
+          readinessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          resources:
+            {{- toYaml .Values.telemetryMcp.resources | nindent 12 }}
+          volumeMounts:
+            - name: data
+              mountPath: /app/data
+      volumes:
+        - name: data
+          emptyDir: {}
+{{- end }}

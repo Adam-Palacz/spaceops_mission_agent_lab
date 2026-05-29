@@ -1,0 +1,167 @@
+# Base defaults — override with values-{dev,stage,prod}.yaml and optional profiles.
+# See deploy/helm/spaceops/README.md for compose → K8s mapping.
+
+global:
+  namespace: spaceops
+  createNamespace: true
+
+nameOverride: ""
+fullnameOverride: ""
+
+images:
+  api:
+    repository: spaceops-api
+    tag: local
+    pullPolicy: IfNotPresent
+  mcp:
+    repository: spaceops-mcp
+    tag: local
+    pullPolicy: IfNotPresent
+
+postgres:
+  enabled: true
+  image: pgvector/pgvector:pg15
+  port: 5432
+  auth:
+    username: spaceops
+    database: spaceops
+    # PS6.6: stage/prod use existingSecret; dev may use secrets.create below.
+    existingSecret: ""
+    secretKeys:
+      password: postgres-password
+  persistence:
+    enabled: true
+    size: 5Gi
+    storageClass: ""
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+
+opa:
+  enabled: true
+  image: openpolicyagent/opa:1.14.0
+  port: 8181
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+
+nats:
+  enabled: false
+  image: nats:2.10-alpine
+  port: 4222
+  monitoringPort: 8222
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
+api:
+  enabled: true
+  replicas: 1
+  port: 8000
+  service:
+    type: ClusterIP
+  llm:
+    backend: openai
+    budgetMode: process
+  checkpoint:
+    enabled: false
+  persistence:
+    data:
+      enabled: true
+      emptyDir: true
+    opsConfig:
+      enabled: true
+      emptyDir: true
+    var:
+      enabled: true
+      # PS5.7: emptyDir for lab; set pvc when GPU profile needs durable activity file.
+      emptyDir: true
+      existingClaim: ""
+  extraEnv: {}
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: "1"
+      memory: 512Mi
+
+telemetryMcp:
+  enabled: true
+  port: 8001
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
+
+telemetryPersister:
+  enabled: false
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
+
+kbMcp:
+  enabled: false
+  port: 8002
+
+ticketMcp:
+  enabled: false
+  port: 8003
+
+gitopsMcp:
+  enabled: false
+  port: 8004
+
+observability:
+  otelCollector:
+    enabled: false
+    image: otel/opentelemetry-collector-contrib:0.96.0
+  jaeger:
+    enabled: false
+    image: jaegertracing/all-in-one:1.55
+
+# Phase 7 prep — off by default (PS6.2).
+nim:
+  enabled: false
+  image: nvcr.io/nim/microsoft/phi-4-mini-instruct:1.12.0
+  port: 8000
+  nodeSelector: {}
+  tolerations: []
+  resources: {}
+
+# Variant A only (Phase 7) — PS6.1 selected Variant B for PS6.
+agentWorker:
+  enabled: false
+  replicas: 1
+
+secrets:
+  # Dev/lab only: render a Kubernetes Secret from values (never commit real keys).
+  create: false
+  name: spaceops-secrets
+  openaiApiKey: ""
+  postgresPassword: ""
+  approvalApiKey: ""
+  githubToken: ""
+
+serviceAccount:
+  create: true
+  name: ""

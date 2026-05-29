@@ -1,34 +1,109 @@
 # Production Scale — Sprint 6 (PS6)
 
-**Goal:** package the system for platform operations (K8s/GitOps/cloud path) and close portfolio
-artifacts for external demonstration and production-readiness review.
+**Goal:** package the system for **platform operations** (K8s / GitOps / cloud path) and close
+**portfolio-grade** artifacts for external demonstration and production-readiness review.
+
+**Strategic source:** [Phase 6 — Kubernetes + GitOps](../../02-production-scale.md#phase-6--kubernetes--gitops-after-mvp-is-stable) and [Phase 7 — Cloud Deployment (GCP-first)](../../02-production-scale.md#phase-7--cloud-deployment-gcp-first-k8s-portable).
+
+**Sprint shape:** PS6 is a **platform release** (packaging, ops, cloud plan, portfolio) — not a single
+vertical slice like PS5. Close it with strict ordering, explicit defer ADRs (PS6.7, PS6.11 fork,
+optional GCP), and a **local K8s proof** as the hard gate; cloud live deploy is stretch.
+
+---
+
+## Configuration model (read first)
+
+| Knob | Scope | Role |
+|------|--------|------|
+| **Environment** | `dev` \| `stage` \| `prod` | Namespace isolation, promotion path (PS6.1) |
+| **`LLM_BACKEND`** | per env values | From PS5.5 matrix — `openai` default; `gpu` canary only where approved |
+| **Secrets** | SOPS / ESO / GSM | No plain-text keys in Git (PS6.6) |
+| **`AGENT_DURABLE_CHECKPOINT_ENABLED`** | api or worker deploy | PS3.9 resume after rollout/OOM (PS6.11 fork) |
+| **`LLM_BUDGET_MODE`** | process (default) \| postgres | Shared ledger — PS5.6 defer decision closed in PS6.1 |
 
 ---
 
 ## Outcomes
 
-- Environment model (`dev/stage/prod`) with documented promotion path.
-- K8s local proof with deploy/rollback runbooks and baseline policies.
-- Cloud deployment baseline (GCP-first, portable manifests/IaC boundaries).
-- Portfolio-grade docs: ADR set, threat model, runbooks, one-page system README.
-- **Durable agent workers:** cluster manifests and runbooks acknowledge **PS3.9** checkpointed graph
-  workers (resume after rollout/OOM), not only stateless API replicas.
+- Environment model (`dev` / `stage` / `prod`) with documented promotion path.
+- K8s local proof (`make k8s-up`) with deploy/rollback runbooks and baseline policies.
+- Cloud deployment baseline (GCP-first, portable manifests / IaC boundaries).
+- Portfolio docs: ADR index, threat model, runbook pack, demo README.
+- **Durable checkpoint ops:** in-cluster resume after pod restart per PS6.11 fork (api for B, worker for A).
+
+---
+
+## Suggested implementation order
+
+1. **PS6.1** — environment ADR + LLM/budget matrix + **PS6.11 fork** + portfolio checklist stub (blocks everything else).
+2. **PS6.3** — Helm package (portable manifests; **minimal dev profile** first).
+3. **PS6.2** — local kind/k3d proof using PS6.3.
+4. **PS6.6** + **PS6.5** — secrets refs first, then isolation on local cluster.
+5. **PS6.4** — rollout/rollback demos on local cluster.
+6. **PS6.11** — checkpoint ops per ADR from PS6.1 (depends on PS6.4 rollout procedures).
+7. **PS6.7** — GitOps (optional; defer with ADR if needed).
+8. **PS6.8** + **PS6.9** — GCP plan/IaC skeleton + billing runbook (live deploy = stretch).
+9. **PS6.10** — portfolio bundle (capstone index).
+
+### Minimal local K8s profile (PS6.2 / PS6.3)
+
+First `make k8s-up` uses a **safe platform baseline**, not full compose parity:
+
+| Tier | Workloads | Notes |
+|------|-----------|--------|
+| **Required (dev profile)** | `api`, `postgres`, `opa`, `telemetry-mcp` (or slim mock), `telemetry-persister` worker | OPA stays in — fail-closed policy path is part of the baseline |
+| **Optional profiles** | `kb-mcp`, full MCP set, `otel-collector`, `jaeger`, `nats`, NIM/GPU | Enable via Helm values; off by default locally |
+| **PS6.11 decision** | Agent graph worker split vs API-only checkpoint | Chosen in PS6.1 ADR — not implied by minimal profile |
 
 ---
 
 ## Tasks
 
-See **[BOARD.md](BOARD.md)** for status of PS6.1–PS6.11.
+See **[BOARD.md](BOARD.md)** for status.
+
+| Task | Spec |
+|------|------|
+| PS6.1 | [Environment strategy](PS6.1-environment-strategy-dev-stage-prod.md) |
+| PS6.2 | [Local K8s baseline](PS6.2-local-k8s-baseline-kind-k3d.md) |
+| PS6.3 | [Deployment packaging](PS6.3-deployment-packaging-helm-kustomize.md) |
+| PS6.4 | [Rollout / rollback playbook](PS6.4-rollout-rollback-playbook.md) |
+| PS6.5 | [Isolation controls](PS6.5-isolation-controls-rbac-network-quotas.md) |
+| PS6.6 | [Secrets strategy](PS6.6-secrets-strategy-sops-eso.md) |
+| PS6.7 | [Optional GitOps](PS6.7-optional-gitops-bootstrap.md) |
+| PS6.8 | [GCP baseline deploy](PS6.8-gcp-baseline-deploy-plan.md) |
+| PS6.9 | [Billing and shutdown](PS6.9-billing-shutdown-controls.md) |
+| PS6.10 | [Portfolio artifacts](PS6.10-portfolio-artifacts-bundle.md) |
+| PS6.11 | [Graph workers + checkpoint ops](PS6.11-graph-workers-postgres-checkpoint-ops.md) |
 
 ---
 
 ## Definition of done (sprint)
 
-- [ ] Local K8s deploy works with safe rollback and documented procedures.
-- [ ] Environment isolation controls are defined and tested at least in local/stage form.
-- [ ] Cloud baseline deployment path is reproducible and cost-guarded.
-- [ ] Portfolio artifact checklist is complete and review-ready.
-- [ ] **PS6.11:** checkpoint / graph worker pattern validated in-cluster (or explicit defer with ADR).
+**Hard gates (local / docs)**
+
+- [ ] Local K8s deploy works with safe rollback and documented procedures (PS6.2 + PS6.4).
+- [ ] Environment isolation controls defined and verified on local/stage form (PS6.5).
+- [ ] Secrets enter cluster without plain-text Git commits (PS6.6 minimal path).
+- [ ] **PS6.11:** checkpoint pattern validated in-cluster per PS6.1 ADR (**worker split** or **API-only resume**) — or explicit defer ADR with trigger.
+- [ ] Portfolio artifact checklist complete and review-ready (PS6.10).
+
+**Cloud — minimum (no live GCP required)**
+
+- [ ] PS6.8: ADR + `infra/terraform/gcp/` skeleton; `terraform validate` (and plan stub) in CI or documented local gate.
+- [ ] PS6.9: `docs/runbooks/cloud_cost_hygiene.md` — budgets, scale-down, labels — **design validated**.
+
+**Cloud — stretch (requires GCP credentials + budget)**
+
+- [ ] PS6.8: reproducible deploy to stage GKE using PS6.3 chart + values overlays.
+- [ ] PS6.9: live budget alert wired in cloud project.
+
+---
+
+## Upstream / downstream
+
+- **Upstream:** PS1–PS5 (compose baseline, safety gates, queue, checkpoint code PS3.9, LLM PS5).
+- **Downstream:** Phase 7 cloud GPU pools, multi-cluster, enterprise secrets rotation.
+- **Cross-phase index:** [Phase README — Cross-cutting](../README.md#cross-cutting-durability-safety-and-evals).
 
 ---
 

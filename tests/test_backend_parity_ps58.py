@@ -272,6 +272,30 @@ def test_fixture_invalid_fallback_arm():
     assert gpu_rows[0]["valid_for_parity"] is False
 
 
+def test_provenance_capture_from_worker_thread():
+    """ThreadPoolExecutor workers must append to the active capture buffer (PS1.9 graph path)."""
+    from concurrent.futures import ThreadPoolExecutor
+
+    from apps.llm_provenance import capture_llm_provenance, record_gateway_provenance
+
+    with capture_llm_provenance() as buf:
+
+        def _worker() -> None:
+            record_gateway_provenance(
+                node="triage",
+                backend_requested="openai",
+                backend_actual="openai",
+                fallback_used=False,
+                fallback_reason="",
+            )
+
+        with ThreadPoolExecutor(max_workers=1) as ex:
+            ex.submit(_worker).result()
+
+    assert len(buf) == 1
+    assert buf[0]["node"] == "triage"
+
+
 def test_valid_pair_produces_comparison():
     openai_arm = build_case_arm(
         case_id="must-escalate-no-evidence",

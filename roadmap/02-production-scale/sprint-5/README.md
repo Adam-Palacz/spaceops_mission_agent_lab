@@ -70,8 +70,9 @@ See **[BOARD.md](BOARD.md)** for status.
 - [x] Cost guardrails documented with explicit **`LLM_BUDGET_MODE`** semantics (PS5.6).
 - [x] Idle shutdown uses mandatory `last_gpu_call_at`; host scripts with bash + PowerShell dry-run (PS5.7).
 - [ ] Parity report promotes GPU only for complete case pairs where both `openai` and `gpu` arms
-      have `valid_for_parity=true` (PS5.8).
-- [ ] **PS5.8** documents optional tracing SaaS as nightly/trend only (not merge gate).
+      have `valid_for_parity=true` (PS5.8) — **automated runner + fixture tests Done**; live NIM
+      promotion evidence is manual/nightly.
+- [x] **PS5.8** documents optional tracing SaaS as nightly/trend only (not merge gate).
 
 ---
 

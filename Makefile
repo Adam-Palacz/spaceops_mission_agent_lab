@@ -15,7 +15,7 @@ POSTGRES_PASSWORD ?= spaceops
 
 .PHONY: help install install-dev lint format typecheck check safety-gates semantic-check test migrate-smoke \
 	golden-check golden-run golden-update compose-config docker-build gpu-up gpu-down gpu-smoke gpu-idle-check \
-	gpu-idle-integration
+	gpu-idle-integration backend-parity-check
 
 help: ## Show this help (default goal)
 	@echo SpaceOps Makefile - targets mirror CI where practical.
@@ -100,3 +100,6 @@ gpu-idle-integration: ## PS5.7 Real compose/API GPU activity acceptance (require
 	@$(PYTHON) -c "from pathlib import Path; Path('var').mkdir(parents=True, exist_ok=True)"
 	$(COMPOSE) --profile gpu up -d nim-llm api
 	$(PYTHON) scripts/gpu_activity_integration.py
+
+backend-parity-check: ## PS5.8 Fixture parity tests (no live LLM)
+	pytest tests/test_backend_parity_ps58.py -v

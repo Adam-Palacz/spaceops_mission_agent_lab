@@ -1,0 +1,87 @@
+# PS5.8 — Backend parity (openai vs gpu); soft gate, not PR blocker.
+# Default CI stays GPU-free; run manually or on schedule before GPU promotion.
+name: Backend parity
+
+on:
+  workflow_dispatch:
+    inputs:
+      soft_signal:
+        description: "Exit 0 even when gpu_promotion=blocked"
+        required: false
+        default: "true"
+        type: choice
+        options:
+          - "true"
+          - "false"
+  schedule:
+    - cron: "0 7 * * 2"
+
+jobs:
+  backend-parity-fixtures:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Fixture parity unit tests (no live LLM)
+        run: pytest tests/test_backend_parity_ps58.py -v
+
+  backend-parity-live:
+    runs-on: ubuntu-latest
+    needs: backend-parity-fixtures
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+    steps:
+      - uses: actions/checkout@v6
+        if: ${{ env.OPENAI_API_KEY != '' }}
+
+      - name: Skip live parity when OPENAI_API_KEY is unset
+        if: ${{ env.OPENAI_API_KEY == '' }}
+        run: echo "OPENAI_API_KEY is unset; live backend parity is skipped."
+
+      - name: Set up Python
+        if: ${{ env.OPENAI_API_KEY != '' }}
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        if: ${{ env.OPENAI_API_KEY != '' }}
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run openai + gpu parity arms (soft signal by default)
+        if: ${{ env.OPENAI_API_KEY != '' }}
+        env:
+          LLM_BACKEND: openai
+        run: |
+          python -m apps.mcp.telemetry_server.main &
+          MCP_PID=$!
+          cleanup() {
+            kill $MCP_PID || true
+          }
+          trap cleanup EXIT
+          sleep 5
+          SOFT="${{ github.event_name == 'workflow_dispatch' && github.event.inputs.soft_signal || 'true' }}"
+          EXTRA=""
+          if [ "${SOFT}" = "true" ]; then EXTRA="--soft-signal"; fi
+          python -m evals.backend_parity --run-both --write-report evals/reports/backend_parity_ci.json ${EXTRA}
+          echo "Live parity completed (gpu arm may block promotion if NIM unavailable)."
+
+      - name: Upload parity report artifact
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: backend-parity-report
+          path: evals/reports/backend_parity_ci.json
+          if-no-files-found: warn

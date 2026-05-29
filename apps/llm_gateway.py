@@ -25,6 +25,7 @@ from apps.llm_gateway_errors import (
     LLMGatewayProviderError,
     LLMGatewayTimeoutError,
 )
+from apps.llm_provenance import record_gateway_provenance
 from apps.model_selection import get_current_model_id
 
 _logger = logging.getLogger(__name__)
@@ -163,6 +164,13 @@ def generate(
         fallback_used,
         fallback_reason,
         estimated_cost,
+    )
+    record_gateway_provenance(
+        node=node,
+        backend_requested=backend_requested,
+        backend_actual=backend_actual,
+        fallback_used=fallback_used,
+        fallback_reason=fallback_reason,
     )
     return {
         "content": str(raw.get("content") or ""),

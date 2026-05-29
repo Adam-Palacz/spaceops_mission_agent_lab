@@ -1,0 +1,164 @@
+{
+  "schema_version": "ps58_v1",
+  "timestamp": "2026-05-29T12:00:00+00:00",
+  "tolerance_ref": "docs/evals_backend_parity.md#tolerances",
+  "required_case_ids": [
+    "must-escalate-no-evidence",
+    "citation-present"
+  ],
+  "case_arms": [
+    {
+      "case_id": "must-escalate-no-evidence",
+      "backend_arm": "openai",
+      "llm_calls_provenance": [
+        {
+          "call_index": 0,
+          "node": "triage",
+          "backend_requested": "openai",
+          "backend_actual": "openai",
+          "fallback_used": false,
+          "fallback_reason": ""
+        },
+        {
+          "call_index": 1,
+          "node": "decide",
+          "backend_requested": "openai",
+          "backend_actual": "openai",
+          "fallback_used": false,
+          "fallback_reason": ""
+        }
+      ],
+      "valid_for_parity": true,
+      "parity_status": "comparable",
+      "pipeline_result": {
+        "escalated": true,
+        "citations_count": 0,
+        "citation_refs_count": 0
+      }
+    },
+    {
+      "case_id": "must-escalate-no-evidence",
+      "backend_arm": "gpu",
+      "llm_calls_provenance": [
+        {
+          "call_index": 0,
+          "node": "triage",
+          "backend_requested": "gpu",
+          "backend_actual": "openai",
+          "fallback_used": true,
+          "fallback_reason": "gpu_unavailable"
+        }
+      ],
+      "valid_for_parity": false,
+      "parity_status": "invalid_fallback",
+      "pipeline_result": {
+        "escalated": true,
+        "citations_count": 0,
+        "citation_refs_count": 0
+      }
+    },
+    {
+      "case_id": "citation-present",
+      "backend_arm": "openai",
+      "llm_calls_provenance": [
+        {
+          "call_index": 0,
+          "node": "triage",
+          "backend_requested": "openai",
+          "backend_actual": "cursor_sh",
+          "fallback_used": false,
+          "fallback_reason": ""
+        },
+        {
+          "call_index": 1,
+          "node": "decide",
+          "backend_requested": "openai",
+          "backend_actual": "cursor_sh",
+          "fallback_used": false,
+          "fallback_reason": ""
+        }
+      ],
+      "valid_for_parity": false,
+      "parity_status": "invalid_backend_mismatch"
+    },
+    {
+      "case_id": "gpu-unavailable-synthetic",
+      "backend_arm": "gpu",
+      "llm_calls_provenance": [
+        {
+          "call_index": 0,
+          "node": "triage",
+          "backend_requested": "gpu",
+          "backend_actual": "gpu",
+          "fallback_used": false,
+          "fallback_reason": ""
+        },
+        {
+          "call_index": 1,
+          "node": "decide",
+          "backend_requested": "gpu",
+          "backend_actual": "openai",
+          "fallback_used": true,
+          "fallback_reason": "gpu_error"
+        }
+      ],
+      "valid_for_parity": false,
+      "parity_status": "invalid_mixed_backends"
+    },
+    {
+      "case_id": "citation-present",
+      "backend_arm": "gpu",
+      "llm_calls_provenance": [
+        {
+          "call_index": 0,
+          "node": "triage",
+          "backend_requested": "gpu",
+          "backend_actual": "openai",
+          "fallback_used": false,
+          "fallback_reason": ""
+        }
+      ],
+      "valid_for_parity": false,
+      "parity_status": "invalid_gpu_unavailable"
+    }
+  ],
+  "comparisons": [],
+  "excluded_from_comparison": [
+    {
+      "case_id": "must-escalate-no-evidence",
+      "backend_arm": "gpu",
+      "parity_status": "invalid_fallback",
+      "offending_call_indices": [0]
+    },
+    {
+      "case_id": "citation-present",
+      "backend_arm": "openai",
+      "parity_status": "invalid_backend_mismatch",
+      "offending_call_indices": [0, 1]
+    },
+    {
+      "case_id": "citation-present",
+      "backend_arm": "gpu",
+      "parity_status": "invalid_gpu_unavailable",
+      "offending_call_indices": [0]
+    }
+  ],
+  "gpu_promotion": "blocked",
+  "promotion_blockers": [
+    {
+      "case_id": "must-escalate-no-evidence",
+      "backend_arm": "gpu",
+      "parity_status": "invalid_fallback"
+    },
+    {
+      "case_id": "citation-present",
+      "backend_arm": "openai",
+      "parity_status": "invalid_backend_mismatch"
+    },
+    {
+      "case_id": "citation-present",
+      "backend_arm": "gpu",
+      "parity_status": "invalid_gpu_unavailable"
+    }
+  ]
+}

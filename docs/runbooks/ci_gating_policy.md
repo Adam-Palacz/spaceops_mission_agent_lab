@@ -23,6 +23,7 @@ Defines which checks **block merge** (hard gates) vs **report only** (soft signa
 | 9 | `eval-injection-suite` | **hard** | `evals-hard` | Unsafe-action rate = 0 (S2.8) |
 | 10 | `eval-semantic-ps44` | **hard** | `semantic-evals` | Citation/audit fixtures, no LLM |
 | 11 | `evals-full-suite` | **soft** | `evals-soft` | Broader MoE quality (non-blocking) |
+| 12 | `backend-parity-ps58` | **soft** | `backend-parity` workflow | OpenAI vs GPU promotion signal (PS5.8); fixture tests in `pytest` |
 
 ### OPA / HITL criteria (`safety-opa-hitl`)
 
@@ -49,6 +50,7 @@ CI runs jobs in parallel where possible; **logical order** for developers:
 3. `make test` — Postgres + full pytest  
 4. Eval hard gates (needs `OPENAI_API_KEY`, OPA + Telemetry MCP in CI)  
 5. Eval soft signal (informational)
+6. Backend parity workflow (optional nightly / workflow_dispatch — PS5.8)
 
 Final job **`gate-summary`** aggregates results, writes `ci-gate-summary.md` artifact and GitHub Step Summary.
 
@@ -113,6 +115,12 @@ python -m evals.scoring --injection-only
 # Soft full suite (exit 0 even on failures)
 python -m evals.scoring --soft-signal
 python -m evals.semantic
+
+# PS5.8 fixture parity tests (no live LLM; also in pytest tests/)
+pytest tests/test_backend_parity_ps58.py -v
+
+# PS5.8 live parity (needs OPENAI_API_KEY; gpu arm needs NIM)
+python -m evals.backend_parity --run-both --soft-signal
 ```
 
 ---
@@ -121,6 +129,6 @@ python -m evals.semantic
 
 - **[guardrails_quality_triage.md](guardrails_quality_triage.md)** — PS4.8 operator triage (decision tree, symptom → action)  
 - **[llm_backend_rollout.md](llm_backend_rollout.md)** — PS5.5 backend rollout/rollback and canary policy  
-- [evals/README.md](../../evals/README.md) — PS1.8 deterministic gates  
+- [docs/evals_backend_parity.md](../evals_backend_parity.md) — PS5.8 openai vs gpu parity (soft gate)  
 - [docs/golden_run_baselines.md](../golden_run_baselines.md) — golden-check  
 - [docs/prompt_injection_threat_model.md](../prompt_injection_threat_model.md) — injection hard gate

@@ -9,6 +9,9 @@ __pycache__/
 
 # P4.8 — generated shadow comparison reports (keep sample_*.json committed)
 evals/reports/shadow_models_*.json
+# PS5.8 — generated backend parity reports (keep sample_backend_parity_report.json committed)
+evals/reports/backend_parity_*.json
+evals/reports/arm_*.json
 
 data/approvals/
 data/incidents/

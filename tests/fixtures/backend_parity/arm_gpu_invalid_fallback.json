@@ -1,0 +1,82 @@
+[
+  {
+    "case_id": "must-escalate-no-evidence",
+    "backend_arm": "openai",
+    "llm_calls_provenance": [
+      {
+        "call_index": 0,
+        "node": "triage",
+        "backend_requested": "openai",
+        "backend_actual": "openai",
+        "fallback_used": false,
+        "fallback_reason": ""
+      },
+      {
+        "call_index": 1,
+        "node": "decide",
+        "backend_requested": "openai",
+        "backend_actual": "openai",
+        "fallback_used": false,
+        "fallback_reason": ""
+      }
+    ],
+    "valid_for_parity": true,
+    "parity_status": "comparable"
+  },
+  {
+    "case_id": "must-escalate-no-evidence",
+    "backend_arm": "gpu",
+    "llm_calls_provenance": [
+      {
+        "call_index": 0,
+        "node": "triage",
+        "backend_requested": "gpu",
+        "backend_actual": "openai",
+        "fallback_used": true,
+        "fallback_reason": "gpu_unavailable"
+      }
+    ],
+    "valid_for_parity": false,
+    "parity_status": "invalid_fallback"
+  },
+  {
+    "case_id": "citation-present",
+    "backend_arm": "openai",
+    "llm_calls_provenance": [
+      {
+        "call_index": 0,
+        "node": "triage",
+        "backend_requested": "openai",
+        "backend_actual": "openai",
+        "fallback_used": false,
+        "fallback_reason": ""
+      }
+    ],
+    "valid_for_parity": true,
+    "parity_status": "comparable"
+  },
+  {
+    "case_id": "citation-present",
+    "backend_arm": "gpu",
+    "llm_calls_provenance": [
+      {
+        "call_index": 0,
+        "node": "triage",
+        "backend_requested": "gpu",
+        "backend_actual": "gpu",
+        "fallback_used": false,
+        "fallback_reason": ""
+      },
+      {
+        "call_index": 1,
+        "node": "decide",
+        "backend_requested": "gpu",
+        "backend_actual": "openai",
+        "fallback_used": true,
+        "fallback_reason": "gpu_error"
+      }
+    ],
+    "valid_for_parity": false,
+    "parity_status": "invalid_mixed_backends"
+  }
+]

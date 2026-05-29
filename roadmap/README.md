@@ -1,6 +1,6 @@
 # Roadmap — SpaceOps Mission Agent Lab
 
-This folder holds the **execution plan**: phases, sprints, and task-level specs. Use it to implement work in order and track status. Canonical high-level plan: [../roadmap_F1.md](../roadmap_F1.md).
+This folder holds the **execution plan**: phases, sprints, and task-level specs. Use it to implement work in order and track status. Canonical high-level sources: [goals.md](goals.md), [01-foundation-mvp.md](01-foundation-mvp.md), [02-production-scale.md](02-production-scale.md), and [03-next-gen-autonomy.md](03-next-gen-autonomy.md).
 
 ---
 
@@ -8,14 +8,14 @@ This folder holds the **execution plan**: phases, sprints, and task-level specs.
 
 | Path | Content |
 |------|---------|
-| **[01-core/](01-core/)** | Phase: core pipeline (Sprint 1 + Sprint 2). Ingest → Report → Act + OPA + approvals. |
-| **[02-hardening/](02-hardening/)** | Phase 4: docs, runbooks, expanded evals, optional UI. |
+| **[01-foundation-mvp/01-core/](01-foundation-mvp/01-core/)** | Phase: core pipeline (Sprint 1 + Sprint 2). Ingest → Report → Act + OPA + approvals. |
+| **[01-foundation-mvp/02-hardening/](01-foundation-mvp/02-hardening/)** | Phase 4: docs, runbooks, expanded evals, optional UI. |
 | **[0x-publication-roadmap.md](0x-publication-roadmap.md)** | Simplified publication plan (technical + product narrative + OSS visibility), independent from sprint execution. |
 | **[03-next-gen-autonomy.md](03-next-gen-autonomy.md)** | Vision and backlog for L3/L4 autonomy: multi-agent Flight Director, collaborative planning, compliance-aware gateway, edge SLMs, GraphRAG. |
 | **[02-production-scale/](02-production-scale/)** | Sprint execution plan for post-MVP productionization and scale-up (PS1-PS6). |
 | **[backlog/](backlog/)** | Pool of ideas/specs (items.md + BL-xxx.md). Use backlog to create sprint tasks — no statuses in backlog. |
 
-Each phase contains **sprint folders** (e.g. `01-core/sprint-1/`). Inside each sprint:
+Each phase contains **sprint folders** (e.g. `01-foundation-mvp/01-core/sprint-1/`). Inside each sprint:
 
 - **README.md** — Sprint goal, outcomes, and how to work in this folder.
 - **BOARD.md** — Status of all tasks (Todo | In progress | Done | Blocked).
@@ -42,8 +42,8 @@ Each phase contains **sprint folders** (e.g. `01-core/sprint-1/`). Inside each s
 
 ### Instructions for AI
 
-1. **Task work** — When implementing a task, read the task’s .md file in the sprint folder (e.g. `01-core/sprint-1/S1.4-fastapi-ingest.md`). Use its Requirements and Checklist; do not invent new scope. After implementation, suggest updating BOARD.md (e.g. task → Done).
+1. **Task work** — When implementing a task, read the task’s .md file in the sprint folder (e.g. `01-foundation-mvp/01-core/sprint-1/S1.4-fastapi-ingest.md`). Use its Requirements and Checklist; do not invent new scope. After implementation, suggest updating BOARD.md (e.g. task → Done).
 2. **Adding tasks** — New tasks go in the right sprint folder. Create a new `Sx.y-name.md` (same format as existing tasks) and add a row to that sprint’s `BOARD.md`. Keep sprint README and BOARD in sync.
-3. **Scope** — If the user asks for something that isn’t in a task file, map it to an existing task or propose a new task file and BOARD update. Do not change scope in `roadmap_F1.md` without the user’s approval.
+3. **Scope** — If the user asks for something that isn’t in a task file, map it to an existing task or propose a new task file and BOARD update. Do not change scope in the canonical roadmap docs without the user’s approval.
 4. **Order** — Prefer implementing tasks in sprint order (S1.1 → S1.14, then S2.1 → S2.11); respect dependencies noted in task files.
 5. **Backlog** — [backlog/](backlog/) is a list of items (items.md) and spec files (BL-xxx.md). To do something: create a sprint task from the backlog spec; track status in the sprint BOARD, not in the backlog.

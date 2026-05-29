@@ -36,7 +36,7 @@ Sprint 1 delivered a **complete pipeline** from ingest to report: a single comma
 ### S1.1 — Directory structure
 - **Why:** Consistent repo layout for API, agent, MCP, data, KB, evals, infra, docs.
 - **What:** Directories `apps/api`, `apps/agent`, `apps/mcp/telemetry_server`, `apps/mcp/kb_server`, `data/`, `kb/runbooks`, `kb/postmortems`, `evals/`, `infra/`, `docs/` (with subdirs workflow, architecture, agent, planning, requirements, data).
-- **Where:** Repo-wide; [docs/architecture/repo_structure.mmd](../../docs/architecture/repo_structure.mmd) (if present).
+- **Where:** Repo-wide; [docs/architecture/repo_structure.mmd](../../../../docs/architecture/repo_structure.mmd) (if present).
 
 ### S1.2 — Docker Compose
 - **Why:** Single command for Postgres with pgvector, OTel Collector, Jaeger (goals §4.5).
@@ -171,7 +171,7 @@ Sprint 1 delivered a **complete pipeline** from ingest to report: a single comma
 | Evals | `evals/cases.yaml`, `evals/scoring.py` |
 | Infra | `infra/docker-compose.yml`, `infra/otel-collector.yaml` |
 | Tests | `tests/test_*.py`, `tests/conftest.py` |
-| Docs | `docs/README.md` (diagram index), `roadmap/goals.md`, `roadmap/01-core-roadmap.md` |
+| Docs | `docs/README.md` (diagram index), `roadmap/goals.md`, `roadmap/01-foundation-mvp.md` |
 
 ---
 
@@ -210,7 +210,7 @@ F5, F6, F8 (Act, OPA, Approval API) and NF3, NF8, NF9 are planned for **S2**.
 ## 7. What's next — Sprint 2
 
 S2 introduces **Act**: safe (ticket, GitOps PR) and restricted (OPA + approval API). Key tasks: ops-config (S2.1), MCP Ticketing + GitOps (S2.2), Decide→Act + OPA fail-closed (S2.3–S2.6), Approval API (S2.5, S2.7), injection suite (S2.8), metrics and dashboard (S2.9).  
-Details: [../sprint-2/README.md](../sprint-2/README.md), [../../01-core-roadmap.md](../../01-core-roadmap.md).
+Details: [../sprint-2/README.md](../sprint-2/README.md), [../../../01-foundation-mvp.md](../../../01-foundation-mvp.md).
 
 ---
 

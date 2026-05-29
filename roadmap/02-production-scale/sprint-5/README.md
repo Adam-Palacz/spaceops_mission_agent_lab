@@ -5,6 +5,8 @@ backend, and cost/safety controls so acceleration remains optional and reversibl
 
 **Strategic source:** [Phase 5 — LLM Backends](../../02-production-scale.md#phase-5--llm-backends-vendor-agnostic--optional-gpu-off-by-default).
 
+**Retrospective:** [SPRINT_REVIEW.md](SPRINT_REVIEW.md) (2026-05-29).
+
 ---
 
 ## Configuration model (read first)
@@ -73,6 +75,8 @@ See **[BOARD.md](BOARD.md)** for status.
       have `valid_for_parity=true` (PS5.8) — manual NIM up/down evidence in
       `evals/reports/backend_parity_manual_*.json`.
 - [x] **PS5.8** documents optional tracing SaaS as nightly/trend only (not merge gate).
+
+**Sprint review:** [SPRINT_REVIEW.md](SPRINT_REVIEW.md) (2026-05-29).
 
 ---
 

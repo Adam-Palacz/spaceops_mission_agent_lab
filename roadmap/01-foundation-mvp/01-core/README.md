@@ -1,6 +1,6 @@
 # Phase: Core (Sprint 1 + Sprint 2)
 
-Delivers the full pipeline to Report (S1) and Act + OPA + approvals + injection suite + dashboards (S2). See [../roadmap_F1.md](../roadmap_F1.md) for the source.
+Delivers the full pipeline to Report (S1) and Act + OPA + approvals + injection suite + dashboards (S2). See [../../01-foundation-mvp.md](../../01-foundation-mvp.md) for the source.
 
 ---
 

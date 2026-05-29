@@ -140,8 +140,8 @@
 - [ ] DLQ captures and explains failures
 
 **Sprint PS3 backlog (repo):** includes **durable LangGraph checkpoints** and **MCP lossy-link proofs**
-— see [`roadmap/02-production-scale/sprint-3/`](roadmap/02-production-scale/sprint-3/) (PS3.9, PS3.10) and
-[`roadmap/02-production-scale/README.md#cross-cutting-durability-safety-and-evals`](roadmap/02-production-scale/README.md#cross-cutting-durability-safety-and-evals).
+— see [`02-production-scale/sprint-3/`](02-production-scale/sprint-3/) (PS3.9, PS3.10) and
+[`02-production-scale/README.md#cross-cutting-durability-safety-and-evals`](02-production-scale/README.md#cross-cutting-durability-safety-and-evals).
 
 ---
 

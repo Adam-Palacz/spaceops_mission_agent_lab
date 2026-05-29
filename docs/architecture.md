@@ -192,6 +192,6 @@ The main runtime path (see also `docs/workflow/end_to_end_pipeline.mmd`):
 ## Cross-links
 
 - **Goals and requirements:** `roadmap/goals.md`, especially §4.5 (production-ready criteria).
-- **Execution plan:** `roadmap/01-foundation-mvp.md`, `roadmap/01-core/README.md`.
+- **Execution plan:** `roadmap/01-foundation-mvp.md`, `roadmap/01-foundation-mvp/01-core/README.md`.
 - **Diagrams index:** `docs/README.md` (`architecture/`, `workflow/`, `agent/` sections).
 

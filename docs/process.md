@@ -64,7 +64,7 @@ than to add capability, it is tech-debt work.
 
 - Main entry points:
   - `README.md` (docs table) links to this file.
-  - `roadmap/01-core/README.md` can reference this process when planning future sprints.
+  - `roadmap/01-foundation-mvp/01-core/README.md` can reference this process when planning future sprints.
 
 ## 5. Sprint planning snippet
 

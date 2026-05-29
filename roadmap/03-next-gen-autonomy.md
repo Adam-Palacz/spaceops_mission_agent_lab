@@ -186,6 +186,6 @@ issues, which then affect propulsion).
 - Keep this file aligned with:
   - `01-foundation-mvp.md` (core),
   - `02-production-scale.md` (productionisation),
-  - `post-mvp.md` (longer-term roadmap),
-  - and `base-roadmap.md` (overview).
+  - `README.md` (roadmap index),
+  - and `goals.md` (project goals and measures).
 

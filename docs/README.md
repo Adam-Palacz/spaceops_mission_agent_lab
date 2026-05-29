@@ -2,7 +2,7 @@
 
 This file is the **index and entry point** for documentation in `docs/`. Mermaid diagrams are stored as **.mmd** files in subfolders by domain. Use a Mermaid-compatible viewer (VS Code Mermaid extension, GitHub/GitLab, [Mermaid Live](https://mermaid.live)) to render them.
 
-**Repozytorium:** [README](../README.md) · [roadmap/goals.md](../roadmap/goals.md) · [roadmap/01-core-roadmap.md](../roadmap/01-core-roadmap.md) · [roadmap/README.md](../roadmap/README.md)
+**Repozytorium:** [README](../README.md) · [roadmap/goals.md](../roadmap/goals.md) · [roadmap/01-foundation-mvp.md](../roadmap/01-foundation-mvp.md) · [roadmap/02-production-scale.md](../roadmap/02-production-scale.md) · [roadmap/README.md](../roadmap/README.md)
 
 ---
 
@@ -18,14 +18,18 @@ The **docs/** directory holds project documentation that supports both humans an
 - **[runbooks/ci_gating_policy.md](runbooks/ci_gating_policy.md)** — Hard vs soft CI gates, OPA/HITL criteria, recovery (PS4.7).
 - **[runbooks/guardrails_quality_triage.md](runbooks/guardrails_quality_triage.md)** — Failed-gate triage, decision tree, PS4 symptom → action (PS4.8).
 - **[evals_llm_judge_hooks.md](evals_llm_judge_hooks.md)** — Optional future LLM-as-judge eval hooks (PS4.4, non-blocking).
-- **workflow/** — High-level pipeline (Ingest to Post-incident) and escalation path; aligns with `roadmap/01-core-roadmap.md` and `roadmap/goals.md` F1–F10.
+- **[llm_gateway.md](llm_gateway.md)** — LLM gateway contract, backend metadata, and `LLM_BACKEND` routing (PS1.6 / PS5).
+- **[llm_gpu_backend.md](llm_gpu_backend.md)** — Optional NVIDIA NIM backend, `gpu` compose profile, and manual smoke checklist (PS5.3 / PS5.7).
+- **[llm_cost_guardrails.md](llm_cost_guardrails.md)** — Cost telemetry and process/postgres budget modes (PS5.6).
+- **[evals_backend_parity.md](evals_backend_parity.md)** — OpenAI vs GPU parity reports, invalid-arm rules, and promotion criteria (PS5.8).
+- **workflow/** — High-level pipeline (Ingest to Post-incident) and escalation path; aligns with `roadmap/01-foundation-mvp.md` and `roadmap/goals.md` F1–F10.
 - **architecture/** — System boundaries (API, Agent, MCP, OPA, storage, observability), repo layout, and production-ready criteria from `goals.md` §4.5.
-- **agent/** — LangGraph state machine and Act logic (safe vs restricted, OPA, approval); implements behaviour described in `roadmap/01-core-roadmap.md` and policy in `roadmap/goals.md` §4.3.
-- **planning/** — Sprint and phase roadmap (S1, S2, Phase 4) and epic→deliverable mapping; mirrors `roadmap/01-core-roadmap.md`.
+- **agent/** — LangGraph state machine and Act logic (safe vs restricted, OPA, approval); implements behaviour described in `roadmap/01-foundation-mvp.md` and policy in `roadmap/goals.md` §4.3.
+- **planning/** — Sprint and phase roadmap (S1, S2, Phase 4) and epic→deliverable mapping; mirrors `roadmap/01-foundation-mvp.md`.
 - **requirements/** — How goals decompose into Functional, Non-functional, Policy, and MoE/MoP; references `roadmap/goals.md` §4.
 - **data/** — Audit log event schema (append-only, immutable); matches `roadmap/goals.md` §4.6.
 
-**Cross-references for AI:** When answering questions about pipeline, architecture, agent behaviour, roadmap, or requirements, use this index to locate the right .mmd; the canonical text remains in `roadmap/goals.md` and `roadmap/01-core-roadmap.md`.
+**Cross-references for AI:** When answering questions about pipeline, architecture, agent behaviour, roadmap, or requirements, use this index to locate the right .mmd; the canonical text remains in `roadmap/goals.md`, `roadmap/01-foundation-mvp.md`, and `roadmap/02-production-scale.md`.
 
 ---
 
@@ -93,6 +97,9 @@ The **docs/** directory holds project documentation that supports both humans an
 - Replay CLI/API workflow (PS1.5): [runbooks/replay_workflow.md](runbooks/replay_workflow.md)
 - Fixture upload + simulate (PS2.7): [runbooks/fixture_upload_simulation.md](runbooks/fixture_upload_simulation.md)
 - LLM gateway contract (PS1.6): [llm_gateway.md](llm_gateway.md)
+- Optional GPU backend (PS5.3 / PS5.7): [llm_gpu_backend.md](llm_gpu_backend.md)
+- LLM cost guardrails (PS5.6): [llm_cost_guardrails.md](llm_cost_guardrails.md)
+- Backend parity evals (PS5.8): [evals_backend_parity.md](evals_backend_parity.md)
 - Guardrails fail-closed minimum hardening (PS1.7): [runbooks/guardrails_minimum_hardening.md](runbooks/guardrails_minimum_hardening.md)
 - Distributed tracing + W3C propagation verification (PS1.9): [runbooks/distributed_tracing_ps19.md](runbooks/distributed_tracing_ps19.md)
 
@@ -103,7 +110,7 @@ The **docs/** directory holds project documentation that supports both humans an
 ## Updating diagrams
 
 - When **goals**, **roadmap**, or **architecture** change, update the matching .mmd and, if needed, the descriptions in this file.
-- Keep diagram IDs and labels consistent with terminology in `roadmap/goals.md` and `roadmap/01-core-roadmap.md` (e.g. "escalation packet", "fail-closed", "safe vs restricted").
+- Keep diagram IDs and labels consistent with terminology in `roadmap/goals.md`, `roadmap/01-foundation-mvp.md`, and `roadmap/02-production-scale.md` (e.g. "escalation packet", "fail-closed", "safe vs restricted").
 
 ---
 
@@ -111,8 +118,8 @@ The **docs/** directory holds project documentation that supports both humans an
 
 | Field | Value |
 |-------|--------|
-| **Document version** | 1.0 |
-| **Last updated** | 2026-05-01 |
+| **Document version** | 1.1 |
+| **Last updated** | 2026-05-29 |
 
 ### Instructions for AI when working in `docs/`
 
@@ -120,7 +127,7 @@ The **docs/** directory holds project documentation that supports both humans an
 
 2. **One diagram = one .mmd.** New diagrams go in the right subfolder (`workflow/`, `architecture/`, `agent/`, `planning/`, `requirements/`, `data/`). Add one Index row under the right heading; keep Folder structure accurate.
 
-3. **Canonical text is in roadmap.** When changing behaviour or requirements, update `roadmap/goals.md` or `roadmap/01-core-roadmap.md` first, then the relevant .mmd and this README if needed. Do not define requirements or process only in `docs/`.
+3. **Canonical text is in roadmap.** When changing behaviour or requirements, update `roadmap/goals.md`, `roadmap/01-foundation-mvp.md`, or `roadmap/02-production-scale.md` first, then the relevant .mmd and this README if needed. Do not define requirements or process only in `docs/`.
 
 4. **If unsure, list the folder.** When unsure which .mmd exist in a subfolder, list that folder (e.g. `docs/workflow/`) and then update this README so Index and Folder structure match.
 

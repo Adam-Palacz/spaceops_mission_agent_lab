@@ -191,4 +191,4 @@ themes should be treated as **recurring backlog streams** and pulled into sprint
 
 *Update this roadmap when sprint scope or priorities change. Align with goals.md (requirements, MoE/MoP, audit schema, production-ready criteria).*
 
-**Task-level execution:** See **[roadmap/](roadmap/)** for phased folders (01-core, 02-hardening), sprint folders (sprint-1, sprint-2), per-task markdown files, and BOARD.md per sprint/phase for status tracking.
+**Task-level execution:** See **[roadmap/README.md](README.md)** for phased folders, sprint folders, per-task markdown files, and BOARD.md per sprint/phase for status tracking.

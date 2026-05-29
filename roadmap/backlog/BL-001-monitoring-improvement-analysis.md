@@ -7,7 +7,7 @@
 | Field | Value |
 |-------|--------|
 | **Backlog ID** | BL-001 |
-| **Source** | Verifies deliverable from [01-core/sprint-1/S1.2-docker-compose.md](../01-core/sprint-1/S1.2-docker-compose.md) |
+| **Source** | Verifies deliverable from [01-core/sprint-1/S1.2-docker-compose.md](../01-foundation-mvp/01-core/sprint-1/S1.2-docker-compose.md) |
 
 ---
 

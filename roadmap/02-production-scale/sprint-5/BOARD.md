@@ -15,6 +15,7 @@
 
 **Plan notes (post-review)**
 
+- **Sprint closed:** 8/8 Done — see [SPRINT_REVIEW.md](SPRINT_REVIEW.md).
 - **Config:** `LLM_BACKEND=openai|cursor_sh|gpu`; `LLM_PROVIDER` deprecated with precedence in PS5.1.
 - **GPU runtime:** NVIDIA NIM only for PS5.3 Done; manual smoke required, not placeholder compose.
 - **Parity:** promotion requires complete `openai`/`gpu` case pairs with both arms valid (PS5.8).

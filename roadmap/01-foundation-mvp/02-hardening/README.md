@@ -1,6 +1,6 @@
 # Phase: Hardening (Phase 4)
 
-Post–Sprint 2: documentation, runbooks, expanded evals, optional UI. Backlog; no fixed sprint boundary. See [../roadmap_F1.md](../roadmap_F1.md).
+Post–Sprint 2: documentation, runbooks, expanded evals, optional UI. Backlog; no fixed sprint boundary. See [../../01-foundation-mvp.md](../../01-foundation-mvp.md).
 
 ---
 

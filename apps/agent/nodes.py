@@ -714,6 +714,7 @@ def check_escalation(state: AgentState) -> dict:
         return packet
     # Preserve escalation already set by token_limit, llm_timeout, or run_timeout (NF6)
     if state.get("escalated") and state.get("escalation_packet", {}).get("reason") in (
+        "budget_exceeded",
         "token_limit",
         "rate_limit",
         "llm_timeout",

@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import os
+import socket
 import subprocess
 import sys
+from urllib.parse import urlparse
 
 import pytest
 
@@ -14,9 +16,35 @@ def _db_url() -> str:
     )
 
 
+def _postgres_reachable(url: str, *, timeout_seconds: float = 1.0) -> bool:
+    parsed = urlparse(url)
+    host = parsed.hostname or "localhost"
+    port = parsed.port or 5432
+    try:
+        with socket.create_connection((host, port), timeout=timeout_seconds):
+            return True
+    except OSError:
+        return False
+
+
+def _migration_smoke_skip_reason() -> str | None:
+    url = _db_url()
+    if not url:
+        return "DATABASE_URL/ALEMBIC_DATABASE_URL not set for migration smoke test"
+    if not _postgres_reachable(url):
+        return (
+            "Postgres not reachable for migration smoke test "
+            "(start compose postgres or kubectl port-forward svc/spaceops-postgres 5432:5432)"
+        )
+    return None
+
+
+_MIGRATION_SMOKE_SKIP = _migration_smoke_skip_reason()
+
+
 @pytest.mark.skipif(
-    not _db_url(),
-    reason="DATABASE_URL/ALEMBIC_DATABASE_URL not set for migration smoke test",
+    _MIGRATION_SMOKE_SKIP is not None,
+    reason=_MIGRATION_SMOKE_SKIP or "skipped",
 )
 def test_alembic_upgrade_downgrade_smoke() -> None:
     env = dict(os.environ)

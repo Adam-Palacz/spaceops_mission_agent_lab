@@ -1,0 +1,13 @@
+# PS6.3 — local kind cluster (default local K8s tool).
+# Single control-plane node; API reached via kubectl port-forward (see docs/runbooks/local_k8s_dev.md).
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: spaceops-dev
+nodes:
+  - role: control-plane
+    kubeadmConfigPatches:
+      - |
+        kind: InitConfiguration
+        nodeRegistration:
+          kubeletExtraArgs:
+            node-labels: "ingress-ready=true"

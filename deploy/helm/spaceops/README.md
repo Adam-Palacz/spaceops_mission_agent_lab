@@ -19,6 +19,8 @@ helm template spaceops deploy/helm/spaceops -f deploy/helm/spaceops/values.yaml 
 
 Makefile: `make helm-template`
 
+Local cluster: `make k8s-up` (PS6.3) — see [docs/runbooks/local_k8s_dev.md](../../../docs/runbooks/local_k8s_dev.md).
+
 ## Compose → Kubernetes mapping
 
 | Docker Compose service | K8s workload | Values toggle |

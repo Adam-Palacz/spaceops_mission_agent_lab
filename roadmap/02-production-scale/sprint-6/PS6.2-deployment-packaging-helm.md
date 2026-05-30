@@ -51,7 +51,7 @@ for full compose parity (kb-mcp, jaeger, nats, NIM).
 ## Test / acceptance
 
 - [x] Render manifests for all three env overlays without error (CI + `tests/test_helm_ps62.py`)
-- [ ] Deploy on local cluster (PS6.3) using packaged manifests — **next task**
+- [x] Deploy on local cluster (PS6.3) using packaged manifests.
 - [x] Changing `LLM_BACKEND` in values and redeploying does not require image rebuild
 
 ---

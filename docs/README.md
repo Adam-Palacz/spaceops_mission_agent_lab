@@ -25,6 +25,7 @@ The **docs/** directory holds project documentation that supports both humans an
 - **[adr/0005-environment-strategy-dev-stage-prod.md](adr/0005-environment-strategy-dev-stage-prod.md)** — `dev` / `stage` / `prod` model, promotion gates, checkpoint fork (PS6.1).
 - **[runbooks/environment_promotion.md](runbooks/environment_promotion.md)** — Promote releases and GPU canaries across environments (PS6.1).
 - **[adr/0006-kubernetes-packaging-helm.md](adr/0006-kubernetes-packaging-helm.md)** — Helm chart layout and env overlays (PS6.2).
+- **[runbooks/local_k8s_dev.md](runbooks/local_k8s_dev.md)** — Local kind cluster + `make k8s-up` (PS6.3).
 - **workflow/** — High-level pipeline (Ingest to Post-incident) and escalation path; aligns with `roadmap/01-foundation-mvp.md` and `roadmap/goals.md` F1–F10.
 - **architecture/** — System boundaries (API, Agent, MCP, OPA, storage, observability), repo layout, and production-ready criteria from `goals.md` §4.5.
 - **agent/** — LangGraph state machine and Act logic (safe vs restricted, OPA, approval); implements behaviour described in `roadmap/01-foundation-mvp.md` and policy in `roadmap/goals.md` §4.3.

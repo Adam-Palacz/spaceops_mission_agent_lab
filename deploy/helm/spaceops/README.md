@@ -21,6 +21,8 @@ Makefile: `make helm-template`
 
 Local cluster: `make k8s-up` (PS6.3) — see [docs/runbooks/local_k8s_dev.md](../../../docs/runbooks/local_k8s_dev.md).
 
+Deploy / rollback on K8s: [docs/runbooks/k8s_rollout_rollback.md](../../../docs/runbooks/k8s_rollout_rollback.md) — local demo: `make k8s-rollout-demo`.
+
 ## Compose → Kubernetes mapping
 
 | Docker Compose service | K8s workload | Values toggle |

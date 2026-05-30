@@ -29,10 +29,14 @@ This runbook explains how to roll out `LLM_BACKEND=gpu` safely and how to rollba
 
 ## Emergency rollback (no code deploy)
 
+**Compose / Makefile path:**
+
 1. Switch config to `LLM_BACKEND=openai`
 2. Stop GPU runtime:
    - `make gpu-down`
 3. Validate new calls show `backend_actual=openai`.
+
+**Kubernetes / Helm path:** see [k8s_rollout_rollback.md § LLM emergency rollback](k8s_rollout_rollback.md#llm-emergency-rollback-ps55-on-k8s) — patch `api.llm.backend=openai`, disable NIM profile, `kubectl rollout restart` if needed.
 
 ## Failure interpretation
 
@@ -57,4 +61,4 @@ Per [ADR 0005](../adr/0005-environment-strategy-dev-stage-prod.md):
 - Stage GPU canary: change values + rolling restart; attach PS5.8 parity report when promoting GPU.
 - Emergency rollback: patch values to `LLM_BACKEND=openai`, redeploy or restart affected Deployment; disable NIM Helm profile if enabled.
 
-Full promotion gates: [environment_promotion.md](environment_promotion.md).
+Full K8s deploy/rollback procedures: [k8s_rollout_rollback.md](k8s_rollout_rollback.md).

@@ -21,7 +21,7 @@ Lab may remain Makefile/Helm imperative; GitOps proves promotion model from PS6.
 - [ ] Bootstrap guide: install GitOps controller on local/stage cluster.
 - [ ] App-of-apps or equivalent: deploy SpaceOps chart from PS6.2 with env overlay.
 - [ ] Sync policy documented: manual vs auto; **prod** requires manual sync or approval (PS6.1).
-- [ ] Rollback = Git revert + sync (cross-link PS6.4).
+- [ ] Rollback = Git revert + sync (cross-link [PS6.4 k8s_rollout_rollback.md](../../../docs/runbooks/k8s_rollout_rollback.md#rollback-flow)).
 - [ ] Secrets: integrate with PS6.6 (SOPS/ESO); no plain secrets in Application spec.
 - [ ] Drift detection: what happens if someone `kubectl edit` (document remediation).
 

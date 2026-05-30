@@ -160,5 +160,6 @@ Match password to `K8S_POSTGRES_PASSWORD` / Helm `secrets.postgresPassword`.
 ## Related
 
 - [Helm chart README](../../deploy/helm/spaceops/README.md)
+- [K8s rollout and rollback (PS6.4)](k8s_rollout_rollback.md)
 - [ADR 0006 — Kubernetes packaging (Helm)](../adr/0006-kubernetes-packaging-helm.md)
 - PS6.3 spec: `roadmap/02-production-scale/sprint-6/PS6.3-local-k8s-baseline-kind-k3d.md`

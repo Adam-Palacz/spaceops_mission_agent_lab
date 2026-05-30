@@ -49,7 +49,7 @@ Changes that **do not** modify:
 ### stage → prod
 
 - [ ] All stage gates above satisfied on current release candidate
-- [ ] [Rollout / rollback](llm_backend_rollout.md#emergency-rollback-no-code-deploy) exercised on stage (PS6.4)
+- [ ] [Rollout / rollback](k8s_rollout_rollback.md) exercised on stage (PS6.4)
 - [ ] Demo scenarios A (report + evidence) and B (escalation) documented and rehearsed
 - [ ] **Manual approver** recorded (name + date in change note or PR)
 - [ ] Prod GPU: only with parity artifact + explicit approver; default remains `openai`

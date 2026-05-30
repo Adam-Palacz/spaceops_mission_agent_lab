@@ -5,7 +5,7 @@
 | PS6.1 | Environment strategy (`dev` / `stage` / `prod`) | Done | [PS6.1](PS6.1-environment-strategy-dev-stage-prod.md) |
 | PS6.2 | Deployment packaging (Helm) | Done | [PS6.2](PS6.2-deployment-packaging-helm.md) |
 | PS6.3 | Local K8s baseline (kind / k3d) | Done | [PS6.3](PS6.3-local-k8s-baseline-kind-k3d.md) |
-| PS6.4 | Rollout and rollback playbook | Todo | [PS6.4](PS6.4-rollout-rollback-playbook.md) |
+| PS6.4 | Rollout and rollback playbook | Done | [PS6.4](PS6.4-rollout-rollback-playbook.md) |
 | PS6.5 | Isolation controls (RBAC, network, quotas) | Todo | [PS6.5](PS6.5-isolation-controls-rbac-network-quotas.md) |
 | PS6.6 | Secrets strategy (SOPS / External Secrets) | Todo | [PS6.6](PS6.6-secrets-strategy-sops-eso.md) |
 | PS6.7 | Optional GitOps bootstrap (Argo CD / Flux) | Todo | [PS6.7](PS6.7-optional-gitops-bootstrap.md) |

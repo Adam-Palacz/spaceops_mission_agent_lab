@@ -27,7 +27,8 @@ POSTGRES_PASSWORD ?= spaceops
 
 .PHONY: help install install-dev lint format typecheck check safety-gates semantic-check test migrate-smoke \
 	golden-check golden-run golden-update compose-config docker-build gpu-up gpu-down gpu-smoke gpu-idle-check \
-	gpu-idle-integration backend-parity-check helm-template helm-lint k8s-up k8s-down k8s-status k8s-smoke
+	gpu-idle-integration backend-parity-check helm-template helm-lint k8s-up k8s-down k8s-status k8s-smoke \
+	k8s-rollout-demo
 
 help: ## Show this help (default goal)
 	@echo SpaceOps Makefile - targets mirror CI where practical.
@@ -142,3 +143,6 @@ k8s-status: ## PS6.3 Show pods/services and Helm release in spaceops-dev
 
 k8s-smoke: ## PS6.3 Port-forward API and GET /health
 	$(PYTHON_RUN) scripts/k8s_local.py smoke
+
+k8s-rollout-demo: ## PS6.4 Helm upgrade + rollback demo (requires make k8s-up)
+	$(PYTHON_RUN) scripts/k8s_rollout_demo.py

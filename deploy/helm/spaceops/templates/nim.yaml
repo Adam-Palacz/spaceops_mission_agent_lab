@@ -37,6 +37,7 @@ spec:
         {{- include "spaceops.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: nim
     spec:
+      serviceAccountName: {{ include "spaceops.componentServiceAccountName" (dict "root" . "component" "nim") }}
       {{- with .Values.nim.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

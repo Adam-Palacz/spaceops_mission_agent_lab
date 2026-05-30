@@ -40,6 +40,7 @@ spec:
         {{- include "spaceops.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: jaeger
     spec:
+      serviceAccountName: {{ include "spaceops.componentServiceAccountName" (dict "root" . "component" "jaeger") }}
       containers:
         - name: jaeger
           image: {{ .Values.observability.jaeger.image }}
@@ -133,6 +134,7 @@ spec:
         {{- include "spaceops.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: otel-collector
     spec:
+      serviceAccountName: {{ include "spaceops.componentServiceAccountName" (dict "root" . "component" "otel-collector") }}
       containers:
         - name: otel-collector
           image: {{ .Values.observability.otelCollector.image }}

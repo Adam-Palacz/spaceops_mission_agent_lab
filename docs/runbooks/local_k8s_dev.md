@@ -38,11 +38,16 @@ From repo root:
 ```
 
 ```bash
-make k8s-up
+make k8s-down
+make k8s-up          # new clusters: Calico CNI for NetworkPolicy enforcement (PS6.5)
 make k8s-status
-make k8s-smoke    # GET /health via port-forward
+make k8s-smoke       # GET /health via port-forward
+make k8s-isolation-verify
 make k8s-down
 ```
+
+**Migrating** from an older kindnet-only cluster: run `make k8s-down` then `make k8s-up` once.
+Skip Calico for faster bootstrap (no cross-namespace proof): `K8S_SKIP_CALICO=1 make k8s-up`.
 
 `k8s-up` will:
 
@@ -161,5 +166,6 @@ Match password to `K8S_POSTGRES_PASSWORD` / Helm `secrets.postgresPassword`.
 
 - [Helm chart README](../../deploy/helm/spaceops/README.md)
 - [K8s rollout and rollback (PS6.4)](k8s_rollout_rollback.md)
+- [K8s environment isolation (PS6.5)](k8s_environment_isolation.md)
 - [ADR 0006 — Kubernetes packaging (Helm)](../adr/0006-kubernetes-packaging-helm.md)
 - PS6.3 spec: `roadmap/02-production-scale/sprint-6/PS6.3-local-k8s-baseline-kind-k3d.md`

@@ -23,3 +23,21 @@ secrets:
 postgres:
   persistence:
     size: 2Gi
+
+isolation:
+  enabled: true
+  environment: dev
+  workloadServiceAccounts: true
+  networkPolicy:
+    enabled: true
+    allowLlmEgress: true
+  resourceQuota:
+    enabled: true
+    hard:
+      pods: "30"
+      requests.cpu: "6"
+      requests.memory: 12Gi
+      limits.cpu: "12"
+      limits.memory: 24Gi
+  limitRange:
+    enabled: true

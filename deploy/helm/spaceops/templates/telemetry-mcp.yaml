@@ -37,6 +37,7 @@ spec:
         {{- include "spaceops.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: telemetry-mcp
     spec:
+      serviceAccountName: {{ include "spaceops.componentServiceAccountName" (dict "root" . "component" "telemetry-mcp") }}
       containers:
         - name: telemetry-mcp
           image: {{ include "spaceops.image" (dict "repository" .Values.images.mcp.repository "tag" .Values.images.mcp.tag) }}

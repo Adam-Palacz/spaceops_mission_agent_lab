@@ -33,3 +33,21 @@ nats:
 
 telemetryPersister:
   enabled: true
+
+isolation:
+  enabled: true
+  environment: stage
+  workloadServiceAccounts: true
+  networkPolicy:
+    enabled: true
+    allowLlmEgress: true
+  resourceQuota:
+    enabled: true
+    hard:
+      pods: "40"
+      requests.cpu: "8"
+      requests.memory: 16Gi
+      limits.cpu: "16"
+      limits.memory: 32Gi
+  limitRange:
+    enabled: true

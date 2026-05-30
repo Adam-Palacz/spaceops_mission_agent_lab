@@ -5,4 +5,8 @@ metadata:
   name: {{ include "spaceops.namespace" . }}
   labels:
     {{- include "spaceops.labels" . | nindent 4 }}
+    {{- if .Values.isolation.enabled }}
+    spaceops.io/environment: {{ required "isolation.environment required when isolation.enabled" .Values.isolation.environment | quote }}
+    spaceops.io/isolation: "enabled"
+    {{- end }}
 {{- end }}

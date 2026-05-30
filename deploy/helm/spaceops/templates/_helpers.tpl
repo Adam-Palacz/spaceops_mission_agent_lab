@@ -46,6 +46,16 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 {{- end }}
 
+{{- define "spaceops.componentServiceAccountName" -}}
+{{- $root := .root -}}
+{{- $component := .component -}}
+{{- if and $root.Values.isolation.enabled $root.Values.isolation.workloadServiceAccounts }}
+{{- printf "%s-%s" (include "spaceops.fullname" $root) $component | trunc 63 | trimSuffix "-" }}
+{{- else }}
+{{- include "spaceops.serviceAccountName" $root }}
+{{- end }}
+{{- end }}
+
 {{- define "spaceops.image" -}}
 {{- $repo := .repository -}}
 {{- $tag := .tag | default "latest" -}}

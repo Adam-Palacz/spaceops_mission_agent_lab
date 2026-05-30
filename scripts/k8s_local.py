@@ -8,6 +8,7 @@ import json
 import os
 import shutil
 import subprocess
+import sys
 import time
 import urllib.error
 import urllib.request
@@ -99,22 +100,33 @@ def build_and_tag_images(*, skip_build: bool = False) -> None:
         print(f"Tagged {source} -> {tag}")
 
 
-def ensure_kind_cluster() -> None:
+def ensure_kind_cluster(*, skip_calico: bool = False) -> None:
+    created = False
     if kind_cluster_exists():
         print(f"kind cluster {CLUSTER_NAME!r} already exists")
-        return
-    print(f"Creating kind cluster {CLUSTER_NAME!r}")
-    _run(
-        [
-            "kind",
-            "create",
-            "cluster",
-            "--name",
-            CLUSTER_NAME,
-            "--config",
-            str(KIND_CONFIG),
-        ]
-    )
+    else:
+        print(f"Creating kind cluster {CLUSTER_NAME!r}")
+        _run(
+            [
+                "kind",
+                "create",
+                "cluster",
+                "--name",
+                CLUSTER_NAME,
+                "--config",
+                str(KIND_CONFIG),
+            ]
+        )
+        created = True
+    scripts_dir = Path(__file__).resolve().parent
+    if str(scripts_dir) not in sys.path:
+        sys.path.insert(0, str(scripts_dir))
+    from k8s_cluster_cni import ensure_calico_cni, install_calico
+
+    if created:
+        install_calico()
+    else:
+        ensure_calico_cni(skip=skip_calico)
 
 
 def kind_load_images() -> None:
@@ -257,12 +269,12 @@ def cmd_status() -> None:
     _run(["helm", "list", "-n", NAMESPACE], check=False)
 
 
-def cmd_up(*, skip_build: bool, skip_smoke: bool) -> None:
+def cmd_up(*, skip_build: bool, skip_smoke: bool, skip_calico: bool) -> None:
     require_tools("docker", "kind", "kubectl", "helm")
     if not KIND_CONFIG.is_file():
         raise SystemExit(f"Missing kind config: {KIND_CONFIG}")
     build_and_tag_images(skip_build=skip_build)
-    ensure_kind_cluster()
+    ensure_kind_cluster(skip_calico=skip_calico)
     kind_load_images()
     helm_upgrade_install()
     wait_api_ready()
@@ -303,6 +315,11 @@ def _parse_args() -> argparse.Namespace:
     up.add_argument(
         "--skip-smoke", action="store_true", help="Skip /health smoke after install"
     )
+    up.add_argument(
+        "--skip-calico",
+        action="store_true",
+        help="Skip Calico CNI install (NetworkPolicy will not be enforced locally)",
+    )
 
     down = sub.add_parser("down", help="Uninstall chart and delete kind cluster")
     down.add_argument(
@@ -320,7 +337,16 @@ def _parse_args() -> argparse.Namespace:
 def main() -> None:
     args = _parse_args()
     if args.command == "up":
-        cmd_up(skip_build=args.skip_build, skip_smoke=args.skip_smoke)
+        skip_calico = args.skip_calico or os.getenv("K8S_SKIP_CALICO", "").lower() in (
+            "1",
+            "true",
+            "yes",
+        )
+        cmd_up(
+            skip_build=args.skip_build,
+            skip_smoke=args.skip_smoke,
+            skip_calico=skip_calico,
+        )
     elif args.command == "down":
         cmd_down(keep_cluster=args.keep_cluster)
     elif args.command == "status":

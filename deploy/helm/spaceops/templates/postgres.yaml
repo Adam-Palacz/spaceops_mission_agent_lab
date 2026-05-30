@@ -38,6 +38,7 @@ spec:
         {{- include "spaceops.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: postgres
     spec:
+      serviceAccountName: {{ include "spaceops.componentServiceAccountName" (dict "root" . "component" "postgres") }}
       containers:
         - name: postgres
           image: {{ .Values.postgres.image }}

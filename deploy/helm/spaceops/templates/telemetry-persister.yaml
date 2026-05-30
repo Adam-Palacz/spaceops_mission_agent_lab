@@ -19,7 +19,7 @@ spec:
         {{- include "spaceops.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: telemetry-persister
     spec:
-      serviceAccountName: {{ include "spaceops.serviceAccountName" . }}
+      serviceAccountName: {{ include "spaceops.componentServiceAccountName" (dict "root" . "component" "telemetry-persister") }}
       containers:
         - name: telemetry-persister
           image: {{ include "spaceops.image" (dict "repository" .Values.images.api.repository "tag" .Values.images.api.tag) }}

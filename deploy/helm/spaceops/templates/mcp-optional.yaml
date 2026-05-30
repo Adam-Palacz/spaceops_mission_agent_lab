@@ -37,6 +37,7 @@ spec:
         {{- include "spaceops.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: kb-mcp
     spec:
+      serviceAccountName: {{ include "spaceops.componentServiceAccountName" (dict "root" . "component" "kb-mcp") }}
       containers:
         - name: kb-mcp
           image: {{ include "spaceops.image" (dict "repository" .Values.images.mcp.repository "tag" .Values.images.mcp.tag) }}
@@ -114,6 +115,7 @@ spec:
         {{- include "spaceops.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: ticket-mcp
     spec:
+      serviceAccountName: {{ include "spaceops.componentServiceAccountName" (dict "root" . "component" "ticket-mcp") }}
       containers:
         - name: ticket-mcp
           image: {{ include "spaceops.image" (dict "repository" .Values.images.mcp.repository "tag" .Values.images.mcp.tag) }}
@@ -179,6 +181,7 @@ spec:
         {{- include "spaceops.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: gitops-mcp
     spec:
+      serviceAccountName: {{ include "spaceops.componentServiceAccountName" (dict "root" . "component" "gitops-mcp") }}
       containers:
         - name: gitops-mcp
           image: {{ include "spaceops.image" (dict "repository" .Values.images.mcp.repository "tag" .Values.images.mcp.tag) }}

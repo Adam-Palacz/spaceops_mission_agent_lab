@@ -23,6 +23,8 @@ Local cluster: `make k8s-up` (PS6.3) — see [docs/runbooks/local_k8s_dev.md](..
 
 Deploy / rollback on K8s: [docs/runbooks/k8s_rollout_rollback.md](../../../docs/runbooks/k8s_rollout_rollback.md) — local demo: `make k8s-rollout-demo`.
 
+Environment isolation (PS6.5): [docs/runbooks/k8s_environment_isolation.md](../../../docs/runbooks/k8s_environment_isolation.md) — verify: `make k8s-isolation-verify`.
+
 ## Compose → Kubernetes mapping
 
 | Docker Compose service | K8s workload | Values toggle |

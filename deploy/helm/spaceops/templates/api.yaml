@@ -37,7 +37,7 @@ spec:
         {{- include "spaceops.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: api
     spec:
-      serviceAccountName: {{ include "spaceops.serviceAccountName" . }}
+      serviceAccountName: {{ include "spaceops.componentServiceAccountName" (dict "root" . "component" "api") }}
       containers:
         - name: api
           image: {{ include "spaceops.image" (dict "repository" .Values.images.api.repository "tag" .Values.images.api.tag) }}

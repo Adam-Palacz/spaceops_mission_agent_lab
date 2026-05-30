@@ -1,0 +1,18 @@
+{{- if .Values.isolation.enabled }}
+# PS6.5: workload ServiceAccounts intentionally have NO RoleBinding — no in-cluster API access.
+# Platform operators use separate RBAC (cluster-admin / namespace-admin) outside this chart.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "spaceops.fullname" . }}-platform-readonly
+  namespace: {{ include "spaceops.namespace" . }}
+  labels:
+    {{- include "spaceops.labels" . | nindent 4 }}
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "services", "configmaps", "events"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["apps"]
+    resources: ["deployments", "statefulsets", "replicasets"]
+    verbs: ["get", "list", "watch"]
+{{- end }}

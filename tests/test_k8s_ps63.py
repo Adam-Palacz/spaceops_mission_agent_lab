@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import importlib.util
 from pathlib import Path
+from types import SimpleNamespace
 
 import yaml
 
@@ -26,6 +27,8 @@ def test_kind_config_exists_and_valid() -> None:
     data = yaml.safe_load(KIND_CONFIG.read_text(encoding="utf-8"))
     assert data["kind"] == "Cluster"
     assert data["name"] == "spaceops-dev"
+    assert data["networking"]["disableDefaultCNI"] is True
+    assert data["networking"]["podSubnet"] == "192.168.0.0/16"
 
 
 def test_helm_value_files_list_complete() -> None:
@@ -55,8 +58,13 @@ def test_local_k8s_runbook_exists() -> None:
     assert "kind" in content.lower()
 
 
-def test_compose_built_image_ref_uses_project_name() -> None:
+def test_compose_built_image_ref_uses_project_name(monkeypatch) -> None:
     mod = _load_k8s_module()
+    monkeypatch.setattr(
+        mod,
+        "_run",
+        lambda *_args, **_kwargs: SimpleNamespace(stdout='{"name":"spaceops"}'),
+    )
     ref = mod.compose_built_image_ref("telemetry-mcp")
     assert ref.endswith("-telemetry-mcp:latest")
     assert ref.startswith("spaceops")

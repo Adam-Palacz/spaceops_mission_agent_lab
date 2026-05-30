@@ -28,7 +28,7 @@ Do **not** commit secret values. Stage/prod never use laptop `.env` files on nod
 - [ ] Default CI green (unit, integration, manifest lint when PS6.2 ships)
 - [ ] `helm template` / deploy dry-run for `values-stage.yaml`
 - [ ] Secrets present via PS6.6 path (not plain Git)
-- [ ] PS6.5 isolation (RBAC, NetworkPolicy) applied in `spaceops-stage`
+- [ ] PS6.5 isolation (RBAC, NetworkPolicy) applied in `spaceops-stage` — [k8s_environment_isolation.md](k8s_environment_isolation.md)
 
 ### Fork PR without GPU
 

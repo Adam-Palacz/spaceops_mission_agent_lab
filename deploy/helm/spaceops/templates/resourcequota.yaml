@@ -1,0 +1,14 @@
+{{- if and .Values.isolation.enabled .Values.isolation.resourceQuota.enabled }}
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: {{ include "spaceops.fullname" . }}-quota
+  namespace: {{ include "spaceops.namespace" . }}
+  labels:
+    {{- include "spaceops.labels" . | nindent 4 }}
+spec:
+  hard:
+    {{- range $key, $val := .Values.isolation.resourceQuota.hard }}
+    {{ $key }}: {{ $val | quote }}
+    {{- end }}
+{{- end }}

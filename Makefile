@@ -28,7 +28,7 @@ POSTGRES_PASSWORD ?= spaceops
 .PHONY: help install install-dev lint format typecheck check safety-gates semantic-check test migrate-smoke \
 	golden-check golden-run golden-update compose-config docker-build gpu-up gpu-down gpu-smoke gpu-idle-check \
 	gpu-idle-integration backend-parity-check helm-template helm-lint k8s-up k8s-down k8s-status k8s-smoke \
-	k8s-rollout-demo
+	k8s-rollout-demo k8s-isolation-verify
 
 help: ## Show this help (default goal)
 	@echo SpaceOps Makefile - targets mirror CI where practical.
@@ -131,9 +131,11 @@ helm-template: ## PS6.2 Render minimal dev manifests to stdout
 
 # PS6.3 — local kind cluster (requires docker, kind, kubectl, helm on PATH).
 K8S_SKIP_BUILD ?= 0
+K8S_SKIP_CALICO ?= 0
+K8S_ISOLATION_ARGS ?=
 
 k8s-up: ## PS6.3 Create kind cluster + Helm install minimal dev profile
-	$(PYTHON_RUN) scripts/k8s_local.py up $(if $(filter 1 true yes,$(K8S_SKIP_BUILD)),--skip-build,)
+	$(PYTHON_RUN) scripts/k8s_local.py up $(if $(filter 1 true yes,$(K8S_SKIP_BUILD)),--skip-build,) $(if $(filter 1 true yes,$(K8S_SKIP_CALICO)),--skip-calico,)
 
 k8s-down: ## PS6.3 Helm uninstall + delete kind cluster spaceops-dev
 	$(PYTHON_RUN) scripts/k8s_local.py down
@@ -146,3 +148,6 @@ k8s-smoke: ## PS6.3 Port-forward API and GET /health
 
 k8s-rollout-demo: ## PS6.4 Helm upgrade + rollback demo (requires make k8s-up)
 	$(PYTHON_RUN) scripts/k8s_rollout_demo.py
+
+k8s-isolation-verify: ## PS6.5 Verify NetworkPolicy, quota, RBAC on local cluster
+	$(PYTHON_RUN) scripts/k8s_isolation_verify.py $(K8S_ISOLATION_ARGS)

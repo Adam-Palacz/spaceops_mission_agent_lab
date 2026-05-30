@@ -47,3 +47,21 @@ ticketMcp:
 
 gitopsMcp:
   enabled: true
+
+isolation:
+  enabled: true
+  environment: prod
+  workloadServiceAccounts: true
+  networkPolicy:
+    enabled: true
+    allowLlmEgress: true
+  resourceQuota:
+    enabled: true
+    hard:
+      pods: "50"
+      requests.cpu: "12"
+      requests.memory: 24Gi
+      limits.cpu: "24"
+      limits.memory: 48Gi
+  limitRange:
+    enabled: true

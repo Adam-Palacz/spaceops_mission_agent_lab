@@ -37,6 +37,7 @@ spec:
         {{- include "spaceops.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: opa
     spec:
+      serviceAccountName: {{ include "spaceops.componentServiceAccountName" (dict "root" . "component" "opa") }}
       containers:
         - name: opa
           image: {{ .Values.opa.image }}

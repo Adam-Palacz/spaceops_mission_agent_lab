@@ -3,7 +3,7 @@
 | Field | Value |
 |-------|-------|
 | **Task ID** | PS6.5 |
-| **Status** | Todo |
+| **Status** | Done |
 
 ---
 
@@ -16,13 +16,13 @@ NetworkPolicy, ResourceQuota, LimitRange. Matches Phase 6 “shared compute, iso
 
 ## Requirements
 
-- [ ] Separate **namespaces** per environment (names from PS6.1 ADR).
-- [ ] **ServiceAccounts** per workload; minimal RBAC (no cluster-admin for app SA).
-- [ ] **NetworkPolicy:** default deny between env namespaces; allow only required paths (api→postgres,
+- [x] Separate **namespaces** per environment (names from PS6.1 ADR).
+- [x] **ServiceAccounts** per workload; minimal RBAC (no cluster-admin for app SA).
+- [x] **NetworkPolicy:** default deny between env namespaces; allow only required paths (api→postgres,
       api→opa, worker→mcp, egress to LLM endpoints documented).
-- [ ] **ResourceQuota** + **LimitRange** per namespace (prevent dev starving stage).
-- [ ] Document what is **not** isolated (shared control plane, shared nodes) vs what is.
-- [ ] Optional: Kyverno/Gatekeeper policy stub for “no `:latest` tag in prod” (design note acceptable).
+- [x] **ResourceQuota** + **LimitRange** per namespace (prevent dev starving stage).
+- [x] Document what is **not** isolated (shared control plane, shared nodes) vs what is.
+- [x] Optional: Kyverno/Gatekeeper policy stub for “no `:latest` tag in prod” (design note acceptable).
 
 ---
 
@@ -35,24 +35,29 @@ NetworkPolicy, ResourceQuota, LimitRange. Matches Phase 6 “shared compute, iso
 
 ## Checklist
 
-- [ ] Policy manifests in deploy package (PS6.2).
-- [ ] Runbook: verify isolation (`kubectl auth can-i`, cross-namespace curl should fail).
-- [ ] Test script or doc steps for quota enforcement (optional automated test).
+- [x] Policy manifests in deploy package (PS6.2).
+- [x] Runbook: verify isolation (`kubectl auth can-i`, cross-namespace curl should fail).
+- [x] Test script or doc steps for quota enforcement (optional automated test).
 
 ---
 
 ## Test / acceptance
 
-- [ ] Pod in `dev` cannot reach postgres Service in `prod` namespace (NetworkPolicy).
-- [ ] App ServiceAccount cannot patch cluster-scoped resources.
-- [ ] Reviewer checklist in runbook passes on local cluster.
+- [x] Pod in `dev` cannot reach postgres Service in `prod` namespace (NetworkPolicy) — `make k8s-isolation-verify` after `make k8s-up` (Calico on kind by default).
+- [x] App ServiceAccount cannot patch cluster-scoped resources.
+- [x] Reviewer checklist in runbook passes on local cluster.
 
 ---
 
 ## Deliverables (expected)
 
-- `deploy/helm/spaceops/templates/networkpolicy.yaml` (or equivalent Helm template path)
+- `deploy/helm/spaceops/templates/networkpolicy.yaml`
+- `deploy/helm/spaceops/templates/resourcequota.yaml`, `limitrange.yaml`, `rbac.yaml`, `isolation-serviceaccounts.yaml`
 - `docs/runbooks/k8s_environment_isolation.md`
+- `scripts/k8s_isolation_verify.py` + `make k8s-isolation-verify`
+- `deploy/policy/kyverno/README.md` (design stub)
+- `scripts/k8s_cluster_cni.py` — Calico install for local kind
+- `infra/k8s/local/kind-config.yaml` — `disableDefaultCNI` + Calico pod subnet
 
 ---
 

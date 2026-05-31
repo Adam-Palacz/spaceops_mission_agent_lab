@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib.util
+import os
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -12,10 +13,19 @@ MAKEFILE = REPO_ROOT / "Makefile"
 
 
 def _load_demo_module():
+    # Script defaults target local kind (spaceops-dev); ignore K8S_NAMESPACE from .env.
     spec = importlib.util.spec_from_file_location("k8s_rollout_demo_ps64", DEMO_SCRIPT)
     assert spec and spec.loader
     mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
+    prev = os.environ.get("K8S_NAMESPACE")
+    os.environ.pop("K8S_NAMESPACE", None)
+    try:
+        spec.loader.exec_module(mod)
+    finally:
+        if prev is None:
+            os.environ.pop("K8S_NAMESPACE", None)
+        else:
+            os.environ["K8S_NAMESPACE"] = prev
     return mod
 
 

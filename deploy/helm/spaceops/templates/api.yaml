@@ -91,6 +91,13 @@ spec:
         - name: ops-config
           configMap:
             name: {{ .Values.api.persistence.opsConfig.configMapName }}
+            {{- with .Values.api.persistence.opsConfig.configMapItems }}
+            items:
+              {{- range . }}
+              - key: {{ .key | quote }}
+                path: {{ .path | quote }}
+              {{- end }}
+            {{- end }}
         {{- else if .Values.api.persistence.opsConfig.emptyDir }}
         - name: ops-config
           emptyDir: {}

@@ -90,6 +90,8 @@ api:
       emptyDir: true
       # When set, mount Git-synced ConfigMap (deploy/gitops/ops-config-kustomize via Argo).
       configMapName: ""
+      # Flat ConfigMap keys -> subpaths (generated in values-ops-config-mounts.yaml).
+      configMapItems: []
     var:
       enabled: true
       # PS5.7: emptyDir for lab; set pvc when GPU profile needs durable activity file.

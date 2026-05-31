@@ -1,0 +1,39 @@
+# Alert thresholds — mission config (GitOps target).
+# Agent may propose changes via PR; review before merge.
+# Schema: human-readable YAML; downstream systems can consume as-is or transform.
+
+version: "1"
+
+defaults:
+  severity: warning
+  cooldown_minutes: 5
+
+thresholds:
+  - id: bus_voltage_nominal
+    channel: bus_voltage
+    subsystem: Power
+    unit: V
+    warn_below: 26.0
+    warn_above: 29.0
+    critical_below: 24.0
+    critical_above: 31.0
+    description: "Main bus voltage; nominal 27–28 V."
+
+  - id: temp_plate_1
+    channel: temp_plate_1
+    subsystem: Thermal
+    unit: "C"
+    warn_below: null
+    warn_above: 50.0
+    critical_above: 60.0
+    description: "Thermal plate 1 temperature."
+
+  - id: wheel_rpm
+    channel: wheel_rpm
+    subsystem: ADCS
+    unit: rpm
+    warn_below: 800
+    warn_above: 1500
+    critical_below: 500
+    critical_above: 1800
+    description: "Reaction wheel RPM operating range."

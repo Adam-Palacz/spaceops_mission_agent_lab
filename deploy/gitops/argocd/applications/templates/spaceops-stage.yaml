@@ -20,6 +20,7 @@ spec:
         - values.yaml
         - values-stage.yaml
         - values-stage-full.yaml
+        - values-ops-config-mounts.yaml
         {{- if .Values.gcp.enabled }}
         - values-gcp-stage.yaml
         {{- end }}

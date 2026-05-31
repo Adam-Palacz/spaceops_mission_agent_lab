@@ -82,6 +82,7 @@ def helm_value_files(*, full_stack: bool) -> list[Path]:
     ]
     if full_stack:
         files.insert(2, HELM_CHART / "values-stage-full.yaml")
+        files.insert(3, HELM_CHART / "values-ops-config-mounts.yaml")
     for path in files:
         if not path.is_file():
             raise SystemExit(f"Missing Helm values: {path}")

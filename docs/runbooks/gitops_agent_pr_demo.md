@@ -89,8 +89,8 @@ $BASE = "http://<LB-IP>:8000"
 
    ```powershell
    python scripts/render_ops_config_kustomize.py
-   git add deploy/gitops/ops-config-kustomize/kustomization.yaml
-   git commit -m "chore: refresh ops-config kustomize"
+   git add deploy/gitops/ops-config-kustomize/ deploy/helm/spaceops/values-ops-config-mounts.yaml
+   git commit -m "chore: refresh ops-config kustomize and Helm mount items"
    git push
    ```
 

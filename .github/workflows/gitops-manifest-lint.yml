@@ -1,0 +1,44 @@
+# PS6.7 — Validate Argo CD Application manifests (no cluster required).
+name: GitOps manifest lint
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "deploy/gitops/**"
+      - "deploy/helm/spaceops/values-gitops-*.yaml"
+      - ".github/workflows/gitops-manifest-lint.yml"
+      - "tests/test_gitops_ps67.py"
+  pull_request:
+    branches: [main]
+    paths:
+      - "deploy/gitops/**"
+      - "deploy/helm/spaceops/values-gitops-*.yaml"
+      - ".github/workflows/gitops-manifest-lint.yml"
+      - "tests/test_gitops_ps67.py"
+
+jobs:
+  gitops-yaml:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.16.4
+
+      - name: Template Argo CD child Applications
+        run: |
+          helm template spaceops-apps deploy/gitops/argocd/applications \
+            --set repoUrl=https://github.com/example/spaceops_mission_agent_lab.git \
+            --set targetRevision=main \
+            > /dev/null
+
+      - run: pip install pytest pyyaml
+
+      - run: pytest tests/test_gitops_ps67.py -v

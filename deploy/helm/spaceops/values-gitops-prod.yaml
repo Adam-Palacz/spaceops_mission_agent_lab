@@ -1,0 +1,6 @@
+# PS6.7 — GitOps-managed image pins for prod (manual Argo CD sync after approver sign-off).
+images:
+  api:
+    tag: local
+  mcp:
+    tag: local

@@ -27,6 +27,8 @@ Environment isolation (PS6.5): [docs/runbooks/k8s_environment_isolation.md](../.
 
 Secrets (PS6.6): [docs/runbooks/k8s_secrets_bootstrap.md](../../../docs/runbooks/k8s_secrets_bootstrap.md) — bootstrap: `make k8s-secrets-bootstrap`.
 
+GitOps (PS6.7, optional): [docs/runbooks/gitops_bootstrap.md](../../../docs/runbooks/gitops_bootstrap.md) — `make gitops-install`, `make gitops-bootstrap`.
+
 ## Compose → Kubernetes mapping
 
 | Docker Compose service | K8s workload | Values toggle |

@@ -1,0 +1,33 @@
+# Optional lab Application — manual sync; not part of app-of-apps (dev stays make k8s-up by default).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: spaceops-dev
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: spaceops
+  source:
+    repoURL: __GITOPS_REPO_URL__
+    targetRevision: __GITOPS_TARGET_REVISION__
+    path: deploy/helm/spaceops
+    helm:
+      releaseName: spaceops
+      valueFiles:
+        - values.yaml
+        - values-dev.yaml
+        - values-minimal-dev.yaml
+      parameters:
+        - name: secrets.create
+          value: "false"
+        - name: secrets.existingSecret
+          value: spaceops-dev-secrets
+        - name: postgres.auth.existingSecret
+          value: spaceops-dev-secrets
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: spaceops-dev
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true

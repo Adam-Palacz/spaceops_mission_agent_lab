@@ -1,0 +1,27 @@
+# Prod - manual sync only (ADR 0005 approver gate). No automated block.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: spaceops-prod
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: spaceops
+  source:
+    repoURL: {{ .Values.repoUrl | quote }}
+    targetRevision: {{ .Values.targetRevision | quote }}
+    path: deploy/helm/spaceops
+    helm:
+      releaseName: spaceops
+      valueFiles:
+        - values.yaml
+        - values-prod.yaml
+        - values-gitops-prod.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: spaceops-prod
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+    # Manual sync: operator runs `argocd app sync spaceops-prod` after approval

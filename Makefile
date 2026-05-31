@@ -28,7 +28,8 @@ POSTGRES_PASSWORD ?= spaceops
 .PHONY: help install install-dev lint format typecheck check safety-gates semantic-check test migrate-smoke \
 	golden-check golden-run golden-update compose-config docker-build gpu-up gpu-down gpu-smoke gpu-idle-check \
 	gpu-idle-integration backend-parity-check helm-template helm-lint k8s-up k8s-down k8s-status k8s-smoke \
-	k8s-rollout-demo k8s-isolation-verify k8s-secrets-bootstrap
+	k8s-rollout-demo k8s-isolation-verify k8s-secrets-bootstrap gitops-install gitops-bootstrap \
+	gitops-status gitops-rollout-demo
 
 help: ## Show this help (default goal)
 	@echo SpaceOps Makefile - targets mirror CI where practical.
@@ -154,3 +155,20 @@ k8s-isolation-verify: ## PS6.5 Verify NetworkPolicy, quota, RBAC on local cluste
 
 k8s-secrets-bootstrap: ## PS6.6 Create/update K8s Secret from env (K8S_POSTGRES_PASSWORD, OPENAI_API_KEY, …)
 	$(PYTHON_RUN) scripts/k8s_secrets_bootstrap.py --create-namespace
+
+# PS6.7 — optional Argo CD GitOps (requires Git remote + pushed deploy/gitops/).
+GITOPS_BOOTSTRAP_ARGS ?=
+
+gitops-install: ## PS6.7 Install Argo CD controller in namespace argocd
+	$(PYTHON_RUN) scripts/gitops_bootstrap.py install --wait
+
+gitops-bootstrap: ## PS6.7 Apply AppProject + app-of-apps (set GITOPS_REPO_URL if needed)
+	$(PYTHON_RUN) scripts/gitops_bootstrap.py bootstrap $(GITOPS_BOOTSTRAP_ARGS)
+
+gitops-status: ## PS6.7 Show Argo CD Application status
+	$(PYTHON_RUN) scripts/gitops_bootstrap.py status
+
+GITOPS_DEMO_ARGS ?=
+
+gitops-rollout-demo: ## PS6.7 GitOps sync demo (use GITOPS_DEMO_ARGS=--sync-only after git push)
+	$(PYTHON_RUN) scripts/gitops_rollout_demo.py $(GITOPS_DEMO_ARGS)

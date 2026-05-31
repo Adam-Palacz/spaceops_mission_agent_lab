@@ -1,0 +1,29 @@
+# Stage - automated sync + self-heal (ADR 0008). Secrets via PS6.6 existingSecret only.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: spaceops-stage
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: spaceops
+  source:
+    repoURL: {{ .Values.repoUrl | quote }}
+    targetRevision: {{ .Values.targetRevision | quote }}
+    path: deploy/helm/spaceops
+    helm:
+      releaseName: spaceops
+      valueFiles:
+        - values.yaml
+        - values-stage.yaml
+        - values-gitops-stage.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: spaceops-stage
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

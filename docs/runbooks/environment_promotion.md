@@ -18,6 +18,7 @@ Local Compose = **dev** semantics (synthetic data, engineer-owned keys in `.env`
 2. Env overlay: `values-dev.yaml` | `values-stage.yaml` | `values-prod.yaml`
 3. Optional profiles: minimal dev, observability, NIM/GPU (off by default)
 4. Secrets: External Secrets / SOPS refs only — see PS6.6
+5. GitOps (optional PS6.7): stage auto-sync from Git; prod manual sync — [gitops_bootstrap.md](gitops_bootstrap.md)
 
 Do **not** commit secret values. Stage/prod never use laptop `.env` files on nodes.
 

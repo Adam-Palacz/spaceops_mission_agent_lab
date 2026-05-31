@@ -1,0 +1,2 @@
+repoUrl: "__GITOPS_REPO_URL__"
+targetRevision: "__GITOPS_TARGET_REVISION__"

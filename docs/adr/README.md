@@ -13,5 +13,6 @@ ADR entries are **append-only**: superseded documents keep full text; status upd
 | [0005-environment-strategy-dev-stage-prod.md](0005-environment-strategy-dev-stage-prod.md) | **Environment strategy (`dev` / `stage` / `prod`)** | **Accepted** |
 | [0006-kubernetes-packaging-helm.md](0006-kubernetes-packaging-helm.md) | **Kubernetes packaging (Helm)** | **Accepted** |
 | [0007-secrets-management-k8s.md](0007-secrets-management-k8s.md) | **Kubernetes secrets (SOPS / External Secrets)** | **Accepted** |
+| [0008-gitops-argocd.md](0008-gitops-argocd.md) | **GitOps controller (Argo CD; Flux deferred)** | **Accepted** |
 
 **Current ingest / queue strategy:** read **ADR 0002** first.

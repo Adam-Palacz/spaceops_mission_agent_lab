@@ -86,7 +86,11 @@ def test_stage_overlay_has_stricter_quota_than_dev() -> None:
 
 @pytest.mark.skipif(not _helm_available(), reason="helm CLI not installed")
 def test_base_values_disable_isolation_by_default() -> None:
-    out = _helm_template("spaceops-base", ["values.yaml"])
+    out = _helm_template(
+        "spaceops-base",
+        ["values.yaml"],
+        ["secrets.existingSecret=spaceops-test-secrets"],
+    )
     assert "NetworkPolicy" not in _kinds(out)
 
 

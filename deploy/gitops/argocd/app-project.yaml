@@ -1,0 +1,24 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: spaceops
+  namespace: argocd
+spec:
+  description: SpaceOps Helm deployments (PS6.2 / PS6.7)
+  sourceRepos:
+    - "__GITOPS_REPO_URL__"
+  destinations:
+    - namespace: argocd
+      server: https://kubernetes.default.svc
+    - namespace: spaceops-dev
+      server: https://kubernetes.default.svc
+    - namespace: spaceops-stage
+      server: https://kubernetes.default.svc
+    - namespace: spaceops-prod
+      server: https://kubernetes.default.svc
+  clusterResourceWhitelist:
+    - group: ""
+      kind: Namespace
+  namespaceResourceWhitelist:
+    - group: "*"
+      kind: "*"

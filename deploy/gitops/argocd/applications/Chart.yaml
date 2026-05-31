@@ -1,0 +1,6 @@
+apiVersion: v2
+name: spaceops-argocd-applications
+description: SpaceOps Argo CD child Applications for PS6.7 app-of-apps.
+type: application
+version: 0.1.0
+appVersion: "ps6.7"

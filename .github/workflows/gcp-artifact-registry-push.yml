@@ -1,0 +1,72 @@
+# PS6.8 — Optional: build and push SpaceOps images to Artifact Registry.
+# Requires repository secrets (or OIDC/WIF in a follow-up):
+#   GCP_PROJECT_ID, GCP_REGION (optional, default us-central1), GCP_SA_KEY (JSON key for spaceops-deploy SA)
+name: GCP Artifact Registry push
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Docker tag for api and mcp images"
+        required: true
+        default: stage
+      push_mcp:
+        description: "Also build and push MCP image"
+        type: boolean
+        default: true
+
+env:
+  REGION: ${{ secrets.GCP_REGION || 'us-central1' }}
+  REPOSITORY: spaceops
+
+jobs:
+  push:
+    runs-on: ubuntu-latest
+    env:
+      GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+      GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Check required secrets
+        id: secrets
+        run: |
+          if [ -z "${GCP_PROJECT_ID}" ] || [ -z "${GCP_SA_KEY}" ]; then
+            echo "ready=false" >> "${GITHUB_OUTPUT}"
+            echo "Skipping push: set GCP_PROJECT_ID and GCP_SA_KEY repository secrets."
+            echo "Optional: GCP_REGION (default us-central1)."
+            echo "See docs/runbooks/gcp_stage_deploy.md and infra/terraform/gcp/README.md"
+          else
+            echo "ready=true" >> "${GITHUB_OUTPUT}"
+          fi
+
+      - name: Authenticate to Google Cloud
+        if: steps.secrets.outputs.ready == 'true'
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+        if: steps.secrets.outputs.ready == 'true'
+
+      - name: Configure Docker for Artifact Registry
+        if: steps.secrets.outputs.ready == 'true'
+        run: gcloud auth configure-docker "${{ env.REGION }}-docker.pkg.dev" --quiet
+
+      - name: Build and push API image
+        if: steps.secrets.outputs.ready == 'true'
+        env:
+          AR_HOST: ${{ env.REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.REPOSITORY }}
+          TAG: ${{ inputs.image_tag }}
+        run: |
+          docker build -t "${AR_HOST}/api:${TAG}" -f apps/api/Dockerfile .
+          docker push "${AR_HOST}/api:${TAG}"
+
+      - name: Build and push MCP image
+        if: steps.secrets.outputs.ready == 'true' && inputs.push_mcp
+        env:
+          AR_HOST: ${{ env.REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.REPOSITORY }}
+          TAG: ${{ inputs.image_tag }}
+        run: |
+          docker build -t "${AR_HOST}/mcp:${TAG}" -f apps/mcp/Dockerfile .
+          docker push "${AR_HOST}/mcp:${TAG}"

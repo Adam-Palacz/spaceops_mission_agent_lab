@@ -1,0 +1,12 @@
+# Copy to terraform.tfvars (gitignored) and fill in your project.
+# Never commit terraform.tfvars with real project IDs to a public repo.
+
+project_id   = "your-gcp-project-id"
+region       = "us-central1"
+environment  = "stage"
+cluster_name = "spaceops-stage"
+
+# Cost-conscious stage defaults (see README cost estimate).
+node_count        = 1
+machine_type      = "e2-standard-2"
+preemptible_nodes = true

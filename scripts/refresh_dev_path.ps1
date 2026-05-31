@@ -45,6 +45,10 @@ $hints = @{
     python  = "Python 3.12 and .venv (see README)"
 }
 
+$gitopsHints = @{
+    argocd = "scripts/install_argocd_cli.ps1  (optional; PS6.7 GitOps)"
+}
+
 $ok = @(
     (Test-DevTool -Name "docker" -InstallHint $hints.docker)
     (Test-DevTool -Name "kind" -InstallHint $hints.kind)
@@ -55,11 +59,22 @@ $ok = @(
 )
 
 Write-Host ""
+Write-Host "GitOps (optional):" -ForegroundColor Cyan
+$gitopsOk = @(
+    (Test-DevTool -Name "argocd" -InstallHint $gitopsHints.argocd)
+)
+
+Write-Host ""
 if ($ok -contains $false) {
-    Write-Host "Some tools missing. Install, then re-run:" -ForegroundColor Yellow
+    Write-Host "Some core tools missing. Install, then re-run:" -ForegroundColor Yellow
     Write-Host "  . .\scripts\refresh_dev_path.ps1" -ForegroundColor Yellow
     Write-Host ""
     Write-Host "After winget install, restart Cursor or open a new terminal." -ForegroundColor Yellow
 } else {
-    Write-Host "All checked tools found. Try: make k8s-up" -ForegroundColor Green
+    Write-Host "Core dev tools OK. Try: make k8s-up" -ForegroundColor Green
+    if ($gitopsOk -contains $false) {
+        Write-Host "GitOps: install argocd CLI for make gitops-rollout-demo --sync-only" -ForegroundColor Yellow
+    } else {
+        Write-Host "GitOps CLI OK. Try: make gitops-status" -ForegroundColor Green
+    }
 }

@@ -1,0 +1,21 @@
+# GCP-only overlay — Artifact Registry image hosts + lab ingress (PS6.8).
+# Use with values-stage.yaml (same env semantics as kind/local).
+#
+# Replace REGION and PROJECT_ID after `terraform apply`:
+#   helm upgrade ... -f values-stage.yaml -f values-gcp-stage.yaml \
+#     --set images.api.repository=REGION-docker.pkg.dev/PROJECT_ID/spaceops/api \
+#     --set images.mcp.repository=REGION-docker.pkg.dev/PROJECT_ID/spaceops/mcp
+
+images:
+  api:
+    repository: us-central1-docker.pkg.dev/PROJECT_ID/spaceops/api
+    tag: stage
+    pullPolicy: IfNotPresent
+  mcp:
+    repository: us-central1-docker.pkg.dev/PROJECT_ID/spaceops/mcp
+    tag: stage
+    pullPolicy: IfNotPresent
+
+api:
+  service:
+    type: LoadBalancer

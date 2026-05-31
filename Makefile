@@ -29,7 +29,7 @@ POSTGRES_PASSWORD ?= spaceops
 	golden-check golden-run golden-update compose-config docker-build gpu-up gpu-down gpu-smoke gpu-idle-check \
 	gpu-idle-integration backend-parity-check helm-template helm-lint k8s-up k8s-down k8s-status k8s-smoke \
 	k8s-rollout-demo k8s-isolation-verify k8s-secrets-bootstrap gitops-install gitops-bootstrap \
-	gitops-status gitops-rollout-demo
+	gitops-status gitops-rollout-demo terraform-gcp-validate
 
 help: ## Show this help (default goal)
 	@echo SpaceOps Makefile - targets mirror CI where practical.
@@ -172,3 +172,7 @@ GITOPS_DEMO_ARGS ?=
 
 gitops-rollout-demo: ## PS6.7 GitOps sync demo (use GITOPS_DEMO_ARGS=--sync-only after git push)
 	$(PYTHON_RUN) scripts/gitops_rollout_demo.py $(GITOPS_DEMO_ARGS)
+
+# PS6.8 — GCP Terraform skeleton (validate only; no live project required).
+terraform-gcp-validate: ## PS6.8 terraform init -backend=false && validate in infra/terraform/gcp
+	cd infra/terraform/gcp && terraform init -backend=false && terraform validate

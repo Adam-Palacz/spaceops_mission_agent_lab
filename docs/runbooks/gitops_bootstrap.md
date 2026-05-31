@@ -47,6 +47,15 @@ kubectl port-forward svc/argocd-server -n argocd 8080:443
 # UI: https://localhost:8080 (admin / initial password from argocd-initial-admin-secret)
 ```
 
+Windows CLI (optional):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/install_argocd_cli.ps1
+. .\scripts\refresh_dev_path.ps1
+argocd login localhost:8080 --username admin --insecure
+argocd app list
+```
+
 ---
 
 ## 2. Bootstrap AppProject + Applications

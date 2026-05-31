@@ -1,0 +1,51 @@
+# PS6.8 — Validate GCP Terraform skeleton (no live project required).
+name: GCP Terraform validate
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "infra/terraform/gcp/**"
+      - "docs/adr/0009-gcp-baseline-portable-first.md"
+      - "docs/runbooks/gcp_stage_deploy.md"
+      - "deploy/helm/spaceops/values-gcp-stage.yaml"
+      - ".github/workflows/gcp-terraform-validate.yml"
+      - "tests/test_gcp_ps68.py"
+  pull_request:
+    branches: [main]
+    paths:
+      - "infra/terraform/gcp/**"
+      - "docs/adr/0009-gcp-baseline-portable-first.md"
+      - "docs/runbooks/gcp_stage_deploy.md"
+      - "deploy/helm/spaceops/values-gcp-stage.yaml"
+      - ".github/workflows/gcp-terraform-validate.yml"
+      - "tests/test_gcp_ps68.py"
+
+jobs:
+  terraform-validate:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: infra/terraform/gcp
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.9.8
+
+      - name: Terraform init (local backend)
+        run: terraform init -backend=false
+
+      - name: Terraform validate
+        run: terraform validate
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: PS6.8 pytest gate
+        working-directory: .
+        run: |
+          pip install pytest pyyaml
+          pytest tests/test_gcp_ps68.py -v

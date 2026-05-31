@@ -94,6 +94,7 @@ Then port-forward Jaeger UI: `kubectl port-forward -n spaceops-dev svc/spaceops-
 ```powershell
 # Option A: repo helper (direct download, no winget id guesswork)
 powershell -ExecutionPolicy Bypass -File scripts/install_kind.ps1
+powershell -ExecutionPolicy Bypass -File scripts/install_argocd_cli.ps1   # optional PS6.7 GitOps
 . .\scripts\refresh_dev_path.ps1
 
 # Option B: winget

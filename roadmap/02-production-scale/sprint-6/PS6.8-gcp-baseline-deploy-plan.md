@@ -1,9 +1,9 @@
-# PS6.8 — GCP baseline deploy plan (portable-first)
+# PS6.8 - GCP baseline deploy plan (portable-first)
 
 | Field | Value |
 |-------|-------|
 | **Task ID** | PS6.8 |
-| **Status** | Todo |
+| **Status** | Done |
 
 ---
 
@@ -21,37 +21,37 @@ Artifact Registry design, optional small GKE cluster. Not a full production land
 
 ## Requirements
 
-- [ ] Terraform (or documented equivalent) for: project vars, GKE cluster (small), Artifact Registry,
+- [x] Terraform (or documented equivalent) for: project vars, GKE cluster (small), Artifact Registry,
       service accounts for deploy.
-- [ ] **(Stretch)** Deploy PS6.2 chart to GKE using same values overlays as local (portability proof).
-- [ ] **No cloud lock-in in app layer** — no GKE-only APIs in application code.
-- [ ] Document optional Cloud Run path as **fallback/showcase** (parent Phase 7 note).
-- [ ] Ingress: minimal (LoadBalancer or Ingress) for API; document TLS deferral for lab.
-- [ ] CI: optional workflow to build/push images to Artifact Registry (workflow_dispatch).
+- [x] **(Stretch)** Deploy PS6.2 chart to GKE using same values overlays as local (portability proof).
+- [x] **No cloud lock-in in app layer** - no GKE-only APIs in application code.
+- [x] Document optional Cloud Run path as **fallback/showcase** (parent Phase 7 note).
+- [x] Ingress: minimal (LoadBalancer or Ingress) for API; document TLS deferral for lab.
+- [x] CI: optional workflow to build/push images to Artifact Registry (`workflow_dispatch`).
 
 ---
 
 ## Dependencies
 
-- **PS6.1** — stage/prod env definitions.
-- **PS6.2** — Helm package.
-- **PS6.6** — secrets in cloud (GSM + ESO design note minimum).
+- **PS6.1** - stage/prod env definitions.
+- **PS6.2** - Helm package.
+- **PS6.6** - secrets in cloud (GSM + ESO design note minimum).
 
 ---
 
 ## Checklist
 
-- [ ] `infra/terraform/gcp/` with README (vars, state backend note).
-- [ ] `docs/runbooks/gcp_stage_deploy.md`
-- [ ] Cost estimate section (cluster size, always-on vs stop).
-- [ ] Cross-link PS6.9 billing controls.
+- [x] `infra/terraform/gcp/` with README (vars, state backend note).
+- [x] `docs/runbooks/gcp_stage_deploy.md`
+- [x] Cost estimate section (cluster size, always-on vs stop).
+- [x] Cross-link PS6.9 billing controls.
 
 ---
 
 ## Test / acceptance
 
-- [ ] **Minimum:** `terraform validate` passes in CI or a documented local gate.
-- [ ] **Minimum:** README documents vars, state backend posture, cost estimate, and deploy/destroy flow.
+- [x] **Minimum:** `terraform validate` passes in CI or a documented local gate.
+- [x] **Minimum:** README documents vars, state backend posture, cost estimate, and deploy/destroy flow.
 - [ ] **Stretch:** one engineer can destroy and recreate stage cluster from docs (time-boxed).
 - [ ] **Stretch:** demo scenario A/B runs in cloud with traces (replay optional).
 
@@ -61,6 +61,10 @@ Artifact Registry design, optional small GKE cluster. Not a full production land
 
 - `infra/terraform/gcp/`
 - `docs/runbooks/gcp_stage_deploy.md`
+- `docs/adr/0009-gcp-baseline-portable-first.md`
+- `deploy/helm/spaceops/values-gcp-stage.yaml`
+- `.github/workflows/gcp-terraform-validate.yml`
+- `.github/workflows/gcp-artifact-registry-push.yml`
 
 ---
 

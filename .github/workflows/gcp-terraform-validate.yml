@@ -53,5 +53,5 @@ jobs:
       - name: PS6.8 / PS6.9 pytest gate
         working-directory: .
         run: |
-          pip install pytest pyyaml
+          pip install pytest pyyaml pydantic==2.13.3 pydantic-settings==2.14.0 python-dotenv==1.2.2
           pytest tests/test_gcp_ps68.py tests/test_cloud_cost_ps69.py -v

@@ -96,6 +96,8 @@ Operator guidance:
 - **Replay** is for reproducibility/regression from captured input, not exact in-flight restoration.
 - Queue consumers must keep idempotency guards (PS3.2) because checkpoint restore does not replace side-effect dedupe.
 
+**K8s operations:** mid-run pod kill / rolling upgrade procedures — [graph_worker_checkpoint_ops.md](graph_worker_checkpoint_ops.md) (PS6.11).
+
 ## CI usage example
 
 Replay a golden run and fail pipeline on regressions:

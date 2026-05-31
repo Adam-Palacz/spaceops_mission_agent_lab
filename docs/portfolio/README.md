@@ -187,6 +187,7 @@ and secrets leakage to PS4/PS5/PS6 controls (tests, OPA, evals, runbooks).
 | [demo_15min.md](../runbooks/demo_15min.md) | Dev / reviewer | First live demo on compose |
 | [local_k8s_dev.md](../runbooks/local_k8s_dev.md) | Dev | kind + Helm local cluster |
 | [k8s_rollout_rollback.md](../runbooks/k8s_rollout_rollback.md) | Dev / SRE | Helm upgrade / rollback |
+| [graph_worker_checkpoint_ops.md](../runbooks/graph_worker_checkpoint_ops.md) | Dev / SRE | Checkpoint resume after pod kill / rollout (PS6.11) |
 | [k8s_environment_isolation.md](../runbooks/k8s_environment_isolation.md) | SRE | NetworkPolicy, RBAC, quotas |
 | [k8s_secrets_bootstrap.md](../runbooks/k8s_secrets_bootstrap.md) | Dev / SRE | K8s Secrets / ESO bootstrap |
 | [gitops_bootstrap.md](../runbooks/gitops_bootstrap.md) | Dev / SRE | Optional Argo CD (PS6.7) |

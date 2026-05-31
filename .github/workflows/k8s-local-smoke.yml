@@ -14,7 +14,7 @@ jobs:
         with:
           python-version: "3.12"
 
-      - run: pip install pytest pyyaml
+      - run: pip install pytest pyyaml pydantic==2.13.3 pydantic-settings==2.14.0 python-dotenv==1.2.2
 
       - name: PS6.3 unit checks
         run: pytest tests/test_k8s_ps63.py -v

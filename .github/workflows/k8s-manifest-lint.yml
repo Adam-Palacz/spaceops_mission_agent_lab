@@ -9,6 +9,7 @@ on:
       - ".github/workflows/k8s-manifest-lint.yml"
       - "tests/test_helm_ps62.py"
       - "tests/test_helm_ps66.py"
+      - "tests/test_k8s_checkpoint_resume_integration.py"
   pull_request:
     branches: [main]
     paths:
@@ -16,6 +17,7 @@ on:
       - ".github/workflows/k8s-manifest-lint.yml"
       - "tests/test_helm_ps62.py"
       - "tests/test_helm_ps66.py"
+      - "tests/test_k8s_checkpoint_resume_integration.py"
 
 jobs:
   helm-template:
@@ -59,6 +61,6 @@ jobs:
         with:
           python-version: "3.12"
 
-      - run: pip install pytest pyyaml
+      - run: pip install pytest pyyaml pydantic==2.13.3 pydantic-settings==2.14.0 python-dotenv==1.2.2
 
-      - run: pytest tests/test_helm_ps62.py tests/test_helm_ps66.py -v
+      - run: pytest tests/test_helm_ps62.py tests/test_helm_ps66.py tests/test_k8s_checkpoint_resume_integration.py -v

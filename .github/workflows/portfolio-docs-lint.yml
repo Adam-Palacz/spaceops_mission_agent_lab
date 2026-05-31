@@ -10,6 +10,8 @@ on:
       - "docs/threat_model.md"
       - "docs/adr/README.md"
       - "tests/test_portfolio_ps610.py"
+      - "tests/test_k8s_checkpoint_resume_integration.py"
+      - "deploy/helm/spaceops/values-checkpoint-dev.yaml"
       - ".github/workflows/portfolio-docs-lint.yml"
   pull_request:
     branches: [main]
@@ -19,6 +21,8 @@ on:
       - "docs/threat_model.md"
       - "docs/adr/README.md"
       - "tests/test_portfolio_ps610.py"
+      - "tests/test_k8s_checkpoint_resume_integration.py"
+      - "deploy/helm/spaceops/values-checkpoint-dev.yaml"
       - ".github/workflows/portfolio-docs-lint.yml"
 
 jobs:
@@ -31,6 +35,10 @@ jobs:
         with:
           python-version: "3.12"
 
-      - run: pip install pytest
+      - run: pip install pytest pyyaml pydantic==2.13.3 pydantic-settings==2.14.0 python-dotenv==1.2.2
 
-      - run: pytest tests/test_portfolio_ps610.py -v
+      - uses: azure/setup-helm@v4
+        with:
+          version: v3.16.4
+
+      - run: pytest tests/test_portfolio_ps610.py tests/test_k8s_checkpoint_resume_integration.py -v

@@ -29,7 +29,7 @@ POSTGRES_PASSWORD ?= spaceops
 	golden-check golden-run golden-update compose-config docker-build gpu-up gpu-down gpu-smoke gpu-idle-check \
 	gpu-idle-integration backend-parity-check helm-template helm-lint k8s-up k8s-down k8s-status k8s-smoke \
 	k8s-rollout-demo k8s-isolation-verify k8s-secrets-bootstrap gitops-install gitops-bootstrap \
-	gitops-status gitops-rollout-demo terraform-gcp-validate cloud-scale-down-check
+	gitops-status gitops-rollout-demo terraform-gcp-validate cloud-scale-down-check k8s-checkpoint-demo
 
 help: ## Show this help (default goal)
 	@echo SpaceOps Makefile - targets mirror CI where practical.
@@ -179,3 +179,6 @@ terraform-gcp-validate: ## PS6.8 terraform init -backend=false && validate in in
 
 cloud-scale-down-check: ## PS6.9 Dry-run GKE node pool scale-down (set GCP_PROJECT_ID)
 	$(PYTHON_RUN) scripts/cloud/schedule_scale_down.py --dry-run $(if $(GCP_PROJECT_ID),--project $(GCP_PROJECT_ID),)
+
+k8s-checkpoint-demo: ## PS6.11 Dry-run checkpoint OOM/resume gate (pass --execute on kind cluster)
+	$(PYTHON_RUN) scripts/k8s_checkpoint_demo.py $(K8S_CHECKPOINT_DEMO_ARGS)

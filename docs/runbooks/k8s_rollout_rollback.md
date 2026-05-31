@@ -213,6 +213,7 @@ When rolling back, record:
 |---------|--------|
 | `another operation is in progress` | `helm status`; wait or `helm uninstall` if stuck `pending-*` |
 | Rollback OK but pods old | `kubectl rollout restart deployment/spaceops-api` |
+| Mid-run lost during rollout | Checkpoint enabled? → [graph_worker_checkpoint_ops.md](graph_worker_checkpoint_ops.md) (`POST /runs/resume`) |
 | `ImagePullBackOff` after rollback | Re-run `make k8s-up` or `kind load docker-image` |
 | OPA CrashLoop after upgrade | Check ConfigMap mount; see PS6.3 fixes in chart |
 | Atomic upgrade failed | Helm auto-reverted; inspect `helm history` and pod logs |
@@ -224,5 +225,6 @@ When rolling back, record:
 - [Environment promotion](environment_promotion.md)
 - [LLM backend rollout (PS5.5)](llm_backend_rollout.md)
 - [Local K8s dev (PS6.3)](local_k8s_dev.md)
+- [Graph checkpoint ops (PS6.11)](graph_worker_checkpoint_ops.md)
 - [Helm chart README](../../deploy/helm/spaceops/README.md)
 - PS6.7 GitOps (when enabled): rollback = Git revert + sync, same revision semantics as above

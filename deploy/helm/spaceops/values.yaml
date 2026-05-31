@@ -77,6 +77,8 @@ api:
     budgetMode: process
   checkpoint:
     enabled: false
+    # PS6.11: operator retention stub (scripts/checkpoint_retention.py); not enforced in-app yet.
+    retentionDays: 30
   persistence:
     data:
       enabled: true

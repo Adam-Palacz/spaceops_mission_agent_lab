@@ -83,4 +83,13 @@ API mounts `/app/var` via `emptyDir` by default (`api.persistence.var.emptyDir`)
 
 ## Checkpoint (PS6.11 Variant B)
 
-Enable on **api** Deployment: `api.checkpoint.enabled: true` (stage overlay). No separate agent worker unless `agentWorker.enabled` (Variant A defer).
+Enable on **api** Deployment: `api.checkpoint.enabled: true` (stage overlay). Local proof:
+
+```bash
+-f values-checkpoint-dev.yaml   # or make k8s-checkpoint-demo
+```
+
+Sets `AGENT_DURABLE_CHECKPOINT_ENABLED` via `_api-env.tpl`. Retention stub: `scripts/checkpoint_retention.py`.
+Runbook: [graph_worker_checkpoint_ops.md](../../../docs/runbooks/graph_worker_checkpoint_ops.md).
+
+No separate agent worker unless `agentWorker.enabled` (Variant A — Phase 7 defer).

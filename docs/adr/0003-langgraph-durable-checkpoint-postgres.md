@@ -37,7 +37,8 @@ Checkpointing helps resume control flow, but does not replace domain-level idemp
 ## Retention
 
 PS3.9 scope stores checkpoints without TTL cleanup automation.
-Operational retention/cleanup policy is deferred to PS6.x hardening tasks.
+Operational retention/cleanup policy is implemented as an operator stub in PS6.11:
+`scripts/checkpoint_retention.py` and [graph_worker_checkpoint_ops.md](../../../docs/runbooks/graph_worker_checkpoint_ops.md).
 
 ## Consequences
 

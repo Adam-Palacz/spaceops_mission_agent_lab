@@ -1,0 +1,7 @@
+# PS6.11 — enable durable checkpoint on local kind for OOM/resume acceptance.
+# Layer on values-minimal-dev.yaml (api.checkpoint.enabled stays false in base dev).
+
+api:
+  checkpoint:
+    enabled: true
+    retentionDays: 30

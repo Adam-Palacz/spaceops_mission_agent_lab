@@ -11,7 +11,7 @@
 | PS6.7 | Optional GitOps bootstrap (Argo CD / Flux) | Done | [PS6.7](PS6.7-optional-gitops-bootstrap.md) |
 | PS6.8 | GCP baseline deploy plan (portable-first) | Done | [PS6.8](PS6.8-gcp-baseline-deploy-plan.md) |
 | PS6.9 | Billing and shutdown controls | Done | [PS6.9](PS6.9-billing-shutdown-controls.md) |
-| PS6.10 | Portfolio artifacts bundle | Todo | [PS6.10](PS6.10-portfolio-artifacts-bundle.md) |
+| PS6.10 | Portfolio artifacts bundle | Done | [PS6.10](PS6.10-portfolio-artifacts-bundle.md) |
 | PS6.11 | Graph workers + Postgres checkpoint ops | Todo | [PS6.11](PS6.11-graph-workers-postgres-checkpoint-ops.md) |
 
 **Status key:** Todo | In progress | Done | Blocked

@@ -12,6 +12,7 @@ Agent for satellite / ground segment anomaly triage: **ingest -> triage -> inves
 | [**roadmap/03-next-gen-autonomy.md**](./roadmap/03-next-gen-autonomy.md) | Next-gen autonomy (L3/L4): Flight Director multi-agent pattern, collaborative planning, compliance gateway, edge SLMs, GraphRAG. |
 | [**roadmap/README.md**](./roadmap/README.md) | Execution plan: phases, sprints, task specs. |
 | [**docs/README.md**](./docs/README.md) | Index of Mermaid diagrams (pipeline, architecture, state flow, Act flow, repo structure). |
+| [**docs/portfolio/README.md**](./docs/portfolio/README.md) | **Portfolio bundle (PS6.10):** one-page overview, demo scenarios A/B, runbook index, reviewer checklist. |
 | [**docs/process.md**](./docs/process.md) | Process docs, including the tech-debt budget (S3.8) and how to apply it in sprints. |
 | [**docs/shadow_models.md**](./docs/shadow_models.md) | Model promotion: shadow-testing, report layout, decision rules (P4.8). |
 | [**docs/llm_gateway.md**](./docs/llm_gateway.md) | LLM gateway contract, backend metadata, and backend selection. |

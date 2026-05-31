@@ -2,7 +2,7 @@
 
 This file is the **index and entry point** for documentation in `docs/`. Mermaid diagrams are stored as **.mmd** files in subfolders by domain. Use a Mermaid-compatible viewer (VS Code Mermaid extension, GitHub/GitLab, [Mermaid Live](https://mermaid.live)) to render them.
 
-**Repozytorium:** [README](../README.md) · [roadmap/goals.md](../roadmap/goals.md) · [roadmap/01-foundation-mvp.md](../roadmap/01-foundation-mvp.md) · [roadmap/02-production-scale.md](../roadmap/02-production-scale.md) · [roadmap/README.md](../roadmap/README.md)
+**Repozytorium:** [README](../README.md) · [portfolio/README.md](portfolio/README.md) (PS6.10) · [roadmap/goals.md](../roadmap/goals.md) · [roadmap/01-foundation-mvp.md](../roadmap/01-foundation-mvp.md) · [roadmap/02-production-scale.md](../roadmap/02-production-scale.md) · [roadmap/README.md](../roadmap/README.md)
 
 ---
 
@@ -22,7 +22,10 @@ The **docs/** directory holds project documentation that supports both humans an
 - **[llm_gpu_backend.md](llm_gpu_backend.md)** — Optional NVIDIA NIM backend, `gpu` compose profile, and manual smoke checklist (PS5.3 / PS5.7).
 - **[llm_cost_guardrails.md](llm_cost_guardrails.md)** — Cost telemetry and process/postgres budget modes (PS5.6).
 - **[evals_backend_parity.md](evals_backend_parity.md)** — OpenAI vs GPU parity reports, invalid-arm rules, and promotion criteria (PS5.8).
-- **[adr/0005-environment-strategy-dev-stage-prod.md](adr/0005-environment-strategy-dev-stage-prod.md)** — `dev` / `stage` / `prod` model, promotion gates, checkpoint fork (PS6.1).
+- **[adr/README.md](adr/README.md)** — ADR index 0001–0009 (PS6.10).
+- **[adr/0005-environment-strategy-dev-stage-prod.md](adr/0005-environment-strategy-dev-stage-prod.md)** — `dev` / `stage` / `prod` model, promotion gates (PS6.1).
+- **[threat_model.md](threat_model.md)** — Portfolio threat model: injection, tool abuse, poisoning, secrets (PS6.10).
+- **[portfolio/README.md](portfolio/README.md)** — External reviewer entry: demos, runbooks, dependency hygiene (PS6.10).
 - **[runbooks/environment_promotion.md](runbooks/environment_promotion.md)** — Promote releases and GPU canaries across environments (PS6.1).
 - **[adr/0006-kubernetes-packaging-helm.md](adr/0006-kubernetes-packaging-helm.md)** — Helm chart layout and env overlays (PS6.2).
 - **[runbooks/local_k8s_dev.md](runbooks/local_k8s_dev.md)** — Local kind cluster + `make k8s-up` (PS6.3).

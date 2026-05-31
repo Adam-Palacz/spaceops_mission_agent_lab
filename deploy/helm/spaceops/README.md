@@ -56,7 +56,11 @@ GitOps (PS6.7, optional): [docs/runbooks/gitops_bootstrap.md](../../../docs/runb
 | `values-minimal-dev.yaml` | Safe baseline: api, postgres, opa, telemetry-mcp, persister, nats |
 | `values-dev.yaml` | Namespace `spaceops-dev`, lab secrets |
 | `values-stage.yaml` | Integration, checkpoint on api, optional observability |
+| `values-stage-full.yaml` | All in-cluster MCPs (kb/ticket/gitops) for GKE stage demo |
+| `values-gcp-stage.yaml` | Artifact Registry repos + LoadBalancer API |
 | `values-prod.yaml` | Stricter persistence, full MCP set optional |
+
+GKE deploy/demo: [gcp_stage_deploy.md](../../../docs/runbooks/gcp_stage_deploy.md) — `make gcp-stage-deploy`, `make gcp-stage-demo`.
 
 ## Images
 

@@ -162,6 +162,26 @@ def bootstrap_apps(
         print(f"Applied {path.relative_to(REPO_ROOT)}")
 
 
+def handoff_from_helm(*, release: str, namespace: str, dry_run: bool) -> None:
+    """Release imperative Helm ownership so Argo CD can manage the same release name."""
+    require_tools("helm", "kubectl")
+    cmd = ["helm", "uninstall", release, "-n", namespace]
+    if dry_run:
+        print(f"Would run: {' '.join(cmd)}")
+        print(
+            "Keeps manually created Secrets (e.g. spaceops-stage-secrets). "
+            "After Argo sync, run: kubectl exec -n spaceops-stage deploy/spaceops-api "
+            "-- python -m alembic upgrade head"
+        )
+        return
+    proc = _run(cmd, check=False, capture=True)
+    if proc.returncode != 0 and "not found" not in (proc.stderr or "").lower():
+        raise SystemExit(proc.stderr.strip() or "helm uninstall failed")
+    print(
+        f"Helm release {release!r} removed from {namespace!r}. Argo CD can sync next."
+    )
+
+
 def status() -> None:
     require_tools("kubectl")
     for kind, name in (
@@ -197,6 +217,18 @@ def main() -> None:
 
     sub.add_parser("status", help="Show Argo CD Application status")
 
+    p_handoff = sub.add_parser(
+        "handoff",
+        help="helm uninstall so Argo CD owns spaceops release (lab migration)",
+    )
+    p_handoff.add_argument(
+        "--release", default=os.getenv("K8S_HELM_RELEASE", "spaceops")
+    )
+    p_handoff.add_argument(
+        "--namespace", default=os.getenv("K8S_NAMESPACE", "spaceops-stage")
+    )
+    p_handoff.add_argument("--dry-run", action="store_true")
+
     args = parser.parse_args()
 
     if args.command == "install":
@@ -214,6 +246,14 @@ def main() -> None:
 
     if args.command == "status":
         status()
+        return
+
+    if args.command == "handoff":
+        handoff_from_helm(
+            release=args.release,
+            namespace=args.namespace,
+            dry_run=args.dry_run,
+        )
         return
 
     raise SystemExit(f"Unknown command: {args.command}")

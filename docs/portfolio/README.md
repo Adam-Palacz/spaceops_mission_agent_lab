@@ -191,6 +191,8 @@ and secrets leakage to PS4/PS5/PS6 controls (tests, OPA, evals, runbooks).
 | [k8s_environment_isolation.md](../runbooks/k8s_environment_isolation.md) | SRE | NetworkPolicy, RBAC, quotas |
 | [k8s_secrets_bootstrap.md](../runbooks/k8s_secrets_bootstrap.md) | Dev / SRE | K8s Secrets / ESO bootstrap |
 | [gitops_bootstrap.md](../runbooks/gitops_bootstrap.md) | Dev / SRE | Optional Argo CD (PS6.7) |
+| [gitops_agent_pr_demo.md](../runbooks/gitops_agent_pr_demo.md) | Dev / SRE | Agent `create_pr` → Argo deploys ops-config |
+| [gitops_pr_demo.md](../runbooks/gitops_pr_demo.md) | Dev / SRE | Argo CD promotion via Git PR |
 | [environment_promotion.md](../runbooks/environment_promotion.md) | Dev / SRE | dev → stage → prod gates |
 | [gcp_stage_deploy.md](../runbooks/gcp_stage_deploy.md) | SRE | GKE stage deploy (stretch) |
 | [cloud_cost_hygiene.md](../runbooks/cloud_cost_hygiene.md) | SRE / FinOps | GCP budget, scale-down |

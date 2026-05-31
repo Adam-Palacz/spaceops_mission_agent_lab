@@ -29,7 +29,8 @@ POSTGRES_PASSWORD ?= spaceops
 	golden-check golden-run golden-update compose-config docker-build gpu-up gpu-down gpu-smoke gpu-idle-check \
 	gpu-idle-integration backend-parity-check helm-template helm-lint k8s-up k8s-down k8s-status k8s-smoke \
 	k8s-rollout-demo k8s-isolation-verify k8s-secrets-bootstrap gitops-install gitops-bootstrap \
-	gitops-status gitops-rollout-demo terraform-gcp-validate cloud-scale-down-check k8s-checkpoint-demo
+	gitops-status gitops-rollout-demo gitops-handoff terraform-gcp-validate cloud-scale-down-check k8s-checkpoint-demo \
+	gcp-stage-deploy gcp-stage-smoke gcp-stage-demo gcp-stage-status
 
 help: ## Show this help (default goal)
 	@echo SpaceOps Makefile - targets mirror CI where practical.
@@ -173,6 +174,12 @@ GITOPS_DEMO_ARGS ?=
 gitops-rollout-demo: ## PS6.7 GitOps sync demo (use GITOPS_DEMO_ARGS=--sync-only after git push)
 	$(PYTHON_RUN) scripts/gitops_rollout_demo.py $(GITOPS_DEMO_ARGS)
 
+gitops-handoff: ## PS6.7 Remove imperative Helm release before Argo CD sync (keeps manual secrets)
+	$(PYTHON_RUN) scripts/gitops_bootstrap.py handoff
+
+ops-config-kustomize-render: ## Regenerate deploy/gitops/ops-config-kustomize from ops-config/
+	$(PYTHON_RUN) scripts/render_ops_config_kustomize.py
+
 # PS6.8 — GCP Terraform skeleton (validate only; no live project required).
 terraform-gcp-validate: ## PS6.8 terraform init -backend=false && validate in infra/terraform/gcp
 	cd infra/terraform/gcp && terraform init -backend=false && terraform validate
@@ -182,3 +189,18 @@ cloud-scale-down-check: ## PS6.9 Dry-run GKE node pool scale-down (set GCP_PROJE
 
 k8s-checkpoint-demo: ## PS6.11 Dry-run checkpoint OOM/resume gate (pass --execute on kind cluster)
 	$(PYTHON_RUN) scripts/k8s_checkpoint_demo.py $(K8S_CHECKPOINT_DEMO_ARGS)
+
+# PS6.8 stretch — GKE stage (requires kubectl context + GCP_PROJECT_ID for deploy).
+GCP_STAGE_ARGS ?=
+
+gcp-stage-deploy: ## GKE stage Helm upgrade (full MCP stack; set GCP_PROJECT_ID + secrets in env)
+	$(PYTHON_RUN) scripts/gcp_stage.py deploy $(GCP_STAGE_ARGS)
+
+gcp-stage-smoke: ## GKE stage GET /health via LoadBalancer :8000
+	$(PYTHON_RUN) scripts/gcp_stage.py smoke
+
+gcp-stage-demo: ## GKE stage ingest + portfolio scenarios A/B (live E2E)
+	$(PYTHON_RUN) scripts/gcp_stage.py demo $(GCP_STAGE_ARGS)
+
+gcp-stage-status: ## GKE stage pods/svc + helm list
+	$(PYTHON_RUN) scripts/gcp_stage.py status

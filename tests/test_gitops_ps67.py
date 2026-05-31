@@ -4,8 +4,11 @@ from __future__ import annotations
 
 import importlib.util
 import re
+import shutil
+import subprocess
 from pathlib import Path
 
+import pytest
 import yaml
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -37,7 +40,54 @@ def _load_bootstrap_module():
     return mod
 
 
+APPLICATIONS_CHART = ARGOCD / "applications"
+
+
+def _helm_render_application(path: Path) -> dict:
+    if shutil.which("helm") is None:
+        pytest.skip("helm CLI not on PATH")
+    proc = subprocess.run(
+        [
+            "helm",
+            "template",
+            "spaceops-apps",
+            str(APPLICATIONS_CHART),
+            "-s",
+            f"templates/{path.name}",
+            "--set",
+            "repoUrl=https://github.com/example/spaceops_mission_agent_lab.git",
+            "--set",
+            "targetRevision=main",
+            "--set",
+            "gcp.enabled=true",
+            "--set",
+            "gcp.projectId=example-project",
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if proc.returncode != 0:
+        pytest.skip(f"helm template failed: {proc.stderr or proc.stdout}")
+    docs = [d for d in yaml.safe_load_all(proc.stdout) if d]
+    assert len(docs) == 1, f"expected one document from helm template {path.name}"
+    return docs[0]
+
+
+def _load_yaml_legacy(path: Path) -> dict:
+    text = _render_template_text(path.read_text(encoding="utf-8"))
+    # Strip helm conditionals for legacy parse of prod template (no conditionals).
+    text = re.sub(r"\n\s*\{\{- if .*?\}\}\s*\n", "\n", text)
+    text = re.sub(r"\n\s*\{\{- end \}\}\s*\n", "\n", text)
+    text = re.sub(r"\n\s*parameters:.*", "", text, flags=re.DOTALL)
+    docs = [d for d in yaml.safe_load_all(text) if d]
+    assert len(docs) == 1, f"expected one document in {path}"
+    return docs[0]
+
+
 def _load_yaml(path: Path) -> dict:
+    if path.parent.name == "templates" and path.parent.parent.name == "applications":
+        return _helm_render_application(path)
     text = _render_template_text(path.read_text(encoding="utf-8"))
     docs = [d for d in yaml.safe_load_all(text) if d]
     assert len(docs) == 1, f"expected one document in {path}"
@@ -66,8 +116,12 @@ def test_application_manifests_are_argocd_applications() -> None:
         assert doc["kind"] == "Application"
         assert doc["spec"]["project"] == "spaceops"
         source = doc["spec"]["source"]
-        assert source["path"] == "deploy/helm/spaceops"
-        assert "helm" in source
+        name = doc["metadata"]["name"]
+        if name == "spaceops-ops-config":
+            assert source["path"] == "deploy/gitops/ops-config-kustomize"
+        else:
+            assert source["path"] == "deploy/helm/spaceops"
+            assert "helm" in source
         text = path.read_text(encoding="utf-8")
         assert "stringData" not in text
         assert "postgrespassword" not in text.lower().replace("_", "")

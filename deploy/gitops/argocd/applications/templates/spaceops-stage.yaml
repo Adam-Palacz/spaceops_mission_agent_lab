@@ -4,6 +4,8 @@ kind: Application
 metadata:
   name: spaceops-stage
   namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
@@ -17,7 +19,24 @@ spec:
       valueFiles:
         - values.yaml
         - values-stage.yaml
+        - values-stage-full.yaml
+        {{- if .Values.gcp.enabled }}
+        - values-gcp-stage.yaml
+        {{- end }}
         - values-gitops-stage.yaml
+      {{- if .Values.gcp.enabled }}
+      parameters:
+        - name: images.api.repository
+          value: {{ printf "%s-docker.pkg.dev/%s/spaceops/api" .Values.gcp.region .Values.gcp.projectId | quote }}
+        - name: images.mcp.repository
+          value: {{ printf "%s-docker.pkg.dev/%s/spaceops/mcp" .Values.gcp.region .Values.gcp.projectId | quote }}
+        - name: images.api.tag
+          value: {{ .Values.gcp.imageTag | quote }}
+        - name: images.mcp.tag
+          value: {{ .Values.gcp.imageTag | quote }}
+        - name: global.createNamespace
+          value: "true"
+      {{- end }}
   destination:
     server: https://kubernetes.default.svc
     namespace: spaceops-stage

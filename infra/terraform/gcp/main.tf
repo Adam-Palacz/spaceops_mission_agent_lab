@@ -63,19 +63,25 @@ resource "google_project_iam_member" "eso_secret_accessor" {
   member  = "serviceAccount:${google_service_account.eso.email}"
 }
 
-resource "google_service_account_iam_member" "eso_wi_user" {
-  service_account_id = google_service_account.eso.name
-  role               = "roles/iam.workloadIdentityUser"
-  member             = "serviceAccount:${var.project_id}.svc.id.goog[external-secrets/external-secrets]"
-}
-
 resource "google_container_cluster" "primary" {
   name     = var.cluster_name
   location = var.region
 
+  # Lab/stage: allow terraform destroy (GKE defaults to true on newer versions).
+  deletion_protection = var.deletion_protection
+
   # Small lab/stage cluster — single default node pool; no GPU (Phase 7).
   remove_default_node_pool = true
   initial_node_count       = 1
+  node_locations           = var.node_locations
+
+  # GKE creates the initial default pool before removing it. Keep that
+  # temporary pool cheap so fresh lab projects do not exceed SSD quota.
+  node_config {
+    machine_type = var.machine_type
+    disk_size_gb = var.node_disk_size_gb
+    disk_type    = var.node_disk_type
+  }
 
   workload_identity_config {
     workload_pool = "${var.project_id}.svc.id.goog"
@@ -91,14 +97,17 @@ resource "google_container_cluster" "primary" {
 }
 
 resource "google_container_node_pool" "primary" {
-  name       = "${var.cluster_name}-pool"
-  location   = var.region
-  cluster    = google_container_cluster.primary.name
-  node_count = var.node_count
+  name           = "${var.cluster_name}-pool"
+  location       = var.region
+  cluster        = google_container_cluster.primary.name
+  node_count     = var.node_count
+  node_locations = var.node_locations
 
   node_config {
     machine_type = var.machine_type
     preemptible  = var.preemptible_nodes
+    disk_size_gb = var.node_disk_size_gb
+    disk_type    = var.node_disk_type
 
     oauth_scopes = [
       "https://www.googleapis.com/auth/cloud-platform",
@@ -126,4 +135,15 @@ resource "google_project_iam_member" "gke_nodes_ar_reader" {
   project = var.project_id
   role    = "roles/artifactregistry.reader"
   member  = "serviceAccount:${data.google_compute_default_service_account.default.email}"
+}
+
+# Workload Identity pool exists only after GKE cluster creation — bind ESO after cluster.
+resource "google_service_account_iam_member" "eso_wi_user" {
+  count = var.enable_eso_workload_identity_binding ? 1 : 0
+
+  service_account_id = google_service_account.eso.name
+  role               = "roles/iam.workloadIdentityUser"
+  member             = "serviceAccount:${var.project_id}.svc.id.goog[external-secrets/external-secrets]"
+
+  depends_on = [google_container_cluster.primary]
 }

@@ -1,0 +1,25 @@
+# Sync wave 0 — ops-config ConfigMap before Helm app (agent PR → merge → Argo deploy).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: spaceops-ops-config
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: spaceops
+  source:
+    repoURL: {{ .Values.repoUrl | quote }}
+    targetRevision: {{ .Values.targetRevision | quote }}
+    path: deploy/gitops/ops-config-kustomize
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: spaceops-stage
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

@@ -20,4 +20,7 @@ terraform {
 provider "google" {
   project = var.project_id
   region  = var.region
+  # Required for billingbudgets API when using user ADC (PS6.9 budget alerts).
+  user_project_override = true
+  billing_project       = var.project_id
 }

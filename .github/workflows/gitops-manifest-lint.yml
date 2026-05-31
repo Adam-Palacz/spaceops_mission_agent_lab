@@ -6,16 +6,22 @@ on:
     branches: [main]
     paths:
       - "deploy/gitops/**"
+      - "ops-config/**"
       - "deploy/helm/spaceops/values-gitops-*.yaml"
+      - "scripts/render_ops_config_kustomize.py"
       - ".github/workflows/gitops-manifest-lint.yml"
       - "tests/test_gitops_ps67.py"
+      - "tests/test_gitops_github_api.py"
   pull_request:
     branches: [main]
     paths:
       - "deploy/gitops/**"
+      - "ops-config/**"
       - "deploy/helm/spaceops/values-gitops-*.yaml"
+      - "scripts/render_ops_config_kustomize.py"
       - ".github/workflows/gitops-manifest-lint.yml"
       - "tests/test_gitops_ps67.py"
+      - "tests/test_gitops_github_api.py"
 
 jobs:
   gitops-yaml:
@@ -32,13 +38,18 @@ jobs:
         with:
           version: v3.16.4
 
+      - name: Render ops-config Kustomize (check)
+        run: python scripts/render_ops_config_kustomize.py --check
+
       - name: Template Argo CD child Applications
         run: |
           helm template spaceops-apps deploy/gitops/argocd/applications \
             --set repoUrl=https://github.com/example/spaceops_mission_agent_lab.git \
             --set targetRevision=main \
+            --set gcp.enabled=true \
+            --set gcp.projectId=example-project \
             > /dev/null
 
-      - run: pip install pytest pyyaml pydantic==2.13.3 pydantic-settings==2.14.0 python-dotenv==1.2.2
+      - run: pip install pytest pyyaml pydantic==2.13.3 pydantic-settings==2.14.0 python-dotenv==1.2.2 httpx
 
-      - run: pytest tests/test_gitops_ps67.py -v
+      - run: pytest tests/test_gitops_ps67.py tests/test_gitops_github_api.py -v

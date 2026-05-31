@@ -21,6 +21,8 @@ images:
 postgres:
   enabled: true
   image: pgvector/pgvector:pg15
+  # Subdir under the PVC mount; required on GCE PD (lost+found at volume root).
+  dataDir: /var/lib/postgresql/data/pgdata
   port: 5432
   auth:
     username: spaceops
@@ -86,6 +88,8 @@ api:
     opsConfig:
       enabled: true
       emptyDir: true
+      # When set, mount Git-synced ConfigMap (deploy/gitops/ops-config-kustomize via Argo).
+      configMapName: ""
     var:
       enabled: true
       # PS5.7: emptyDir for lab; set pvc when GPU profile needs durable activity file.
@@ -132,6 +136,8 @@ ticketMcp:
 gitopsMcp:
   enabled: false
   port: 8004
+  # GitHub repo for agent create_pr (API path on K8s); override per env.
+  githubRepo: ""
 
 observability:
   otelCollector:

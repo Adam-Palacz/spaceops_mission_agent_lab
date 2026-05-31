@@ -5,14 +5,18 @@ project_id   = "your-gcp-project-id"
 region       = "us-central1"
 environment  = "stage"
 cluster_name = "spaceops-stage"
+node_locations = ["us-central1-a"]
 
 # Cost-conscious stage defaults (see README cost estimate).
 node_count        = 1
 machine_type      = "e2-standard-2"
 preemptible_nodes = true
+node_disk_size_gb = 30
+node_disk_type    = "pd-standard"
 
 # PS6.9 — enable after linking a billing account (stretch / live project).
 # enable_budget_alert  = true
 # billing_account_id   = "012345-678901-ABCDEF"
 # budget_amount_usd    = 150
+# budget_currency_code = "PLN" # must match billing account currency
 # budget_alert_emails  = ["you@example.com"]

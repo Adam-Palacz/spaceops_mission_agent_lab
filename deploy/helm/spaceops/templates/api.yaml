@@ -87,8 +87,14 @@ spec:
           {{- end }}
         {{- end }}
         {{- if .Values.api.persistence.opsConfig.enabled }}
+        {{- if .Values.api.persistence.opsConfig.configMapName }}
+        - name: ops-config
+          configMap:
+            name: {{ .Values.api.persistence.opsConfig.configMapName }}
+        {{- else if .Values.api.persistence.opsConfig.emptyDir }}
         - name: ops-config
           emptyDir: {}
+        {{- end }}
         {{- end }}
         {{- if .Values.api.persistence.var.enabled }}
         - name: var

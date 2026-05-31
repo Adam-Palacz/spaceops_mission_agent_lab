@@ -47,6 +47,9 @@ spec:
             - name: postgres
               containerPort: {{ .Values.postgres.port }}
           env:
+            # GCE PD (and some CSI volumes) place lost+found at the mount root; initdb requires a subdir.
+            - name: PGDATA
+              value: {{ .Values.postgres.dataDir | quote }}
             - name: POSTGRES_USER
               value: {{ .Values.postgres.auth.username | quote }}
             - name: POSTGRES_DB

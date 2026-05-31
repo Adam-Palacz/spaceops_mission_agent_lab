@@ -1,0 +1,22 @@
+# Full stage profile — all in-cluster MCPs (parity with prod tool surface, no GPU/NIM).
+# Layer on values-stage.yaml (+ values-gcp-stage.yaml on GKE).
+
+kbMcp:
+  enabled: true
+
+ticketMcp:
+  enabled: true
+
+gitopsMcp:
+  enabled: true
+  githubRepo: Adam-Palacz/spaceops_mission_agent_lab
+
+api:
+  persistence:
+    opsConfig:
+      configMapName: spaceops-ops-config
+
+isolation:
+  resourceQuota:
+    hard:
+      pods: "50"

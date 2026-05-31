@@ -89,12 +89,13 @@ def _normalize_github_repo(value: str) -> str:
 def _push_and_create_pr(
     branch: str,
     files_rel: list[str],
+    files_repo_content: list[tuple[str, str]],
     title: str,
     body: str,
 ) -> tuple[str | None, str | None]:
     """
     Push branch and create PR. Returns (pr_url, error_message).
-    Requires config.settings.github_token and github_repo (run from repo root with PYTHONPATH=. so config loads).
+    files_repo_content: repo-relative paths (e.g. ops-config/alerts/x.yaml) and utf-8 content.
     """
     try:
         from config import settings
@@ -107,12 +108,21 @@ def _push_and_create_pr(
     if not token or not repo:
         return None, None
 
-    # Ensure we're in a git repo and have no uncommitted changes in other files
     ok, out = _run_git(REPO_ROOT, "rev-parse", "--is-inside-work-tree")
     if not ok or out != "true":
-        return None, "Not a git repository"
+        from apps.mcp.gitops_server.github_api import create_pr_via_github_api
 
-    # Create branch
+        return create_pr_via_github_api(
+            repo=repo,
+            token=token,
+            branch=branch,
+            base=base,
+            title=title,
+            body=body,
+            files=files_repo_content,
+        )
+
+    # Local git repo path (dev laptop / compose with mounted .git)
     ok, err = _run_git(REPO_ROOT, "checkout", "-b", branch)
     if not ok:
         if "already exists" in err:
@@ -236,6 +246,7 @@ def create_pr(
 
             normalized_files: list[FileSpec] = []
             files_rel_to_repo: list[str] = []
+            files_repo_content: list[tuple[str, str]] = []
             for spec in files:
                 rel = (spec.get("path") or "").strip() or ""
                 content = spec.get("content")
@@ -250,7 +261,9 @@ def create_pr(
                 normalized_files.append(FileSpec(path=norm_path, content=content))
                 try:
                     rel_to_repo = (ops_dir / rel_path).resolve().relative_to(REPO_ROOT)
-                    files_rel_to_repo.append(str(rel_to_repo).replace("\\", "/"))
+                    repo_path = str(rel_to_repo).replace("\\", "/")
+                    files_rel_to_repo.append(repo_path)
+                    files_repo_content.append((repo_path, content))
                 except ValueError:
                     pass
 
@@ -266,8 +279,9 @@ def create_pr(
             pr_url, push_error = _push_and_create_pr(
                 branch=branch,
                 files_rel=files_rel_to_repo,
+                files_repo_content=files_repo_content,
                 title=f"GitOps: {branch}",
-                body="Agent-proposed config change (create_pr MCP).",
+                body="Agent-proposed config change (create_pr MCP). Argo CD deploys ops-config after merge.",
             )
             if pr_url:
                 result["pr_url"] = str(pr_url)

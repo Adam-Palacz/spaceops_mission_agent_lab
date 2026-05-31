@@ -200,10 +200,20 @@ spec:
               port: http
             initialDelaySeconds: 15
             periodSeconds: 10
+          env:
+            - name: GITHUB_REPO
+              value: {{ .Values.gitopsMcp.githubRepo | quote }}
+            {{- include "spaceops.secretEnvOptional" (list . "GITHUB_TOKEN" "GITHUB_TOKEN") | nindent 12 }}
           volumeMounts:
             - name: ops-config
               mountPath: /app/ops-config
       volumes:
+        {{- if .Values.api.persistence.opsConfig.configMapName }}
+        - name: ops-config
+          configMap:
+            name: {{ .Values.api.persistence.opsConfig.configMapName }}
+        {{- else }}
         - name: ops-config
           emptyDir: {}
+        {{- end }}
 {{- end }}

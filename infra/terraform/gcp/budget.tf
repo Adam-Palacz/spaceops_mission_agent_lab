@@ -1,5 +1,13 @@
 # PS6.9 — optional billing budget + email alerts (stretch: enable on live project).
 
+data "google_project" "current" {
+  project_id = var.project_id
+}
+
+locals {
+  billing_account_id = replace(var.billing_account_id, "billingAccounts/", "")
+}
+
 resource "google_project_service" "budget_apis" {
   for_each = var.enable_budget_alert ? toset([
     "billingbudgets.googleapis.com",
@@ -28,19 +36,17 @@ resource "google_monitoring_notification_channel" "budget_email" {
 resource "google_billing_budget" "spaceops" {
   count = var.enable_budget_alert ? 1 : 0
 
-  billing_account = var.billing_account_id
+  billing_account = local.billing_account_id
   display_name    = "spaceops-${var.environment}-monthly"
 
   budget_filter {
-    projects = ["projects/${var.project_id}"]
-    labels = {
-      env = var.environment
-    }
+    # Billing API expects project *number*, not project ID.
+    projects = ["projects/${data.google_project.current.number}"]
   }
 
   amount {
     specified_amount {
-      currency_code = "USD"
+      currency_code = var.budget_currency_code
       units         = tostring(var.budget_amount_usd)
     }
   }

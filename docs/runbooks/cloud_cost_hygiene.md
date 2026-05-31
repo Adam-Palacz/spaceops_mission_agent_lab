@@ -51,8 +51,12 @@ Enable in `terraform.tfvars`:
 enable_budget_alert   = true
 billing_account_id    = "012345-678901-ABCDEF"   # Billing → Account management
 budget_amount_usd     = 150
+budget_currency_code  = "PLN"                    # must match billing account currency
 budget_alert_emails   = ["you@example.com"]
 ```
+
+`billing_account_id` can also be the full `billingAccounts/012345-678901-ABCDEF` resource name;
+Terraform strips that prefix before passing the value to the Google provider.
 
 Then:
 

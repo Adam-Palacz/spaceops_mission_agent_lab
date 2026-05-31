@@ -26,6 +26,18 @@ variable "cluster_name" {
   default     = "spaceops-stage"
 }
 
+variable "node_locations" {
+  description = "GKE node zones for the regional lab cluster. Keep single-zone by default to reduce quota/cost."
+  type        = list(string)
+  default     = ["us-central1-a"]
+}
+
+variable "deletion_protection" {
+  description = "GKE deletion protection. Set false for ephemeral lab clusters (terraform destroy)."
+  type        = bool
+  default     = false
+}
+
 variable "node_count" {
   description = "Initial node count in the default node pool (keep small for lab/stage)."
   type        = number
@@ -40,6 +52,24 @@ variable "machine_type" {
 
 variable "preemptible_nodes" {
   description = "Use preemptible VMs in the node pool to reduce stage cost."
+  type        = bool
+  default     = true
+}
+
+variable "node_disk_size_gb" {
+  description = "Boot disk size per node (keep small on fresh projects — SSD quota)."
+  type        = number
+  default     = 30
+}
+
+variable "node_disk_type" {
+  description = "Boot disk type (pd-standard avoids SSD_TOTAL_GB quota on small projects)."
+  type        = string
+  default     = "pd-standard"
+}
+
+variable "enable_eso_workload_identity_binding" {
+  description = "Bind ESO K8s SA to GSA via Workload Identity (requires GKE cluster first)."
   type        = bool
   default     = true
 }
@@ -70,24 +100,38 @@ variable "enable_budget_alert" {
 }
 
 variable "billing_account_id" {
-  description = "Billing account ID (012345-678901-ABCDEF). Required when enable_budget_alert is true."
+  description = "Billing account ID (012345-678901-ABCDEF) or full billingAccounts/... name. Required when enable_budget_alert is true."
   type        = string
   default     = ""
 
   validation {
-    condition     = var.enable_budget_alert == false || var.billing_account_id != ""
-    error_message = "billing_account_id is required when enable_budget_alert is true."
+    condition = (
+      var.enable_budget_alert == false
+      || can(regex("^(billingAccounts/)?[A-Z0-9]{6}-[A-Z0-9]{6}-[A-Z0-9]{6}$", var.billing_account_id))
+    )
+    error_message = "billing_account_id must be a billing account ID like 012345-678901-ABCDEF or billingAccounts/012345-678901-ABCDEF."
   }
 }
 
 variable "budget_amount_usd" {
-  description = "Monthly budget cap in USD for the project filter."
+  description = "Monthly budget cap in budget_currency_code units for the project filter."
   type        = number
   default     = 150
+}
+
+variable "budget_currency_code" {
+  description = "Billing budget currency code. Must match the billing account currency, e.g. PLN or USD."
+  type        = string
+  default     = "PLN"
 }
 
 variable "budget_alert_emails" {
   description = "Email addresses for budget threshold notifications."
   type        = list(string)
   default     = []
+
+  validation {
+    condition     = var.enable_budget_alert == false || length(var.budget_alert_emails) > 0
+    error_message = "budget_alert_emails must be non-empty when enable_budget_alert is true."
+  }
 }

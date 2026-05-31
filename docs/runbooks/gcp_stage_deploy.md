@@ -84,31 +84,73 @@ only for throwaway clusters.
 
 ## 4. Install Helm (portability proof)
 
-Same chart as PS6.2 / PS6.3; stage overlay + GCP image hosts:
+Same chart as PS6.2 / PS6.3; stage overlay + GCP image hosts.
+
+**Automated (recommended):** full in-cluster MCP stack (`values-stage-full.yaml`) + secrets bootstrap:
+
+```powershell
+# From repo root — load secrets from .env
+Get-Content .env | ForEach-Object {
+  if ($_ -match '^\s*(POSTGRES_PASSWORD|OPENAI_API_KEY)\s*=\s*(.+)\s*$') {
+    Set-Item -Path "env:$($matches[1])" -Value $matches[2].Trim('"')
+  }
+}
+$env:GCP_PROJECT_ID = "spaceops-project"
+$env:K8S_NAMESPACE = "spaceops-stage"
+make gcp-stage-deploy
+```
+
+**Manual Helm** (namespace pre-created → `global.createNamespace=false`):
 
 ```bash
 export NAMESPACE=spaceops-stage
-kubectl create namespace "${NAMESPACE}" --dry-run=client -o yaml | kubectl apply -f -
+export AR_REPO="${REGION}-docker.pkg.dev/${PROJECT_ID}/spaceops"
 
 helm upgrade --install spaceops deploy/helm/spaceops \
   --namespace "${NAMESPACE}" \
   -f deploy/helm/spaceops/values.yaml \
   -f deploy/helm/spaceops/values-stage.yaml \
+  -f deploy/helm/spaceops/values-stage-full.yaml \
   -f deploy/helm/spaceops/values-gcp-stage.yaml \
+  --set global.createNamespace=false \
   --set images.api.repository="${AR_REPO}/api" \
   --set images.mcp.repository="${AR_REPO}/mcp" \
-  --set images.api.tag="${TAG}" \
-  --set images.mcp.tag="${TAG}" \
-  --wait --timeout 10m
+  --set images.api.tag=stage \
+  --set images.mcp.tag=stage \
+  --wait --timeout 15m
+```
+
+**Postgres on GCE PD:** chart sets `postgres.dataDir=/var/lib/postgresql/data/pgdata` (required — PD mount
+includes `lost+found` at volume root).
+
+**Database schema:** after first install, `make gcp-stage-deploy` runs `alembic upgrade head` via the API
+pod (creates `telemetry_events`, `dlq_events`, checkpoint tables). If persister is in `CrashLoopBackOff`
+with `relation "dlq_events" does not exist`, run migrations manually:
+
+```bash
+kubectl exec -n spaceops-stage deploy/spaceops-api -- python -m alembic upgrade head
+kubectl rollout restart deploy/spaceops-telemetry-persister -n spaceops-stage
 ```
 
 Verify:
 
 ```bash
-kubectl get pods,svc -n "${NAMESPACE}"
-kubectl get svc spaceops-api -n "${NAMESPACE}" -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
-curl -s "http://$(kubectl get svc spaceops-api -n "${NAMESPACE}" -o jsonpath='{.status.loadBalancer.ingress[0].ip}')/health"
+make gcp-stage-status
+make gcp-stage-smoke
+# or:
+curl -s "http://$(kubectl get svc spaceops-api -n spaceops-stage -o jsonpath='{.status.loadBalancer.ingress[0].ip}'):8000/health"
 ```
+
+**Full stack on GKE (what `values-stage-full.yaml` adds):**
+
+| Component | In stage baseline | In stage-full |
+|-----------|-------------------|---------------|
+| api, postgres, opa, nats, persister | yes | yes |
+| telemetry-mcp | yes | yes |
+| kb-mcp, ticket-mcp, gitops-mcp | no | **yes** |
+| jaeger, otel-collector | yes | yes |
+| nim / GPU | no | no (Phase 7; use laptop NIM hybrid) |
+| grafana / UI | no | no (compose-only; PS6.2 scope) |
 
 ---
 
@@ -126,19 +168,74 @@ For portfolio demos, HTTP to LoadBalancer IP is acceptable; do not expose prod w
 
 ## 6. Optional GitOps (PS6.7)
 
-After cluster bootstrap, install Argo CD per [gitops_bootstrap.md](gitops_bootstrap.md). Point
-`spaceops-stage` Application at this cluster context; use `values-gitops-stage.yaml` for image tag
-pins.
+**Status today:** your live GKE cluster was installed with **imperative Helm** (`helm upgrade` /
+`make gcp-stage-deploy`). **Argo CD is not installed yet** — GitOps is optional (PS6.7), documented
+and ready, but not required for the portfolio demo.
+
+### Imperative vs GitOps
+
+| Path | When | Command |
+|------|------|---------|
+| **Imperative** (current) | Lab, first deploy, debugging | `make gcp-stage-deploy` |
+| **GitOps** | Ongoing stage sync from Git | `make gitops-install` + `make gitops-bootstrap` |
+
+Do **not** run both on the same release — pick one owner for `spaceops` in `spaceops-stage`.
+
+### Enable Argo CD on this GKE cluster
+
+1. **Push** this repo (including `deploy/gitops/`) to GitHub.
+2. **Secrets** stay out of Git — keep `spaceops-stage-secrets` (PS6.6 bootstrap or GSM+ESO).
+3. Edit `deploy/gitops/argocd/applications/values.yaml` for GKE:
+
+   ```yaml
+   gcp:
+     enabled: true
+     region: us-central1
+     projectId: spaceops-project
+     imageTag: stage
+   ```
+
+4. Install and bootstrap:
+
+   ```bash
+   export GITOPS_REPO_URL=https://github.com/YOUR_ORG/spaceops_mission_agent_lab.git
+   make gitops-install
+   make gitops-bootstrap
+   make gitops-status
+   ```
+
+5. Argo CD UI: `kubectl port-forward svc/argocd-server -n argocd 8080:443` → https://localhost:8080
+
+The `spaceops-stage` Application syncs `values-stage-full.yaml` + GCP image parameters automatically
+when `gcp.enabled: true`. Image tag promotion = commit to `values-gitops-stage.yaml`.
+
+**Migrating from imperative Helm:** uninstall Helm release *or* let Argo adopt (advanced); simplest lab
+path: `helm uninstall spaceops -n spaceops-stage` (keep namespace + secrets), then sync Argo Application.
+
+Full runbook: [gitops_bootstrap.md](gitops_bootstrap.md) · [ADR 0008](../adr/0008-gitops-argocd.md)
 
 ---
 
-## 7. Demo scenarios A/B (stretch)
+## 7. Demo scenarios A/B (automated E2E)
 
-With observability enabled in `values-stage.yaml`:
+```powershell
+$env:GCP_PROJECT_ID = "spaceops-project"   # optional if LB IP already assigned
+make gcp-stage-demo
+# Scenario A only: make gcp-stage-demo GCP_STAGE_ARGS=--scenario a
+```
 
-1. Run scenario A/B via API (same as local `make k8s-smoke` / rollout docs).
-2. Confirm traces in Jaeger (port-forward or internal LB if added).
-3. Checkpoint proof: `api.checkpoint.enabled: true` — verify resume path per ADR 0005.
+Script flow: `GET /health` → ingest fixture → wait for persister → `POST /runs` scenarios A & B.
+
+**Live observability during demo:**
+
+```powershell
+kubectl logs -n spaceops-stage -l app.kubernetes.io/component=api -f
+kubectl port-forward -n spaceops-stage svc/spaceops-jaeger 16686:16686
+```
+
+Manual curls: [portfolio README](../portfolio/README.md) (use `:8000` on LoadBalancer IP).
+
+Checkpoint proof (`api.checkpoint.enabled: true`): [graph_worker_checkpoint_ops.md](graph_worker_checkpoint_ops.md).
 
 ---
 
@@ -187,8 +284,11 @@ cd infra/terraform/gcp && terraform destroy
 |---------|--------|
 | `ImagePullBackOff` | Node SA has `artifactregistry.reader`; image path matches AR repo |
 | API `Pending` | Node pool capacity; `kubectl describe pod` |
+| Postgres `CrashLoopBackOff` / `lost+found` | Ensure chart has `postgres.dataDir` (pgdata subdir); upgrade Helm |
 | ESO sync failed | WI annotation on ESO SA; GSM secret names match `remoteRefs` |
 | LB IP pending | Wait 2–5 min; quota for external IPs in project |
+| `curl` to `/health` fails | Use port **8000**, not 80 |
+| Helm namespace ownership error | `--set global.createNamespace=false` if namespace created manually |
 
 ---
 

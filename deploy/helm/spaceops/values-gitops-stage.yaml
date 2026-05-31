@@ -1,6 +1,6 @@
 # PS6.7 — GitOps-managed image pins for stage (commit changes here to promote tags).
 images:
   api:
-    tag: local
+    tag: stage
   mcp:
-    tag: local
+    tag: stage

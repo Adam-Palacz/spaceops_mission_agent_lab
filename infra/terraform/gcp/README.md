@@ -33,9 +33,12 @@ See [ADR 0009](../../../docs/adr/0009-gcp-baseline-portable-first.md) and
 | `region` | `us-central1` | Region for GKE + AR |
 | `environment` | `stage` | Label `env=` (`dev` \| `stage` \| `prod`) |
 | `cluster_name` | `spaceops-stage` | GKE cluster name |
+| `node_locations` | `["us-central1-a"]` | Single-zone lab node placement inside regional control plane |
 | `node_count` | `1` | Node pool size |
 | `machine_type` | `e2-standard-2` | GCE type |
 | `preemptible_nodes` | `true` | Cheaper stage nodes (may be reclaimed) |
+| `node_disk_size_gb` | `30` | Small boot disk; avoids fresh-project SSD quota surprises |
+| `node_disk_type` | `pd-standard` | Standard disk for lab quota/cost |
 | `artifact_registry_repository_id` | `spaceops` | AR repo ID |
 | `deploy_service_account_id` | `spaceops-deploy` | Deploy SA short name |
 | `enable_apis` | `true` | Enable Container + AR APIs |
@@ -114,6 +117,22 @@ terraform output artifact_registry_repository
 
 Then follow [gcp_stage_deploy.md](../../../docs/runbooks/gcp_stage_deploy.md) for kubectl, images, Helm.
 
+### Troubleshooting (live apply)
+
+| Error | Fix |
+|-------|-----|
+| `invalid_rapt` / OAuth | `gcloud auth login` then `gcloud auth application-default login` |
+| Budget API **quota project** | Provider sets `billing_project` in `versions.tf`; also run `gcloud auth application-default set-quota-project PROJECT_ID` |
+| **Identity Pool does not exist** (ESO WI) | Fixed: WI binding runs after GKE cluster (`depends_on`) |
+| **deletion_protection** blocks replace/destroy | Set `deletion_protection = false` in tfvars (default); or `gcloud container clusters update CLUSTER --region=REGION --no-deletion-protection` |
+| Cluster **tainted** after failed apply | If cluster is healthy: `terraform untaint google_container_cluster.primary` then `apply` (avoids recreate) |
+| Budget **400 invalid argument** | `budget.tf` strips any `billingAccounts/` prefix before passing `billing_account_id` to the provider, uses project number, and avoids unsupported label filters |
+| Budget **400 invalid argument** with valid account | Set `budget_currency_code` to billing account currency (`gcloud billing accounts describe ... --format="value(currencyCode)"`) |
+| **SSD_TOTAL_GB exceeded** | Broken regional default pool can exceed quota. Defaults now use one node zone plus `pd-standard` 30GB for the temporary default pool; delete the broken `ERROR` cluster and re-apply. |
+| Budget optional for lab | Set `enable_budget_alert = false` in `terraform.tfvars` |
+
+After a failed apply, run `terraform apply` again (or `terraform destroy` to reset).
+
 ### Destroy
 
 ```bash
@@ -151,4 +170,7 @@ ADR 0009.
 ## Billing budget (PS6.9)
 
 Optional `budget.tf` — set `enable_budget_alert = true` and `billing_account_id` in `terraform.tfvars`.
+`billing_account_id` may be either `012345-678901-ABCDEF` or `billingAccounts/012345-678901-ABCDEF`;
+the Terraform module passes the short ID to the Google provider.
+Set `budget_currency_code` to the billing account currency (`PLN` for the current lab account).
 See [cloud_cost_hygiene.md](../../../docs/runbooks/cloud_cost_hygiene.md) for gcloud stubs and scale-down scripts.

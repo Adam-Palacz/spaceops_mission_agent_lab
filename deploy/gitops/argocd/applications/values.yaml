@@ -1,2 +1,8 @@
 repoUrl: "__GITOPS_REPO_URL__"
 targetRevision: "__GITOPS_TARGET_REVISION__"
+# Set gcp.enabled=true + projectId when Argo CD runs on GKE (see docs/runbooks/gcp_stage_deploy.md).
+gcp:
+  enabled: true
+  region: us-central1
+  projectId: spaceops-project
+  imageTag: stage

@@ -80,6 +80,10 @@ def test_terraform_budget_optional_by_default() -> None:
     assert "default     = false" in vars_tf
     budget = (TF_DIR / "budget.tf").read_text(encoding="utf-8")
     assert "google_billing_budget" in budget
+    assert "billing_account_id" in budget
+    assert 'replace(var.billing_account_id, "billingAccounts/", "")' in budget
+    assert "data.google_project.current.number" in budget
+    assert "var.budget_currency_code" in budget
 
 
 def test_schedule_scale_down_builds_gcloud_command() -> None:

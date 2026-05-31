@@ -1,6 +1,6 @@
-# Wariant B — agent otwiera PR, Argo wdraża ops-config
+# Variant B - agent opens a PR, Argo deploys ops-config
 
-End-to-end: **gitops-mcp `create_pr`** → GitHub PR → merge → **Argo CD** sync ConfigMap → API widzi nową konfigurację.
+End-to-end: **gitops-mcp `create_pr`** -> GitHub PR -> merge -> **Argo CD** sync ConfigMap -> API sees the new configuration.
 
 ```
 Agent / test script → gitops-mcp → GitHub PR (ops-config/)
@@ -10,56 +10,56 @@ Agent / test script → gitops-mcp → GitHub PR (ops-config/)
 
 ---
 
-## Wymagania
+## Requirements
 
-| Element | Ustawienie |
+| Element | Setting |
 |---------|------------|
 | Argo CD | `make gitops-install` + `make gitops-bootstrap` |
-| Secret stage | `GITHUB_TOKEN` (repo scope) w `spaceops-stage-secrets` |
+| Stage Secret | `GITHUB_TOKEN` (repo scope) in `spaceops-stage-secrets` |
 | Env gitops-mcp | `GITHUB_REPO=Adam-Palacz/spaceops_mission_agent_lab` (Helm `gitopsMcp.githubRepo`) |
-| Handoff Helm | `make gitops-handoff` jeśli wcześniej imperatywny `helm upgrade` |
-| Po merge | `python scripts/render_ops_config_kustomize.py` + commit (nowe pliki w ops-config) |
+| Helm handoff | `make gitops-handoff` if the release was previously managed by imperative `helm upgrade` |
+| After merge | `python scripts/render_ops_config_kustomize.py` + commit (new files in ops-config) |
 
 ---
 
 ## 1. Secret + redeploy (GITHUB_TOKEN)
 
 ```powershell
-# .env lub ręcznie:
+# .env or manual export:
 $env:GITHUB_TOKEN = "ghp_..."
 $env:K8S_NAMESPACE = "spaceops-stage"
 $env:K8S_SECRET_NAME = "spaceops-stage-secrets"
-# + POSTGRES_PASSWORD, OPENAI_API_KEY jak wcześniej
+# + POSTGRES_PASSWORD, OPENAI_API_KEY as before
 .venv\Scripts\python.exe scripts\k8s_secrets_bootstrap.py
 
 $env:GCP_PROJECT_ID = "spaceops-project"
-make gcp-stage-deploy --skip-secrets  # lub helm z values-stage-full
+make gcp-stage-deploy --skip-secrets  # or Helm with values-stage-full
 ```
 
 ---
 
-## 2. Argo CD (Git + branch main po merge)
+## 2. Argo CD (Git + main branch after merge)
 
 ```powershell
 $env:GITOPS_REPO_URL = "https://github.com/Adam-Palacz/spaceops_mission_agent_lab.git"
 $env:GITOPS_TARGET_REVISION = "main"
 make gitops-bootstrap
-make gitops-handoff   # jednorazowo: oddaj release Helm Argo
+make gitops-handoff   # one-time: hand the Helm release over to Argo
 make gitops-status
 ```
 
-Aplikacje Argo:
+Argo applications:
 
-| App | Wave | Co syncuje |
+| App | Wave | What it syncs |
 |-----|------|------------|
-| `spaceops-ops-config` | 0 | ConfigMap z `ops-config/` |
+| `spaceops-ops-config` | 0 | ConfigMap from `ops-config/` |
 | `spaceops-stage` | 1 | Helm (API mount ConfigMap) |
 
 ---
 
-## 3. Agent / skrypt otwiera PR
+## 3. Agent / script opens PR
 
-**Opcja A — skrypt testowy (port-forward gitops-mcp):**
+**Option A - test script (port-forward gitops-mcp):**
 
 ```powershell
 kubectl port-forward -n spaceops-stage svc/spaceops-gitops-mcp 8004:8004
@@ -70,12 +70,12 @@ $env:GITHUB_TOKEN = "ghp_..."
 .venv\Scripts\python.exe scripts\test_gitops_pr.py
 ```
 
-Wynik: `pr_url: https://github.com/.../pull/N`
+Result: `pr_url: https://github.com/.../pull/N`
 
-**Opcja B — agent przez API** (incydent z krokiem `create_pr` w planie, OPA allow):
+**Option B - agent through API** (incident with a `create_pr` plan step, OPA allow):
 
 ```powershell
-# POST /runs z payloadem prowadzącym do create_pr (patrz portfolio / evals)
+# POST /runs with a payload that leads to create_pr (see portfolio / evals)
 $BASE = "http://<LB-IP>:8000"
 # ...
 ```
@@ -85,7 +85,7 @@ $BASE = "http://<LB-IP>:8000"
 ## 4. Merge PR → Argo deploy
 
 1. **Merge** PR na GitHubie (`main`).
-2. Jeśli agent dodał **nowy** plik YAML w `ops-config/`:
+2. If the agent added a **new** YAML file under `ops-config/`:
 
    ```powershell
    python scripts/render_ops_config_kustomize.py
@@ -94,7 +94,7 @@ $BASE = "http://<LB-IP>:8000"
    git push
    ```
 
-   (Edycja istniejącego pliku, np. `thresholds.yaml`, nie wymaga regen.)
+   (Editing an existing file, e.g. `thresholds.yaml`, does not require regeneration.)
 
 3. Argo auto-sync (~1–3 min) lub:
 
@@ -109,7 +109,7 @@ $BASE = "http://<LB-IP>:8000"
    kubectl rollout status deploy/spaceops-api -n spaceops-stage
    ```
 
-5. **Weryfikacja:**
+5. **Verification:**
 
    ```powershell
    kubectl get configmap spaceops-ops-config -n spaceops-stage -o yaml
@@ -120,19 +120,19 @@ $BASE = "http://<LB-IP>:8000"
 
 ## 5. Rollback
 
-`git revert` merge commit → push → Argo sync → restart API (jak wyżej).
+`git revert` merge commit -> push -> Argo sync -> restart API (as above).
 
 ---
 
-## Uwagi techniczne
+## Technical notes
 
-- Obraz MCP **nie ma `.git`** — `create_pr` używa **GitHub API** (nie lokalnego `git push`).
-- Helm values / image tag: nadal `values-gitops-stage.yaml`; **ops-config**: osobna Application.
-- Prod: ten sam wzorzec; sync **manualny** na `spaceops-prod` (ADR 0005).
+- The MCP image **does not have `.git`** - `create_pr` uses the **GitHub API** (not local `git push`).
+- Helm values / image tag: still `values-gitops-stage.yaml`; **ops-config**: separate Application.
+- Prod: same pattern; **manual** sync on `spaceops-prod` (ADR 0005).
 
 ---
 
-## Powiązane
+## Related
 
 - [gitops_bootstrap.md](gitops_bootstrap.md)
 - [ops-config/README.md](../../ops-config/README.md)

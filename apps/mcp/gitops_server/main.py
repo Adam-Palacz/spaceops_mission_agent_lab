@@ -78,12 +78,35 @@ def _normalize_github_repo(value: str) -> str:
     if not s:
         return ""
     if "github.com" in s:
-        # e.g. https://github.com/Adam-Palacz/spaceops_mission_agent_lab or .../repo.git
         parts = s.rstrip("/").replace(".git", "").split("github.com/")
         if len(parts) >= 2 and parts[-1]:
             return parts[-1].strip("/")
         return ""
     return s
+
+
+def _github_credentials() -> tuple[str, str]:
+    """Return (token, owner/name) or empty strings if GitHub integration disabled."""
+    try:
+        from config import settings
+    except ImportError:
+        return "", ""
+    token = (getattr(settings, "github_token", None) or "").split("#")[0].strip()
+    repo = _normalize_github_repo(getattr(settings, "github_repo", None) or "")
+    return token, repo
+
+
+def _use_github_api_only() -> bool:
+    """K8s image: no local .git — skip writes to read-only ConfigMap-mounted ops-config."""
+    ok, out = _run_git(REPO_ROOT, "rev-parse", "--is-inside-work-tree")
+    if ok and out == "true":
+        return False
+    token, repo = _github_credentials()
+    return bool(token and repo)
+
+
+def _ops_config_repo_path(rel: str) -> str:
+    return f"ops-config/{rel}".replace("\\", "/")
 
 
 def _push_and_create_pr(
@@ -102,7 +125,7 @@ def _push_and_create_pr(
     except ImportError:
         return None, None  # no config → local-only mode
 
-    token = (getattr(settings, "github_token", None) or "").strip()
+    token = (getattr(settings, "github_token", None) or "").split("#")[0].strip()
     repo = _normalize_github_repo(getattr(settings, "github_repo", None) or "")
     base = getattr(settings, "github_repo_base_branch", "main") or "main"
     if not token or not repo:
@@ -242,7 +265,9 @@ def create_pr(
         try:
             branch = (branch or "").strip() or "agent/unknown"
             ops_dir = _resolve_ops_config_dir(repo_path)
-            ops_dir.mkdir(parents=True, exist_ok=True)
+            api_only = _use_github_api_only()
+            if not api_only:
+                ops_dir.mkdir(parents=True, exist_ok=True)
 
             normalized_files: list[FileSpec] = []
             files_rel_to_repo: list[str] = []
@@ -254,20 +279,31 @@ def create_pr(
                 rel_path = Path(rel)
                 if rel_path.is_absolute() or ".." in rel_path.parts:
                     raise ValueError(f"Invalid path for GitOps file: {rel}")
-                target = ops_dir / rel_path
-                target.parent.mkdir(parents=True, exist_ok=True)
-                target.write_text(content, encoding="utf-8")
                 norm_path = str(rel_path).replace("\\", "/")
+                if not api_only:
+                    target = ops_dir / rel_path
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    target.write_text(content, encoding="utf-8")
                 normalized_files.append(FileSpec(path=norm_path, content=content))
-                try:
-                    rel_to_repo = (ops_dir / rel_path).resolve().relative_to(REPO_ROOT)
-                    repo_path = str(rel_to_repo).replace("\\", "/")
-                    files_rel_to_repo.append(repo_path)
-                    files_repo_content.append((repo_path, content))
-                except ValueError:
-                    pass
+                if api_only:
+                    repo_path_str = _ops_config_repo_path(norm_path)
+                    files_repo_content.append((repo_path_str, content))
+                else:
+                    try:
+                        rel_to_repo = (
+                            (ops_dir / rel_path).resolve().relative_to(REPO_ROOT)
+                        )
+                        repo_path_str = str(rel_to_repo).replace("\\", "/")
+                        files_rel_to_repo.append(repo_path_str)
+                        files_repo_content.append((repo_path_str, content))
+                    except ValueError:
+                        pass
 
-            note = "Files written under ops-config/."
+            note = (
+                "Files committed via GitHub API (no local write)."
+                if api_only
+                else "Files written under ops-config/."
+            )
             result: CreatePrResult = {
                 "repo_root": str(REPO_ROOT),
                 "ops_config_dir": str(ops_dir),
@@ -285,7 +321,11 @@ def create_pr(
             )
             if pr_url:
                 result["pr_url"] = str(pr_url)
-                result["note"] = "Files written, branch pushed, PR created."
+                result["note"] = (
+                    "PR created via GitHub API."
+                    if api_only
+                    else "Files written, branch pushed, PR created."
+                )
             elif push_error:
                 result["push_error"] = str(push_error)
                 result["note"] = "Files written; push/PR failed (see push_error)."

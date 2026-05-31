@@ -9,6 +9,8 @@
 vertical slice like PS5. Close it with strict ordering, explicit defer ADRs (PS6.7, PS6.11 fork,
 optional GCP), and a **local K8s proof** as the hard gate; cloud live deploy is stretch.
 
+**Sprint review:** [SPRINT_REVIEW.md](SPRINT_REVIEW.md) (2026-05-31).
+
 ---
 
 ## Configuration model (read first)
@@ -93,16 +95,16 @@ See **[BOARD.md](BOARD.md)** for status.
 
 **Hard gates (local / docs)**
 
-- [ ] Local K8s deploy works with safe rollback and documented procedures (PS6.3 + PS6.4).
-- [ ] Environment isolation controls defined and verified on local/stage form (PS6.5).
-- [ ] Secrets enter cluster without plain-text Git commits (PS6.6 minimal path).
-- [ ] **PS6.11:** checkpoint pattern validated in-cluster per PS6.1 ADR (**worker split** or **API-only resume**) — or explicit defer ADR with trigger.
-- [ ] Portfolio artifact checklist complete and review-ready (PS6.10).
+- [x] Local K8s deploy works with safe rollback and documented procedures (PS6.3 + PS6.4).
+- [x] Environment isolation controls defined and verified on local/stage form (PS6.5).
+- [x] Secrets enter cluster without plain-text Git commits (PS6.6 minimal path).
+- [x] **PS6.11:** checkpoint pattern validated in-cluster per PS6.1 ADR — **Variant B (API-only resume)**; Variant A worker split deferred Phase 7.
+- [x] Portfolio artifact checklist complete and review-ready (PS6.10).
 
 **Cloud — minimum (no live GCP required)**
 
-- [ ] PS6.8: ADR + `infra/terraform/gcp/` skeleton; `terraform validate` (and plan stub) in CI or documented local gate.
-- [ ] PS6.9: `docs/runbooks/cloud_cost_hygiene.md` — budgets, scale-down, labels — **design validated**.
+- [x] PS6.8: ADR + `infra/terraform/gcp/` skeleton; `terraform validate` in CI (`gcp-terraform-validate.yml`).
+- [x] PS6.9: `docs/runbooks/cloud_cost_hygiene.md` — budgets, scale-down, labels — **design validated**.
 
 **Cloud — stretch (requires GCP credentials + budget)**
 

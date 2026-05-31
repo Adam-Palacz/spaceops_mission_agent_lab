@@ -6,6 +6,7 @@ global:
 secrets:
   create: false
   name: spaceops-prod-secrets
+  existingSecret: spaceops-prod-secrets
 
 postgres:
   auth:
@@ -47,6 +48,14 @@ ticketMcp:
 
 gitopsMcp:
   enabled: true
+
+externalSecrets:
+  remoteRefs:
+    postgresPassword: spaceops-prod/postgres-password
+    openaiApiKey: spaceops-prod/openai-api-key
+    approvalApiKey: spaceops-prod/approval-api-key
+    githubToken: spaceops-prod/github-token
+    ngcApiKey: spaceops-prod/ngc-api-key
 
 isolation:
   enabled: true

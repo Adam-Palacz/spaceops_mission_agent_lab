@@ -154,13 +154,32 @@ agentWorker:
   replicas: 1
 
 secrets:
-  # Dev/lab only: render a Kubernetes Secret from values (never commit real keys).
+  # Dev/lab only: render a Kubernetes Secret from install-time --set (never commit real keys).
   create: false
   name: spaceops-secrets
+  # When create=false, chart reads this Secret (must exist before install on stage/prod).
+  existingSecret: ""
   openaiApiKey: ""
   postgresPassword: ""
   approvalApiKey: ""
   githubToken: ""
+  ngcApiKey: ""
+  cursorShApiKey: ""
+  gpuLlmApiKey: ""
+
+# PS6.6 — External Secrets Operator stub (install ESO + SecretStore out-of-band).
+externalSecrets:
+  enabled: false
+  refreshInterval: 1h
+  secretStore:
+    name: spaceops-secret-store
+    kind: SecretStore
+  remoteRefs:
+    postgresPassword: spaceops-dev/postgres-password
+    openaiApiKey: spaceops-dev/openai-api-key
+    approvalApiKey: spaceops-dev/approval-api-key
+    githubToken: spaceops-dev/github-token
+    ngcApiKey: spaceops-dev/ngc-api-key
 
 serviceAccount:
   create: true

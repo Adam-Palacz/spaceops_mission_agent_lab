@@ -16,8 +16,10 @@ api:
 
 secrets:
   create: true
-  # Override at install: --set secrets.postgresPassword=..., secrets.openaiApiKey=...
-  postgresPassword: changeme-dev
+  name: spaceops-dev-secrets
+  # Supply at install only: --set secrets.postgresPassword=$K8S_POSTGRES_PASSWORD
+  # Optional: --set secrets.openaiApiKey=$OPENAI_API_KEY (never commit real values)
+  postgresPassword: ""
   openaiApiKey: ""
 
 postgres:

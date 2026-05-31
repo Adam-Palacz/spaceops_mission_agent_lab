@@ -25,6 +25,8 @@ Deploy / rollback on K8s: [docs/runbooks/k8s_rollout_rollback.md](../../../docs/
 
 Environment isolation (PS6.5): [docs/runbooks/k8s_environment_isolation.md](../../../docs/runbooks/k8s_environment_isolation.md) — verify: `make k8s-isolation-verify`.
 
+Secrets (PS6.6): [docs/runbooks/k8s_secrets_bootstrap.md](../../../docs/runbooks/k8s_secrets_bootstrap.md) — bootstrap: `make k8s-secrets-bootstrap`.
+
 ## Compose → Kubernetes mapping
 
 | Docker Compose service | K8s workload | Values toggle |
@@ -66,7 +68,7 @@ Set in values: `images.api.repository`, `images.api.tag`, etc.
 ## LLM / secrets (ADR 0005)
 
 - Set `api.llm.backend` per env (`openai` default; `gpu` requires `nim.enabled`).
-- **No plain-text secrets in Git** — dev uses `secrets.create` + `--set`; stage/prod use External Secrets (PS6.6).
+- **No plain-text secrets in Git** — dev uses `secrets.create` + `--set` at install; stage/prod use `existingSecret` + ESO/SOPS ([PS6.6](../../../docs/runbooks/k8s_secrets_bootstrap.md)).
 - **`LLM_BACKEND` only** — do not set deprecated `LLM_PROVIDER` in manifests.
 
 ## PS5.7 GPU activity file

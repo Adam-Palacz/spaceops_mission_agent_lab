@@ -28,7 +28,7 @@ POSTGRES_PASSWORD ?= spaceops
 .PHONY: help install install-dev lint format typecheck check safety-gates semantic-check test migrate-smoke \
 	golden-check golden-run golden-update compose-config docker-build gpu-up gpu-down gpu-smoke gpu-idle-check \
 	gpu-idle-integration backend-parity-check helm-template helm-lint k8s-up k8s-down k8s-status k8s-smoke \
-	k8s-rollout-demo k8s-isolation-verify
+	k8s-rollout-demo k8s-isolation-verify k8s-secrets-bootstrap
 
 help: ## Show this help (default goal)
 	@echo SpaceOps Makefile - targets mirror CI where practical.
@@ -151,3 +151,6 @@ k8s-rollout-demo: ## PS6.4 Helm upgrade + rollback demo (requires make k8s-up)
 
 k8s-isolation-verify: ## PS6.5 Verify NetworkPolicy, quota, RBAC on local cluster
 	$(PYTHON_RUN) scripts/k8s_isolation_verify.py $(K8S_ISOLATION_ARGS)
+
+k8s-secrets-bootstrap: ## PS6.6 Create/update K8s Secret from env (K8S_POSTGRES_PASSWORD, OPENAI_API_KEY, …)
+	$(PYTHON_RUN) scripts/k8s_secrets_bootstrap.py --create-namespace

@@ -20,7 +20,11 @@ data/replay/runs/
 data/replay/golden/reports/
 data/audit.ndjson
 
-# PS5.7 GPU activity timestamp (host ./var bind mount)
+# PS6.6 — SOPS decrypted artifacts and local secret exports
+deploy/secrets/decrypted/
+*.secrets.dec.yaml
+*.dec.yaml
+.sops-decrypted/
 var/llm_last_gpu_call_at
 # PS5.3 NIM downloaded model/build cache
 var/nim-cache/

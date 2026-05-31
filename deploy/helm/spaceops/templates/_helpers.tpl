@@ -75,11 +75,13 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{- define "spaceops.secretName" -}}
-{{- if .Values.secrets.create }}
-{{- .Values.secrets.name | default (printf "%s-secrets" (include "spaceops.fullname" .)) }}
-{{- else if .Values.postgres.auth.existingSecret }}
-{{- .Values.postgres.auth.existingSecret }}
-{{- else }}
-{{- .Values.secrets.name | default (printf "%s-secrets" (include "spaceops.fullname" .)) }}
-{{- end }}
+{{- if .Values.secrets.existingSecret -}}
+{{- .Values.secrets.existingSecret -}}
+{{- else if .Values.postgres.auth.existingSecret -}}
+{{- .Values.postgres.auth.existingSecret -}}
+{{- else if .Values.secrets.create -}}
+{{- .Values.secrets.name | default (printf "%s-secrets" (include "spaceops.fullname" .)) -}}
+{{- else -}}
+{{- fail "secrets: set secrets.create=true, secrets.existingSecret, or postgres.auth.existingSecret" -}}
+{{- end -}}
 {{- end }}

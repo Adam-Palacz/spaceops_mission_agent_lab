@@ -47,14 +47,11 @@ spec:
               containerPort: {{ .Values.api.port }}
           env:
             {{- include "spaceops.apiEnv" . | nindent 12 }}
-            {{- if or .Values.secrets.create .Values.secrets.openaiApiKey }}
-            - name: OPENAI_API_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "spaceops.secretName" . }}
-                  key: OPENAI_API_KEY
-                  optional: true
-            {{- end }}
+            {{- include "spaceops.secretEnvOptional" (list . "OPENAI_API_KEY" "OPENAI_API_KEY") | nindent 12 }}
+            {{- include "spaceops.secretEnvOptional" (list . "APPROVAL_API_KEY" "APPROVAL_API_KEY") | nindent 12 }}
+            {{- include "spaceops.secretEnvOptional" (list . "GITHUB_TOKEN" "GITHUB_TOKEN") | nindent 12 }}
+            {{- include "spaceops.secretEnvOptional" (list . "CURSOR_SH_API_KEY" "CURSOR_SH_API_KEY") | nindent 12 }}
+            {{- include "spaceops.secretEnvOptional" (list . "GPU_LLM_API_KEY" "GPU_LLM_API_KEY") | nindent 12 }}
           readinessProbe:
             httpGet:
               path: /health

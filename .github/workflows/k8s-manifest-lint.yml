@@ -8,12 +8,14 @@ on:
       - "deploy/helm/**"
       - ".github/workflows/k8s-manifest-lint.yml"
       - "tests/test_helm_ps62.py"
+      - "tests/test_helm_ps66.py"
   pull_request:
     branches: [main]
     paths:
       - "deploy/helm/**"
       - ".github/workflows/k8s-manifest-lint.yml"
       - "tests/test_helm_ps62.py"
+      - "tests/test_helm_ps66.py"
 
 jobs:
   helm-template:
@@ -59,4 +61,4 @@ jobs:
 
       - run: pip install pytest pyyaml
 
-      - run: pytest tests/test_helm_ps62.py -v
+      - run: pytest tests/test_helm_ps62.py tests/test_helm_ps66.py -v

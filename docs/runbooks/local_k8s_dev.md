@@ -136,7 +136,7 @@ K8S_SKIP_BUILD=1 make k8s-up
 | Compose (dev) | kind + Helm |
 |---------------|-------------|
 | `docker compose up` | `make k8s-up` |
-| `.env` secrets | Helm `secrets.create` + `K8S_POSTGRES_PASSWORD` |
+| `.env` secrets | Helm `secrets.create` + `K8S_POSTGRES_PASSWORD` (see [k8s_secrets_bootstrap.md](k8s_secrets_bootstrap.md)) |
 | GPU / NIM profile | Stay on compose (`make gpu-up`) — **no GPU node** in default kind cluster |
 
 See [environment_promotion.md](environment_promotion.md) for promotion to stage/prod.

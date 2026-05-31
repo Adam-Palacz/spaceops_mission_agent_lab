@@ -6,8 +6,7 @@ global:
 secrets:
   create: false
   name: spaceops-stage-secrets
-  # Wire via External Secrets / SOPS in PS6.6:
-  # existingSecret: spaceops-stage-secrets
+  existingSecret: spaceops-stage-secrets
 
 postgres:
   auth:
@@ -33,6 +32,14 @@ nats:
 
 telemetryPersister:
   enabled: true
+
+externalSecrets:
+  remoteRefs:
+    postgresPassword: spaceops-stage/postgres-password
+    openaiApiKey: spaceops-stage/openai-api-key
+    approvalApiKey: spaceops-stage/approval-api-key
+    githubToken: spaceops-stage/github-token
+    ngcApiKey: spaceops-stage/ngc-api-key
 
 isolation:
   enabled: true

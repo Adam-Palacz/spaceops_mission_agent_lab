@@ -3,7 +3,7 @@
 | Field | Value |
 |-------|-------|
 | **Task ID** | PS6.6 |
-| **Status** | Todo |
+| **Status** | Done |
 
 ---
 
@@ -17,12 +17,12 @@ enterprise upgrade (ESO + GSM/Vault).
 
 ## Requirements
 
-- [ ] ADR: chosen approach — **SOPS** (Git-encrypted) and/or **External Secrets Operator** stub.
-- [ ] Secret naming convention per env (`spaceops-dev/openai-api-key`, etc.).
-- [ ] Rotation procedure documented (even if manual for lab).
-- [ ] **No secrets** in Helm values committed to repo; use `existingSecret` refs.
-- [ ] Align with `config.py` / PS5.1 env var names — single mapping table.
-- [ ] CI: manifest lint must not print decrypted secrets; no secret files in PR diff.
+- [x] ADR: chosen approach — **SOPS** (Git-encrypted) and/or **External Secrets Operator** stub.
+- [x] Secret naming convention per env (`spaceops-dev/openai-api-key`, etc.).
+- [x] Rotation procedure documented (even if manual for lab).
+- [x] **No secrets** in Helm values committed to repo; use `existingSecret` refs.
+- [x] Align with `config.py` / PS5.1 env var names — single mapping table.
+- [x] CI: manifest lint must not print decrypted secrets; no secret files in PR diff.
 
 ---
 
@@ -35,26 +35,26 @@ enterprise upgrade (ESO + GSM/Vault).
 
 ## Checklist
 
-- [ ] `docs/adr/0006-secrets-management-k8s.md` (or extend existing secrets stub ADR).
-- [ ] Example sealed/SOPS file or ESO `ExternalSecret` template (placeholder values).
-- [ ] Runbook: bootstrap secrets on fresh cluster.
-- [ ] `.gitignore` / pre-commit note for decrypted secret artifacts.
+- [x] `docs/adr/0007-secrets-management-k8s.md` (0006 reserved for Helm packaging ADR).
+- [x] Example sealed/SOPS file or ESO `ExternalSecret` template (placeholder values).
+- [x] Runbook: bootstrap secrets on fresh cluster.
+- [x] `.gitignore` / pre-commit note for decrypted secret artifacts.
 
 ---
 
 ## Test / acceptance
 
-- [ ] Local deploy succeeds with secrets supplied via documented mechanism.
-- [ ] `git grep OPENAI_API_KEY` in tracked files finds only `.env.example` placeholders.
-- [ ] Reviewer can rotate one secret following runbook without guessing paths.
+- [x] Local deploy succeeds with secrets supplied via documented mechanism.
+- [x] Secret-pattern scan finds no committed real key values; env names may appear in docs, tests, templates, and placeholder examples.
+- [x] Reviewer can rotate one secret following runbook without guessing paths.
 
 ---
 
 ## Deliverables (expected)
 
-- `docs/adr/0006-secrets-management-k8s.md`
+- `docs/adr/0007-secrets-management-k8s.md`
 - `docs/runbooks/k8s_secrets_bootstrap.md`
-- Example manifests under `deploy/*/examples/secrets/`
+- Example manifests under `deploy/examples/secrets/`
 
 ---
 

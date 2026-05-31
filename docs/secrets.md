@@ -79,7 +79,26 @@ for local work, but the **logical source of truth is `get_secret()`**.
    - DB passwords: rotate with coordinated rollout (update backend, then restart services).
    - Approval API keys: rotate and invalidate old keys after a short overlap window.
 
-## 5. First secret to migrate
+## 5. Kubernetes (PS6.6)
+
+For Helm / kind deployments, secrets use the same **env var names** as Compose. See
+[ADR 0007](adr/0007-secrets-management-k8s.md) and [runbooks/k8s_secrets_bootstrap.md](runbooks/k8s_secrets_bootstrap.md).
+
+| App env (`config.py`) | K8s Secret `data` key | ESO / GSM path (`{env}` = dev\|stage\|prod) |
+|-----------------------|----------------------|---------------------------------------------|
+| `POSTGRES_PASSWORD` | `postgres-password` | `spaceops-{env}/postgres-password` |
+| `OPENAI_API_KEY` | `OPENAI_API_KEY` | `spaceops-{env}/openai-api-key` |
+| `APPROVAL_API_KEY` | `APPROVAL_API_KEY` | `spaceops-{env}/approval-api-key` |
+| `GITHUB_TOKEN` | `GITHUB_TOKEN` | `spaceops-{env}/github-token` |
+| `NGC_API_KEY` | `NGC_API_KEY` | `spaceops-{env}/ngc-api-key` |
+| `CURSOR_SH_API_KEY` | `CURSOR_SH_API_KEY` | `spaceops-{env}/cursor-sh-api-key` |
+| `GPU_LLM_API_KEY` | `GPU_LLM_API_KEY` | `spaceops-{env}/gpu-llm-api-key` |
+
+Examples: `deploy/examples/secrets/`. Bootstrap: `make k8s-secrets-bootstrap`.
+
+---
+
+## 6. First secret to migrate
 
 Priority secret to move under the new mechanism: **`OPENAI_API_KEY`**.
 

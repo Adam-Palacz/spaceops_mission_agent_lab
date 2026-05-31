@@ -7,7 +7,7 @@
 | PS6.3 | Local K8s baseline (kind / k3d) | Done | [PS6.3](PS6.3-local-k8s-baseline-kind-k3d.md) |
 | PS6.4 | Rollout and rollback playbook | Done | [PS6.4](PS6.4-rollout-rollback-playbook.md) |
 | PS6.5 | Isolation controls (RBAC, network, quotas) | Done | [PS6.5](PS6.5-isolation-controls-rbac-network-quotas.md) |
-| PS6.6 | Secrets strategy (SOPS / External Secrets) | Todo | [PS6.6](PS6.6-secrets-strategy-sops-eso.md) |
+| PS6.6 | Secrets strategy (SOPS / External Secrets) | Done | [PS6.6](PS6.6-secrets-strategy-sops-eso.md) |
 | PS6.7 | Optional GitOps bootstrap (Argo CD / Flux) | Todo | [PS6.7](PS6.7-optional-gitops-bootstrap.md) |
 | PS6.8 | GCP baseline deploy plan (portable-first) | Todo | [PS6.8](PS6.8-gcp-baseline-deploy-plan.md) |
 | PS6.9 | Billing and shutdown controls | Todo | [PS6.9](PS6.9-billing-shutdown-controls.md) |

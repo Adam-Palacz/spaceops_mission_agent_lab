@@ -43,3 +43,8 @@ output "docker_push_example_api" {
   description = "Example docker tag/push for the API image."
   value       = "${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.spaceops.repository_id}/api:stage"
 }
+
+output "budget_enabled" {
+  description = "Whether PS6.9 billing budget alert is managed by Terraform."
+  value       = var.enable_budget_alert
+}

@@ -150,8 +150,8 @@ See cost table in [infra/terraform/gcp/README.md](../../infra/terraform/gcp/READ
 |--------|------|
 | `terraform destroy` | Tear down lab cluster when done |
 | Preemptible nodes | Default in Terraform (`preemptible_nodes = true`) |
-| Budget alerts | **PS6.9** — wire GCP budget + email threshold |
-| Scale-down overnight | **PS6.9** — node pool min / scheduled stop |
+| Budget alerts | **PS6.9** — [cloud_cost_hygiene.md](cloud_cost_hygiene.md) + Terraform `budget.tf` |
+| Scale-down overnight | **PS6.9** — `scripts/cloud/schedule_scale_down.sh` |
 
 **Infra $ vs model $:** cluster cost is independent of [LLM token budget](gpu_cost_hygiene.md)
 (PS5.6 process mode).
@@ -197,3 +197,4 @@ cd infra/terraform/gcp && terraform destroy
 - [Environment promotion](environment_promotion.md)
 - [K8s rollout / rollback](k8s_rollout_rollback.md)
 - [PS6.9 billing and shutdown controls](../../roadmap/02-production-scale/sprint-6/PS6.9-billing-shutdown-controls.md)
+- [Cloud cost hygiene](cloud_cost_hygiene.md)

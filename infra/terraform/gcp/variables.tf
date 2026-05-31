@@ -61,3 +61,33 @@ variable "enable_apis" {
   type        = bool
   default     = true
 }
+
+# PS6.9 — billing budget alerts (optional; requires live billing account).
+variable "enable_budget_alert" {
+  description = "Create monthly billing budget with email threshold alerts."
+  type        = bool
+  default     = false
+}
+
+variable "billing_account_id" {
+  description = "Billing account ID (012345-678901-ABCDEF). Required when enable_budget_alert is true."
+  type        = string
+  default     = ""
+
+  validation {
+    condition     = var.enable_budget_alert == false || var.billing_account_id != ""
+    error_message = "billing_account_id is required when enable_budget_alert is true."
+  }
+}
+
+variable "budget_amount_usd" {
+  description = "Monthly budget cap in USD for the project filter."
+  type        = number
+  default     = 150
+}
+
+variable "budget_alert_emails" {
+  description = "Email addresses for budget threshold notifications."
+  type        = list(string)
+  default     = []
+}

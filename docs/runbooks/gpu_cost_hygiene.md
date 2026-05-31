@@ -82,3 +82,9 @@ If NIM is running and activity file is missing/invalid, scripts treat the servic
 After NIM is stopped:
 
 - `LLM_BACKEND=gpu` calls will either fallback via PS5.4 (if OpenAI available) or fail with explicit provider error.
+
+## Cloud infra cost (PS6.9)
+
+Host idle TTL (this runbook) covers **local compose/NIM**. **GKE stage/prod** billing, budget alerts,
+and overnight node-pool scale-down are in [cloud_cost_hygiene.md](cloud_cost_hygiene.md). **No GPU node
+pool on GKE by default** — Phase 7 only.

@@ -1,4 +1,4 @@
-# PS6.8 — Validate GCP Terraform skeleton (no live project required).
+# PS6.8 / PS6.9 — Validate GCP Terraform skeleton (no live project required).
 name: GCP Terraform validate
 
 on:
@@ -8,18 +8,24 @@ on:
       - "infra/terraform/gcp/**"
       - "docs/adr/0009-gcp-baseline-portable-first.md"
       - "docs/runbooks/gcp_stage_deploy.md"
+      - "docs/runbooks/cloud_cost_hygiene.md"
+      - "scripts/cloud/**"
       - "deploy/helm/spaceops/values-gcp-stage.yaml"
       - ".github/workflows/gcp-terraform-validate.yml"
       - "tests/test_gcp_ps68.py"
+      - "tests/test_cloud_cost_ps69.py"
   pull_request:
     branches: [main]
     paths:
       - "infra/terraform/gcp/**"
       - "docs/adr/0009-gcp-baseline-portable-first.md"
       - "docs/runbooks/gcp_stage_deploy.md"
+      - "docs/runbooks/cloud_cost_hygiene.md"
+      - "scripts/cloud/**"
       - "deploy/helm/spaceops/values-gcp-stage.yaml"
       - ".github/workflows/gcp-terraform-validate.yml"
       - "tests/test_gcp_ps68.py"
+      - "tests/test_cloud_cost_ps69.py"
 
 jobs:
   terraform-validate:
@@ -44,8 +50,8 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: PS6.8 pytest gate
+      - name: PS6.8 / PS6.9 pytest gate
         working-directory: .
         run: |
           pip install pytest pyyaml
-          pytest tests/test_gcp_ps68.py -v
+          pytest tests/test_gcp_ps68.py tests/test_cloud_cost_ps69.py -v

@@ -29,7 +29,7 @@ POSTGRES_PASSWORD ?= spaceops
 	golden-check golden-run golden-update compose-config docker-build gpu-up gpu-down gpu-smoke gpu-idle-check \
 	gpu-idle-integration backend-parity-check helm-template helm-lint k8s-up k8s-down k8s-status k8s-smoke \
 	k8s-rollout-demo k8s-isolation-verify k8s-secrets-bootstrap gitops-install gitops-bootstrap \
-	gitops-status gitops-rollout-demo terraform-gcp-validate
+	gitops-status gitops-rollout-demo terraform-gcp-validate cloud-scale-down-check
 
 help: ## Show this help (default goal)
 	@echo SpaceOps Makefile - targets mirror CI where practical.
@@ -176,3 +176,6 @@ gitops-rollout-demo: ## PS6.7 GitOps sync demo (use GITOPS_DEMO_ARGS=--sync-only
 # PS6.8 — GCP Terraform skeleton (validate only; no live project required).
 terraform-gcp-validate: ## PS6.8 terraform init -backend=false && validate in infra/terraform/gcp
 	cd infra/terraform/gcp && terraform init -backend=false && terraform validate
+
+cloud-scale-down-check: ## PS6.9 Dry-run GKE node pool scale-down (set GCP_PROJECT_ID)
+	$(PYTHON_RUN) scripts/cloud/schedule_scale_down.py --dry-run $(if $(GCP_PROJECT_ID),--project $(GCP_PROJECT_ID),)

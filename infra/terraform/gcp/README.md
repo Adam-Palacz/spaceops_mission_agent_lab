@@ -81,7 +81,7 @@ Rough **always-on** monthly cost for defaults (`1 × e2-standard-2` preemptible,
 - `preemptible_nodes = true` (default) vs standard saves ~60–70% on compute.
 - Destroy cluster when idle: `terraform destroy` (see below).
 
-**Infra $ vs model $:** GKE cost is separate from [LLM token budget](../../../docs/runbooks/gpu_cost_hygiene.md) (PS5.6/PS5.7).
+**Infra $ vs model $:** GKE cost is separate from [LLM token budget](../../../docs/runbooks/llm_cost_guardrails.md) (PS5.6). Platform guardrails: [cloud_cost_hygiene.md](../../../docs/runbooks/cloud_cost_hygiene.md) (PS6.9).
 
 ## Deploy / destroy flow
 
@@ -145,4 +145,10 @@ ADR 0009.
 
 - [PS6.8 spec](../../../roadmap/02-production-scale/sprint-6/PS6.8-gcp-baseline-deploy-plan.md)
 - [PS6.9 billing controls](../../../roadmap/02-production-scale/sprint-6/PS6.9-billing-shutdown-controls.md)
+- [Cloud cost hygiene runbook](../../../docs/runbooks/cloud_cost_hygiene.md)
 - [Secrets bootstrap (ESO/GSM)](../../../docs/runbooks/k8s_secrets_bootstrap.md)
+
+## Billing budget (PS6.9)
+
+Optional `budget.tf` — set `enable_budget_alert = true` and `billing_account_id` in `terraform.tfvars`.
+See [cloud_cost_hygiene.md](../../../docs/runbooks/cloud_cost_hygiene.md) for gcloud stubs and scale-down scripts.

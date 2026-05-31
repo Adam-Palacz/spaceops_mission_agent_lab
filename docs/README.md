@@ -2,7 +2,7 @@
 
 This file is the **index and entry point** for documentation in `docs/`. Mermaid diagrams are stored as **.mmd** files in subfolders by domain. Use a Mermaid-compatible viewer (VS Code Mermaid extension, GitHub/GitLab, [Mermaid Live](https://mermaid.live)) to render them.
 
-**Repozytorium:** [README](../README.md) · [portfolio/README.md](portfolio/README.md) (PS6.10) · [roadmap/goals.md](../roadmap/goals.md) · [roadmap/01-foundation-mvp.md](../roadmap/01-foundation-mvp.md) · [roadmap/02-production-scale.md](../roadmap/02-production-scale.md) · [roadmap/README.md](../roadmap/README.md)
+**Repository:** [README](../README.md) · [portfolio/README.md](portfolio/README.md) (PS6.10) · [roadmap/goals.md](../roadmap/goals.md) · [roadmap/01-foundation-mvp.md](../roadmap/01-foundation-mvp.md) · [roadmap/02-production-scale.md](../roadmap/02-production-scale.md) · [roadmap/README.md](../roadmap/README.md)
 
 ---
 
@@ -110,7 +110,8 @@ The **docs/** directory holds project documentation that supports both humans an
 - Guardrails fail-closed minimum hardening (PS1.7): [runbooks/guardrails_minimum_hardening.md](runbooks/guardrails_minimum_hardening.md)
 - Distributed tracing + W3C propagation verification (PS1.9): [runbooks/distributed_tracing_ps19.md](runbooks/distributed_tracing_ps19.md)
 
-*Ścieżki do plików .mmd są względem katalogu `docs/` (np. `workflow/end_to_end_pipeline.mmd` = `docs/workflow/end_to_end_pipeline.mmd` w repo).*
+*.mmd file paths are relative to the `docs/` directory (for example,
+`workflow/end_to_end_pipeline.mmd` = `docs/workflow/end_to_end_pipeline.mmd` in the repo).*
 
 ---
 

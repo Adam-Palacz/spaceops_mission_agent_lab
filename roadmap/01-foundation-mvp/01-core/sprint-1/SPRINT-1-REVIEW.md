@@ -8,7 +8,7 @@
 
 ## 1. Executive summary
 
-Sprint 1 delivered a **complete pipeline** from ingest to report: a single command brings up the stack (Postgres, OTel, Jaeger); the API accepts data and invokes the agent; the agent runs Triage → Investigate → Decide → Report with escalation on lack of evidence/timeouts/limits; audit log and OTel traces are in place; evals and unit tests run in CI. Post-review tasks (S1.15–S1.22) hardened eval scoring, observability/config, audit semantics, MCP telemetry client behaviour, NF6 tests, oraz spójny styl/formatowanie kodu. **Sprint goal achieved.** Act (ticketing, GitOps, OPA, approvals) is intentionally out of scope for S1 and planned for S2.
+Sprint 1 delivered a **complete pipeline** from ingest to report: a single command brings up the stack (Postgres, OTel, Jaeger); the API accepts data and invokes the agent; the agent runs Triage → Investigate → Decide → Report with escalation on lack of evidence/timeouts/limits; audit log and OTel traces are in place; evals and unit tests run in CI. Post-review tasks (S1.15–S1.22) hardened eval scoring, observability/config, audit semantics, MCP telemetry client behaviour, NF6 tests, and consistent code style/formatting. **Sprint goal achieved.** Act (ticketing, GitOps, OPA, approvals) is intentionally out of scope for S1 and planned for S2.
 
 ---
 

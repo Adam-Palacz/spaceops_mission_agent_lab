@@ -28,3 +28,4 @@
 - **PS6.11 decision (ADR 0005):** Variant **B** API-only checkpoint + `POST /runs/resume` is accepted for PS6; Variant **A** worker split is deferred to Phase 7 unless explicitly re-scoped.
 - **GPU in cloud:** default off; Phase 7 extends NIM/GPU node pools — not PS6 default path.
 - **Postgres LLM budget (`LLM_BUDGET_MODE=postgres`):** deferred by ADR 0005; implement only after shared org-cap trigger.
+- **Sprint closed:** 11/11 Done — see [SPRINT_REVIEW.md](SPRINT_REVIEW.md).

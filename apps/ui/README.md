@@ -4,7 +4,7 @@ Minimal operator UI for:
 - **Incidents** (`/incidents`): run list with filters (`GET /runs?…`), **Jaeger** column (PS2.5), detail (`GET /runs/{run_key}`) with **pipeline timeline** (`stage_timings`, PS2.3), **escalation packet** when escalated (PS2.4), and **trace** deep link + `run_id` (PS2.5)
 - **Approvals** (`/approvals`): list (`GET /approvals`) and actions (`POST /approvals/{id}/approve|reject`)
 - **Replay** (`/replays`): load replay metadata and trigger **`POST /replays/{run_id}/run`**; incident detail includes **Replay from this run** when `run_id` is present (PS2.6)
-- **Simulate** (`/simulate`): **formularz** (wybór opcji → **`POST /runs/simulate/quick`**) lub **upload JSON** → **`POST /runs/simulate`** (PS2.7); lista pokazuje badge **SIM**
+- **Simulate** (`/simulate`): **form** (option selection -> **`POST /runs/simulate/quick`**) or **JSON upload** -> **`POST /runs/simulate`** (PS2.7); the list shows a **SIM** badge
 - `/` redirects to `/incidents`
 
 ## Prerequisites

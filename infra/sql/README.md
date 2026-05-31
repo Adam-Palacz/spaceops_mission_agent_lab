@@ -2,25 +2,28 @@
 
 ## 001_kb_vector.sql
 
-Tworzy rozszerzenie `vector` i tabelę `kb_chunks` dla RAG (runbooki i postmortemy). **Uruchom raz** po starcie Postgresa.
+Creates the `vector` extension and the `kb_chunks` table for RAG (runbooks and postmortems).
+**Run once** after Postgres starts.
 
-### Z repo root
+### From the repo root
 
-**Opcja A — przez kontener (bez psql na hoście):**
+**Option A - through the container (no host `psql` required):**
 
 ```bash
 docker exec -i spaceops-postgres psql -U spaceops -d spaceops < infra/sql/001_kb_vector.sql
 ```
 
-**Opcja B — z hosta (gdy masz zainstalowane `psql`):**
+**Option B - from the host (when `psql` is installed):**
 
 ```bash
-# Hasło z .env (POSTGRES_PASSWORD)
+# Password from .env (POSTGRES_PASSWORD)
 psql -h localhost -p 5432 -U spaceops -d spaceops -f infra/sql/001_kb_vector.sql
 ```
 
-Jeśli w `.env` masz inne `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB`, użyj tych wartości w powyższych poleceniach.
+If `.env` uses different `POSTGRES_USER`, `POSTGRES_PASSWORD`, or `POSTGRES_DB` values, use those
+values in the commands above.
 
-### Po uruchomieniu
+### After running
 
-Zaindeksuj KB: `python -m apps.mcp.kb_server.index_kb` (wymaga `.env` z `OPENAI_API_KEY` i działającego Postgresa).
+Index the KB: `python -m apps.mcp.kb_server.index_kb` (requires `.env` with `OPENAI_API_KEY` and
+running Postgres).

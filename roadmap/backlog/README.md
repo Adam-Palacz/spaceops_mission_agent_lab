@@ -14,8 +14,9 @@
 
 ## Contents
 
-- **[items.md](items.md)** — List of backlog items (title, one-line description, link to spec). No Status column.
-- **`BL-xxx-short-name.md`** — Full spec (description, requirements, checklist, test requirements) in the same format as sprint tasks, so it can be moved to Sx.y easily.
+- **[items.md](items.md)** — List with **Disposition** (done / scheduled / open) — not sprint status.
+- **[TRIAGE.md](TRIAGE.md)** — Relevance vs PS6 maturity (2026-05-31).
+- **`BL-xxx-short-name.md`** — Full spec; copy into PS7.x or NGx.y when starting work.
 
 ---
 

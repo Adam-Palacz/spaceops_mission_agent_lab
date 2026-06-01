@@ -10,8 +10,10 @@ phase is **not** for current delivery; it is a forward-looking design for:
 - edge autonomy with air‑gapped SLMs,
 - and next‑gen knowledge retrieval (GraphRAG).
 
-Use this file as a **vision/backlog**; concrete work should be pulled into future sprints or
-dedicated phases once core and production-scale milestones are stable.
+Use this file as **vision**; concrete work is tracked in **[03-next-gen-autonomy/](03-next-gen-autonomy/)**
+(NG1–NG5 sprints with `BOARD.md`). Schedule after **PS6** (minimum) and preferably **PS7** (live stage).
+
+**Backlog triage:** [backlog/TRIAGE.md](backlog/TRIAGE.md) — which BL-xxx items are still relevant.
 
 ---
 
@@ -178,14 +180,8 @@ issues, which then affect propulsion).
 
 ## How to use this document
 
-- **Do not pull these themes into S1/S2**; they belong to **post-MVP / production-scale** work
-  and should be scheduled once core reliability and safety are proven.
-- When planning future phases/sprints, map concrete backlog items here into:
-  - new sprint tasks (e.g. under a future “E3 — Next-Gen Autonomy” epic),
-  - or into dedicated hardening/innovation tracks.
-- Keep this file aligned with:
-  - `01-foundation-mvp.md` (core),
-  - `02-production-scale.md` (productionisation),
-  - `README.md` (roadmap index),
-  - and `goals.md` (project goals and measures).
+- **Execution:** [03-next-gen-autonomy/README.md](03-next-gen-autonomy/README.md) — sprint map NG1→NG5.
+- **Do not pull L3/L4 into S1/S2 or PS1–PS4** without explicit re-scope.
+- **Cloud stretch** (live GKE, billing) stays in [02-production-scale/sprint-7/](02-production-scale/sprint-7/) (PS7), not NG.
+- Keep aligned with `01-foundation-mvp.md`, `02-production-scale.md`, [goals.md](goals.md).
 

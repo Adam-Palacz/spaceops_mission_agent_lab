@@ -1,6 +1,6 @@
 # BL-003 — MCP servers in Docker Compose
 
-**Backlog item** — use this spec to create a sprint task (e.g. S2.x or P4.x) when you schedule this work. The backlog has no statuses.
+**Backlog item** — **Done** (2026-05-31): `infra/docker-compose.yml` includes `telemetry-mcp` and `kb-mcp`. See [TRIAGE.md](TRIAGE.md). No further sprint task required.
 
 | Field | Value |
 |-------|--------|

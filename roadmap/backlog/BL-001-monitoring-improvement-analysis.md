@@ -2,7 +2,7 @@
 
 **Backlog item** — use this spec to create a sprint task (e.g. P4.x) when you schedule this work. The backlog has no statuses.
 
-> Scheduled in production-scale sprint 1 as [PS1.9-monitoring-improvement-analysis.md](../02-production-scale/sprint-1/PS1.9-monitoring-improvement-analysis.md).
+> **Note (2026-05-31):** PS1.9 delivered **distributed tracing**, not this analysis. Scheduled as **[PS7.4](../02-production-scale/sprint-7/PS7.4-monitoring-production-analysis.md)** — see [TRIAGE.md](TRIAGE.md).
 
 | Field | Value |
 |-------|--------|

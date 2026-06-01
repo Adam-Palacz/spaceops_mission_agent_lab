@@ -11,9 +11,10 @@ This folder holds the **execution plan**: phases, sprints, and task-level specs.
 | **[01-foundation-mvp/01-core/](01-foundation-mvp/01-core/)** | Phase: core pipeline (Sprint 1 + Sprint 2). Ingest → Report → Act + OPA + approvals. |
 | **[01-foundation-mvp/02-hardening/](01-foundation-mvp/02-hardening/)** | Phase 4: docs, runbooks, expanded evals, optional UI. |
 | **[0x-publication-roadmap.md](0x-publication-roadmap.md)** | Simplified publication plan (technical + product narrative + OSS visibility), independent from sprint execution. |
-| **[03-next-gen-autonomy.md](03-next-gen-autonomy.md)** | Vision and backlog for L3/L4 autonomy: multi-agent Flight Director, collaborative planning, compliance-aware gateway, edge SLMs, GraphRAG. |
-| **[02-production-scale/](02-production-scale/)** | Sprint execution plan for post-MVP productionization and scale-up (PS1-PS6). |
-| **[backlog/](backlog/)** | Pool of ideas/specs (items.md + BL-xxx.md). Use backlog to create sprint tasks — no statuses in backlog. |
+| **[03-next-gen-autonomy.md](03-next-gen-autonomy.md)** | Vision for L3/L4 autonomy (themes 1–5). |
+| **[03-next-gen-autonomy/](03-next-gen-autonomy/)** | Execution: NG1–NG5 sprints (multi-agent, HITL, compliance, edge SLM, GraphRAG). |
+| **[02-production-scale/](02-production-scale/)** | Post-MVP productionization (PS1–PS7). |
+| **[backlog/](backlog/)** | Idea pool + [TRIAGE.md](backlog/TRIAGE.md); schedule into PS/NG sprints. |
 
 Each phase contains **sprint folders** (e.g. `01-foundation-mvp/01-core/sprint-1/`). Inside each sprint:
 

@@ -1,14 +1,14 @@
 # Backlog — item list
 
-List of ideas/specs that can be turned into sprint tasks. **No statuses** — when you schedule an item, create a task in a sprint from it (see [README.md](README.md)).
+Pool of ideas/specs. **Disposition** (not sprint status) — see [TRIAGE.md](TRIAGE.md). When scheduled, track in sprint `BOARD.md`.
 
-| ID | Title | Description (one line) | Spec |
-|----|--------|-------------------------|------|
-| BL-001 | Monitoring improvement analysis | Verify whether S1.2 tools and config (Postgres, OTel, Jaeger) are suitable for production; document analysis and recommendations. Scheduled as PS1.9. | [BL-001-monitoring-improvement-analysis.md](BL-001-monitoring-improvement-analysis.md) |
-| BL-002 | README per folder | Add a short README.md to every folder in the repo (apps/, data/, kb/, evals/, infra/, docs/, roadmap/ and subfolders) describing purpose and links. | [BL-002-readme-per-folder.md](BL-002-readme-per-folder.md) |
-| BL-003 | MCP servers in Docker Compose | Add Telemetry MCP and KB MCP as services in infra/docker-compose.yml so one command brings up full stack (Postgres, OTel, Jaeger, MCPs). | [BL-003-mcp-docker-compose.md](BL-003-mcp-docker-compose.md) |
-| BL-004 | Smart resource management (multi-cloud burst) | Define a future concept for portable resource orchestration: primary cluster on cloud A with optional GPU burst capacity on cloud B, routed by policy and cost/health signals. | [BL-004-smart-resource-management-multicloud-burst.md](BL-004-smart-resource-management-multicloud-burst.md) |
-| BL-005 | AI-assisted incident triage agent (queue/DLQ/MCP) | Add a dedicated incident agent that auto-collects read-only evidence, proposes diagnosis and next steps, and keeps human approval gates for risky actions. | [BL-005-ai-assisted-incident-triage.md](BL-005-ai-assisted-incident-triage.md) |
+| ID | Title | Disposition (2026-05-31) | Sprint task | Spec |
+|----|--------|---------------------------|-------------|------|
+| BL-001 | Monitoring improvement analysis | Reschedule — PS1.9 was tracing only | → **PS7.4** | [BL-001](BL-001-monitoring-improvement-analysis.md) |
+| BL-002 | README per folder | Open — partial coverage | → **PS7.5** | [BL-002](BL-002-readme-per-folder.md) |
+| BL-003 | MCP servers in Docker Compose | **Done** (compose has telemetry-mcp, kb-mcp) | — | [BL-003](BL-003-mcp-docker-compose.md) |
+| BL-004 | Smart resource management (multi-cloud burst) | Future — after live GCP | → **PS7.7** (optional) | [BL-004](BL-004-smart-resource-management-multicloud-burst.md) |
+| BL-005 | AI-assisted incident triage (platform ops) | Open — different domain than mission agent | → **PS7.8** (optional) | [BL-005](BL-005-ai-assisted-incident-triage.md) |
 
 ---
 

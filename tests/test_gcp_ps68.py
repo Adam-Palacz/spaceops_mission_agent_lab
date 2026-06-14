@@ -48,9 +48,11 @@ def test_terraform_declares_core_resources() -> None:
         "google_artifact_registry_repository",
         "google_service_account",
         "google_service_account.eso",
+        "compute.googleapis.com",
         "node_locations",
         "node_config",
         "node_disk_type",
+        "depends_on = [google_project_service.apis]",
     ):
         assert snippet in main
 

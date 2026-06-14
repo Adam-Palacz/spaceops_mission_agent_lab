@@ -22,6 +22,68 @@ validate + documentation only.
 
 ---
 
+## Quick path
+
+Bring up the full stage stack and validate smoke + scenarios A/B:
+
+```powershell
+$env:GCP_PROJECT_ID = "spaceops-project-498213"
+$env:GCP_IMAGE_TAG = "stage"
+make gcp-stage-up
+```
+
+This runs:
+
+```text
+terraform init && terraform apply -auto-approve
+make gcp-stage-images
+make gcp-stage-deploy
+make gcp-stage-smoke
+make gcp-stage-demo
+```
+
+Tear everything down again:
+
+```powershell
+$env:GCP_PROJECT_ID = "spaceops-project-498213"
+make gcp-stage-down
+```
+
+Use the numbered sections below for debugging or partial recovery.
+
+---
+
+## 0. kubectl access to GKE (before deploy)
+
+If `make gcp-stage-deploy` fails with `failed to download openapi` or `connectex` to the
+control plane IP (`35.x.x.x:443`), refresh credentials — the kubeconfig endpoint is stale or
+you are not authenticated.
+
+```powershell
+$env:GCP_PROJECT_ID = "spaceops-project"
+make gcp-kube-credentials
+kubectl get nodes
+```
+
+Manual:
+
+```bash
+gcloud auth login
+gcloud auth application-default login
+gcloud container clusters get-credentials spaceops-stage --region us-central1 --project spaceops-project
+kubectl cluster-info
+```
+
+If the cluster does not exist, run section **1** (Terraform) first. If the cluster exists but
+Terraform state is empty, see targeted apply in section **2** — do not assume deploy works without
+a reachable API.
+
+If `kubectl` reports an unreachable OpenAPI endpoint but `gcloud container clusters list` shows no
+`spaceops-stage`, kubeconfig points at a deleted cluster. Stop the deploy; recreate/import the
+cluster first, then refresh credentials. Do not run secrets bootstrap or Helm against a stale context.
+
+---
+
 ## 1. Provision infrastructure
 
 ```bash
@@ -30,6 +92,7 @@ cp terraform.tfvars.example terraform.tfvars   # set project_id
 terraform init
 terraform plan
 terraform apply
+terraform state list
 ```
 
 Save outputs:
@@ -41,13 +104,64 @@ terraform output artifact_registry_repository
 terraform output eso_service_account_email
 ```
 
+Do not build/push images until `terraform state list` includes
+`google_artifact_registry_repository.spaceops` and `terraform output artifact_registry_repository`
+prints the repository path expected by the image push step.
+
 **Validate-only (no GCP):** `make terraform-gcp-validate`
 
 ---
 
 ## 2. Build and push images (Artifact Registry)
 
-Set variables from Terraform outputs:
+Images must include `data/telemetry/*.ndjson` for MCP queries on GKE (see root `.dockerignore` PS7.1).
+
+**Order:** section **1** (Terraform) must create the AR repo **before** `make gcp-stage-images`.
+
+**Automated:**
+
+```bash
+export GCP_PROJECT_ID=your-gcp-project-id
+export GCP_REGION=us-central1
+export GCP_IMAGE_TAG=stage
+make gcp-stage-images
+```
+
+PowerShell:
+
+```powershell
+$env:GCP_PROJECT_ID = "spaceops-project"
+make gcp-stage-images
+```
+
+If this fails with `Repository "spaceops" not found`, the Artifact Registry repository does not exist
+in the selected project/region or the repository ID differs. Run `terraform apply` first and verify:
+
+```bash
+cd infra/terraform/gcp
+terraform state list
+terraform output artifact_registry_repository
+gcloud artifacts repositories list --project="$GCP_PROJECT_ID" --location="$GCP_REGION"
+```
+
+If `terraform state list` is empty but a live cluster already exists, avoid a blind full apply because
+Terraform may try to create or replace existing resources. Reconcile/import the live resources, or
+create only the missing image-push prerequisite first:
+
+```bash
+terraform apply \
+  -target=google_project_service.apis \
+  -target=google_artifact_registry_repository.spaceops \
+  -target=google_project_iam_member.gke_nodes_ar_reader
+```
+
+From repo root the same targeted recovery is available as:
+
+```bash
+make gcp-terraform-ar
+```
+
+**Manual:**
 
 ```bash
 export PROJECT_ID=your-gcp-project-id
@@ -243,9 +357,13 @@ Checkpoint proof (`api.checkpoint.enabled: true`): [graph_worker_checkpoint_ops.
 
 See cost table in [infra/terraform/gcp/README.md](../../infra/terraform/gcp/README.md).
 
+**Full teardown (trial end):** [gcp_stage_teardown.md](gcp_stage_teardown.md) — `make gcp-stage-down`
+
 | Action | When |
 |--------|------|
-| `terraform destroy` | Tear down lab cluster when done |
+| `make gcp-stage-down` | One-command teardown: Helm + namespaces + Terraform destroy |
+| `make gcp-stage-destroy GCP_STAGE_ARGS="--confirm"` | Tear down Helm + Terraform when trial ends |
+| `terraform destroy` | Same (manual) |
 | Preemptible nodes | Default in Terraform (`preemptible_nodes = true`) |
 | Budget alerts | **PS6.9** — [cloud_cost_hygiene.md](cloud_cost_hygiene.md) + Terraform `budget.tf` |
 | Scale-down overnight | **PS6.9** — `scripts/cloud/schedule_scale_down.sh` |
@@ -282,6 +400,8 @@ cd infra/terraform/gcp && terraform destroy
 
 | Symptom | Check |
 |---------|--------|
+| `kubectl` OpenAPI validation fails against old endpoint | Run `gcloud container clusters list`; if `spaceops-stage` is absent, recreate/import the cluster before deploy |
+| `gcloud get-credentials` returns 404 | Wrong project/region/name or deleted cluster; verify `GCP_PROJECT_ID`, `GCP_REGION`, `GKE_CLUSTER_NAME`, then run Terraform |
 | `ImagePullBackOff` | Node SA has `artifactregistry.reader`; image path matches AR repo |
 | API `Pending` | Node pool capacity; `kubectl describe pod` |
 | Postgres `CrashLoopBackOff` / `lost+found` | Ensure chart has `postgres.dataDir` (pgdata subdir); upgrade Helm |
@@ -289,6 +409,12 @@ cd infra/terraform/gcp && terraform destroy
 | LB IP pending | Wait 2–5 min; quota for external IPs in project |
 | `curl` to `/health` fails | Use port **8000**, not 80 |
 | Helm namespace ownership error | `--set global.createNamespace=false` if namespace created manually |
+| Scenario A always `no_evidence` | Rebuild/push images after PS7.1 (telemetry NDJSON in image); run `make gcp-stage-deploy` (runs `index_kb`); confirm ingest + 20s persister wait |
+| `SSD_TOTAL_GB` quota exceeded | Set `node_locations = ["us-central1-a"]`, `node_disk_size_gb = 30`, `node_disk_type = "pd-standard"` in `terraform.tfvars` |
+| Terraform wants to **replace** healthy cluster | If cluster is healthy: `terraform untaint google_container_cluster.primary` then `apply`; do not auto-destroy |
+| Failed apply left cluster **tainted** | `terraform state list`; fix root cause; untaint or `terraform destroy` and recreate (~45 min) |
+
+See also [infra/terraform/gcp/README.md](../../infra/terraform/gcp/README.md) (PS7.1 live GCP lessons).
 
 ---
 

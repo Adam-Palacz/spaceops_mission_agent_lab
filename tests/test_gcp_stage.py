@@ -77,5 +77,67 @@ def test_runbook_documents_automation_and_gitops() -> None:
 
 def test_makefile_gcp_stage_targets() -> None:
     makefile = (REPO_ROOT / "Makefile").read_text(encoding="utf-8")
-    for target in ("gcp-stage-deploy", "gcp-stage-demo", "gcp-stage-smoke"):
+    for target in (
+        "gcp-stage-deploy",
+        "gcp-stage-demo",
+        "gcp-stage-smoke",
+        "gcp-stage-images",
+        "gcp-terraform-ar",
+        "gcp-kube-credentials",
+        "gcp-stage-destroy",
+    ):
         assert target in makefile
+
+
+def test_gcp_stage_teardown_command() -> None:
+    source = (REPO_ROOT / "scripts" / "gcp_stage.py").read_text(encoding="utf-8")
+    assert "cmd_teardown" in source
+    assert "--confirm" in source
+    teardown_doc = REPO_ROOT / "docs" / "runbooks" / "gcp_stage_teardown.md"
+    assert teardown_doc.is_file()
+
+
+def test_gcp_stage_preflight_kubectl() -> None:
+    source = (REPO_ROOT / "scripts" / "gcp_stage.py").read_text(encoding="utf-8")
+    assert "preflight_kubectl" in source
+    assert "ensure_gke_credentials" in source
+    assert "kube-credentials" in source
+
+
+def test_dockerignore_includes_telemetry_fixtures() -> None:
+    text = (REPO_ROOT / ".dockerignore").read_text(encoding="utf-8")
+    assert "!data/telemetry" in text
+
+
+def test_gcp_stage_demo_validators() -> None:
+    source = (REPO_ROOT / "scripts" / "gcp_stage.py").read_text(encoding="utf-8")
+    assert "validate_scenario_a" in source
+    assert "validate_scenario_b" in source
+    assert "run_kb_index" in source
+
+
+def test_gcp_stage_checks_cluster_exists_before_kubectl() -> None:
+    source = (REPO_ROOT / "scripts" / "gcp_stage.py").read_text(encoding="utf-8")
+    assert "clusters" in source
+    assert "describe" in source
+    assert "No GKE cluster named" in source
+    assert "old, deleted control-plane endpoint" in source
+
+
+def test_gcp_stage_images_script() -> None:
+    assert (REPO_ROOT / "scripts" / "gcp_stage_images.py").is_file()
+
+
+def test_gcp_stage_images_resolves_windows_tools() -> None:
+    source = (REPO_ROOT / "scripts" / "gcp_stage_images.py").read_text(encoding="utf-8")
+    assert "def resolve_tool" in source
+    assert "shutil.which" in source
+
+
+def test_gcp_stage_images_checks_artifact_registry_before_build() -> None:
+    source = (REPO_ROOT / "scripts" / "gcp_stage_images.py").read_text(encoding="utf-8")
+    assert "artifacts" in source
+    assert "repositories" in source
+    assert "describe" in source
+    assert "Artifact Registry repository not found" in source
+    assert "--skip-repository-check" in source

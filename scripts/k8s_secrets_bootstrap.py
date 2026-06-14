@@ -25,7 +25,16 @@ SECRET_ENV_MAP: dict[str, tuple[str, ...]] = {
 }
 
 
+def _resolve_tool(name: str) -> str:
+    path = shutil.which(name)
+    if not path:
+        raise SystemExit(f"Missing {name} on PATH")
+    return path
+
+
 def _run(cmd: list[str], *, check: bool = True) -> subprocess.CompletedProcess[str]:
+    if cmd and "/" not in cmd[0] and "\\" not in cmd[0]:
+        cmd = [_resolve_tool(cmd[0]), *cmd[1:]]
     return subprocess.run(cmd, check=check, text=True, capture_output=True)
 
 
@@ -81,11 +90,19 @@ def apply_secret(
     cmd = ["kubectl", "apply", "-f", "-"]
     if dry_run:
         cmd.insert(2, "--dry-run=client")
-    proc = subprocess.run(cmd, input=payload, text=True, capture_output=True)
+    kubectl = _resolve_tool("kubectl")
+    proc = subprocess.run(
+        [kubectl, *cmd[1:]], input=payload, text=True, capture_output=True
+    )
     if proc.returncode != 0:
-        raise SystemExit(
-            proc.stderr.strip() or proc.stdout.strip() or "kubectl apply failed"
-        )
+        detail = (proc.stderr or proc.stdout or "kubectl apply failed").strip()
+        if "failed to download openapi" in detail or "connectex" in detail:
+            raise SystemExit(
+                f"{detail}\n\n"
+                "kubectl cannot reach the GKE API. Run: make gcp-kube-credentials "
+                "(or gcloud container clusters get-credentials ...)"
+            )
+        raise SystemExit(detail)
     action = "validated" if dry_run else "applied"
     keys = ", ".join(sorted(data))
     print(f"Secret {secret_name!r} in namespace {namespace!r} {action} (keys: {keys})")

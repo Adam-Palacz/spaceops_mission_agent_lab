@@ -82,7 +82,8 @@ def test_terraform_budget_optional_by_default() -> None:
     assert "google_billing_budget" in budget
     assert "billing_account_id" in budget
     assert 'replace(var.billing_account_id, "billingAccounts/", "")' in budget
-    assert "data.google_project.current.number" in budget
+    assert "data.google_project.current[0].number" in budget
+    assert "count = var.enable_budget_alert ? 1 : 0" in budget
     assert "var.budget_currency_code" in budget
 
 

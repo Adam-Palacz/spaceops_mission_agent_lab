@@ -88,6 +88,21 @@ Rough **always-on** monthly cost for defaults (`1 × e2-standard-2` preemptible,
 
 ## Deploy / destroy flow
 
+### Bootstrap APIs on a fresh project
+
+On a brand-new GCP project, enable the bootstrap APIs once before the first Terraform plan:
+
+```bash
+gcloud services enable \
+  serviceusage.googleapis.com \
+  cloudresourcemanager.googleapis.com \
+  compute.googleapis.com \
+  --project PROJECT_ID
+```
+
+After that, Terraform manages the remaining required APIs (`container`, `artifactregistry`, `iam`,
+and optional budget/monitoring APIs).
+
 ### Validate (no GCP credentials)
 
 ```bash
@@ -124,7 +139,7 @@ Then follow [gcp_stage_deploy.md](../../../docs/runbooks/gcp_stage_deploy.md) fo
 | `invalid_rapt` / OAuth | `gcloud auth login` then `gcloud auth application-default login` |
 | Budget API **quota project** | Provider sets `billing_project` in `versions.tf`; also run `gcloud auth application-default set-quota-project PROJECT_ID` |
 | **Identity Pool does not exist** (ESO WI) | Fixed: WI binding runs after GKE cluster (`depends_on`) |
-| **deletion_protection** blocks replace/destroy | Set `deletion_protection = false` in tfvars (default); or `gcloud container clusters update CLUSTER --region=REGION --no-deletion-protection` |
+| **deletion_protection** blocks replace/destroy | Set `deletion_protection = false` in `terraform.tfvars` (default for lab) and re-apply. If a live cluster was created outside current state, verify the supported `gcloud container clusters update` flags for your installed SDK before using CLI deletion-protection commands. |
 | Cluster **tainted** after failed apply | If cluster is healthy: `terraform untaint google_container_cluster.primary` then `apply` (avoids recreate) |
 | Budget **400 invalid argument** | `budget.tf` strips any `billingAccounts/` prefix before passing `billing_account_id` to the provider, uses project number, and avoids unsupported label filters |
 | Budget **400 invalid argument** with valid account | Set `budget_currency_code` to billing account currency (`gcloud billing accounts describe ... --format="value(currencyCode)"`) |

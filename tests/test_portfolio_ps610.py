@@ -26,6 +26,7 @@ REQUIRED_RUNBOOK_INDEX = [
     "k8s_rollout_rollback.md",
     "cloud_cost_hygiene.md",
     "gcp_stage_deploy.md",
+    "gcp_stage_teardown.md",
     "ci_gating_policy.md",
     "llm_cost_guardrails.md",
     "gpu_cost_hygiene.md",

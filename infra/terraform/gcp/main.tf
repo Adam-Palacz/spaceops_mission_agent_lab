@@ -8,6 +8,7 @@ locals {
 
   required_apis = [
     "container.googleapis.com",
+    "compute.googleapis.com",
     "artifactregistry.googleapis.com",
     "iam.googleapis.com",
     "cloudresourcemanager.googleapis.com",
@@ -36,6 +37,8 @@ resource "google_service_account" "deploy" {
   account_id   = var.deploy_service_account_id
   display_name = "SpaceOps deploy / CI (${var.environment})"
   description  = "Push images to Artifact Registry and deploy Helm to GKE."
+
+  depends_on = [google_project_service.apis]
 }
 
 resource "google_project_iam_member" "deploy_artifact_writer" {
@@ -55,6 +58,8 @@ resource "google_service_account" "eso" {
   account_id   = "spaceops-eso-${var.environment}"
   display_name = "SpaceOps ESO (${var.environment})"
   description  = "Workload Identity SA for External Secrets Operator GSM access."
+
+  depends_on = [google_project_service.apis]
 }
 
 resource "google_project_iam_member" "eso_secret_accessor" {
@@ -79,6 +84,7 @@ resource "google_container_cluster" "primary" {
   # temporary pool cheap so fresh lab projects do not exceed SSD quota.
   node_config {
     machine_type = var.machine_type
+    preemptible  = var.preemptible_nodes
     disk_size_gb = var.node_disk_size_gb
     disk_type    = var.node_disk_type
   }
@@ -129,6 +135,8 @@ resource "google_container_node_pool" "primary" {
 # Allow GKE nodes to pull images from Artifact Registry in the same project.
 data "google_compute_default_service_account" "default" {
   project = var.project_id
+
+  depends_on = [google_project_service.apis]
 }
 
 resource "google_project_iam_member" "gke_nodes_ar_reader" {

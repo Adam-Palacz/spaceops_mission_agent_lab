@@ -13,7 +13,10 @@
 .venv
 **/node_modules
 apps/ui/.next
-data
+# Exclude bulk data/ except telemetry NDJSON for MCP demos in AR/GKE images (PS7.1).
+data/*
+!data/telemetry/
+!data/telemetry/**
 var/nim-cache
 tests
 docs

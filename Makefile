@@ -30,7 +30,8 @@ POSTGRES_PASSWORD ?= spaceops
 	gpu-idle-integration backend-parity-check helm-template helm-lint k8s-up k8s-down k8s-status k8s-smoke \
 	k8s-rollout-demo k8s-isolation-verify k8s-secrets-bootstrap gitops-install gitops-bootstrap \
 	gitops-status gitops-rollout-demo gitops-handoff terraform-gcp-validate cloud-scale-down-check k8s-checkpoint-demo \
-	gcp-stage-deploy gcp-stage-smoke gcp-stage-demo gcp-stage-status
+	gcp-stage-up gcp-stage-down gcp-stage-deploy gcp-stage-smoke gcp-stage-demo gcp-stage-status \
+	gcp-stage-images gcp-terraform-ar gcp-kube-credentials gcp-stage-destroy
 
 help: ## Show this help (default goal)
 	@echo SpaceOps Makefile - targets mirror CI where practical.
@@ -191,16 +192,44 @@ k8s-checkpoint-demo: ## PS6.11 Dry-run checkpoint OOM/resume gate (pass --execut
 	$(PYTHON_RUN) scripts/k8s_checkpoint_demo.py $(K8S_CHECKPOINT_DEMO_ARGS)
 
 # PS6.8 stretch — GKE stage (requires kubectl context + GCP_PROJECT_ID for deploy).
-GCP_STAGE_ARGS ?=
+GCP_STAGE_DEPLOY_ARGS ?=
+GCP_STAGE_SMOKE_ARGS ?=
+GCP_STAGE_DEMO_ARGS ?= $(GCP_STAGE_ARGS)
+GCP_STAGE_TEARDOWN_ARGS ?= $(GCP_STAGE_ARGS)
+GCP_STAGE_DOWN_ARGS ?= --confirm --terraform-auto-approve
+GCP_TERRAFORM_APPLY_ARGS ?= -auto-approve
+
+gcp-stage-up: ## Full GCP stage bring-up: terraform apply, images, deploy, smoke, demo
+	$(PYTHON_RUN) -c "import os,sys; sys.exit(0) if os.getenv('GCP_PROJECT_ID') else (print('Missing GCP_PROJECT_ID'), sys.exit(1))"
+	cd infra/terraform/gcp && terraform init && terraform apply $(GCP_TERRAFORM_APPLY_ARGS)
+	$(MAKE) gcp-stage-images
+	$(MAKE) gcp-stage-deploy
+	$(MAKE) gcp-stage-smoke
+	$(MAKE) gcp-stage-demo
+
+gcp-stage-down: ## Full GCP stage teardown: Helm/namespaces + terraform destroy
+	$(PYTHON_RUN) scripts/gcp_stage.py teardown $(GCP_STAGE_DOWN_ARGS)
 
 gcp-stage-deploy: ## GKE stage Helm upgrade (full MCP stack; set GCP_PROJECT_ID + secrets in env)
-	$(PYTHON_RUN) scripts/gcp_stage.py deploy $(GCP_STAGE_ARGS)
+	$(PYTHON_RUN) scripts/gcp_stage.py deploy $(GCP_STAGE_DEPLOY_ARGS)
 
 gcp-stage-smoke: ## GKE stage GET /health via LoadBalancer :8000
-	$(PYTHON_RUN) scripts/gcp_stage.py smoke
+	$(PYTHON_RUN) scripts/gcp_stage.py smoke $(GCP_STAGE_SMOKE_ARGS)
 
 gcp-stage-demo: ## GKE stage ingest + portfolio scenarios A/B (live E2E)
-	$(PYTHON_RUN) scripts/gcp_stage.py demo $(GCP_STAGE_ARGS)
+	$(PYTHON_RUN) scripts/gcp_stage.py demo $(GCP_STAGE_DEMO_ARGS)
 
 gcp-stage-status: ## GKE stage pods/svc + helm list
 	$(PYTHON_RUN) scripts/gcp_stage.py status
+
+gcp-terraform-ar: ## PS7.1 Recovery only: targeted apply for missing Artifact Registry repo
+	cd infra/terraform/gcp && terraform init && terraform apply -target=google_project_service.apis -target=google_artifact_registry_repository.spaceops -target=google_project_iam_member.gke_nodes_ar_reader
+
+gcp-stage-images: ## Build/push api+mcp to Artifact Registry (GCP_PROJECT_ID, GCP_IMAGE_TAG=stage)
+	$(PYTHON_RUN) scripts/gcp_stage_images.py
+
+gcp-kube-credentials: ## Refresh kubectl context for stage GKE (GCP_PROJECT_ID required)
+	$(PYTHON_RUN) scripts/gcp_stage.py kube-credentials
+
+gcp-stage-destroy: ## Tear down Helm + namespace + terraform destroy (requires GCP_STAGE_ARGS=--confirm)
+	$(PYTHON_RUN) scripts/gcp_stage.py teardown $(GCP_STAGE_TEARDOWN_ARGS)

@@ -19,3 +19,6 @@ images:
 api:
   service:
     type: LoadBalancer
+  # Jaeger UI is cluster-internal; use port-forward for trace_link in reports (PS7.1).
+  extraEnv:
+    JAEGER_UI_URL: "http://localhost:16686"

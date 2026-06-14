@@ -1,7 +1,11 @@
 # PS6.9 — optional billing budget + email alerts (stretch: enable on live project).
 
 data "google_project" "current" {
+  count = var.enable_budget_alert ? 1 : 0
+
   project_id = var.project_id
+
+  depends_on = [google_project_service.apis]
 }
 
 locals {
@@ -41,7 +45,7 @@ resource "google_billing_budget" "spaceops" {
 
   budget_filter {
     # Billing API expects project *number*, not project ID.
-    projects = ["projects/${data.google_project.current.number}"]
+    projects = ["projects/${data.google_project.current[0].number}"]
   }
 
   amount {

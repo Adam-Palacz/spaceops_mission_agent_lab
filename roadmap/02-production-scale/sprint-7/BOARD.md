@@ -2,7 +2,7 @@
 
 | Task | Title | Status | Spec |
 |------|-------|--------|------|
-| PS7.1 | Live stage GKE deploy (PS6.8 stretch) | Todo | [PS7.1](PS7.1-live-stage-gke-deploy.md) |
+| PS7.1 | Live stage GKE deploy (PS6.8 stretch) | Done | [PS7.1](PS7.1-live-stage-gke-deploy.md) — stage GKE deploy + smoke + demo A/B passed on `spaceops-project-498213` |
 | PS7.2 | Live GCP billing alerts + cost drill (PS6.9 stretch) | Todo | [PS7.2](PS7.2-live-billing-alerts-drill.md) |
 | PS7.4 | Production monitoring stack analysis (BL-001) | Todo | [PS7.4](PS7.4-monitoring-production-analysis.md) |
 | PS7.5 | README per folder coverage (BL-002) | Todo | [PS7.5](PS7.5-readme-per-folder.md) |
@@ -17,6 +17,6 @@
 
 **Plan notes**
 
-- **PS7.1 / PS7.2** require GCP credentials — PS7.4–PS7.5 can run in parallel without cloud.
+- **PS7.2** requires GCP credentials — PS7.4–PS7.5 can run in parallel without cloud.
 - **PS7.3** does not block NG1; Variant B is enough to start multi-agent locally.
 - **PS7.3, PS7.6–PS7.8** default to **PS7b** unless hard scope finishes early.

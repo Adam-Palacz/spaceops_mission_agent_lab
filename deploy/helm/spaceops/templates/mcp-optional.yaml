@@ -54,6 +54,7 @@ spec:
                   key: {{ .Values.postgres.auth.secretKeys.password }}
             - name: DATABASE_URL
               value: {{ include "spaceops.postgresUrl" . | quote }}
+            {{- include "spaceops.secretEnvOptional" (list . "OPENAI_API_KEY" "OPENAI_API_KEY") | nindent 12 }}
           readinessProbe:
             tcpSocket:
               port: http

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import importlib.util
 import shutil
 import subprocess
 import sys
@@ -15,6 +16,14 @@ SCRIPT = REPO_ROOT / "scripts" / "gcp_stage.py"
 FULL_VALUES = REPO_ROOT / "deploy" / "helm" / "spaceops" / "values-stage-full.yaml"
 RUNBOOK = REPO_ROOT / "docs" / "runbooks" / "gcp_stage_deploy.md"
 HELM_CHART = REPO_ROOT / "deploy" / "helm" / "spaceops"
+
+
+def _load_gcp_stage_module():
+    spec = importlib.util.spec_from_file_location("gcp_stage_test", SCRIPT)
+    assert spec and spec.loader
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
 
 
 def test_gcp_stage_script_exists() -> None:
@@ -93,8 +102,54 @@ def test_gcp_stage_teardown_command() -> None:
     source = (REPO_ROOT / "scripts" / "gcp_stage.py").read_text(encoding="utf-8")
     assert "cmd_teardown" in source
     assert "--confirm" in source
+    assert "--destroy-budget-alert" in source
+    assert "-target=google_billing_budget.spaceops" in source
     teardown_doc = REPO_ROOT / "docs" / "runbooks" / "gcp_stage_teardown.md"
     assert teardown_doc.is_file()
+
+
+@pytest.mark.parametrize(
+    ("destroy_budget_alert", "expects_restore"),
+    ((False, True), (True, False)),
+)
+def test_gcp_stage_teardown_budget_restore_behavior(
+    monkeypatch: pytest.MonkeyPatch,
+    destroy_budget_alert: bool,
+    expects_restore: bool,
+) -> None:
+    mod = _load_gcp_stage_module()
+    calls: list[list[str]] = []
+
+    monkeypatch.setattr(mod, "PROJECT_ID", "")
+    monkeypatch.setattr(mod, "require_tools", lambda *_tools: None)
+    monkeypatch.setattr(
+        mod,
+        "_run",
+        lambda *_args, **_kwargs: subprocess.CompletedProcess([], 0, "", ""),
+    )
+
+    def fake_run(cmd: list[str], **_kwargs: object) -> subprocess.CompletedProcess[str]:
+        calls.append(cmd)
+        return subprocess.CompletedProcess(cmd, 0, "", "")
+
+    monkeypatch.setattr(mod.subprocess, "run", fake_run)
+
+    mod.cmd_teardown(
+        confirm=True,
+        skip_helm=True,
+        skip_terraform=False,
+        skip_argocd=True,
+        terraform_auto_approve=True,
+        destroy_budget_alert=destroy_budget_alert,
+    )
+
+    restore = [
+        "terraform",
+        "apply",
+        "-target=google_billing_budget.spaceops",
+        "-auto-approve",
+    ]
+    assert (restore in calls) is expects_restore
 
 
 def test_gcp_stage_preflight_kubectl() -> None:

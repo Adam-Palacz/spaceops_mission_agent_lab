@@ -280,8 +280,9 @@ def cmd_teardown(
     skip_terraform: bool,
     skip_argocd: bool,
     terraform_auto_approve: bool,
+    destroy_budget_alert: bool,
 ) -> None:
-    """Remove Helm release, namespace, and Terraform-managed GCP resources."""
+    """Remove stage resources, preserving the billing alert unless explicitly requested."""
     if not confirm:
         raise SystemExit(
             "Refusing teardown without --confirm (deletes stage workloads and Terraform resources)."
@@ -360,6 +361,28 @@ def cmd_teardown(
                 "terraform destroy failed or was cancelled. "
                 "Fix errors or delete remaining resources in GCP Console."
             )
+        if not destroy_budget_alert:
+            print("Restoring persistent billing budget alert (if enabled) ...")
+            apply_cmd = [
+                "terraform",
+                "apply",
+                "-target=google_billing_budget.spaceops",
+            ]
+            if terraform_auto_approve:
+                apply_cmd.append("-auto-approve")
+            else:
+                print("Terraform will prompt to restore the budget alert (type 'yes').")
+            proc = subprocess.run(
+                apply_cmd,
+                cwd=str(tf_dir),
+                check=False,
+            )
+            if proc.returncode != 0:
+                raise SystemExit(
+                    "Stage resources were destroyed, but restoring the persistent budget "
+                    "alert failed. Run terraform apply "
+                    "-target=google_billing_budget.spaceops from infra/terraform/gcp."
+                )
     else:
         print("Skipped Terraform destroy (--skip-terraform).")
 
@@ -757,6 +780,11 @@ def main() -> None:
         action="store_true",
         help="Pass -auto-approve to terraform destroy (non-interactive).",
     )
+    p_teardown.add_argument(
+        "--destroy-budget-alert",
+        action="store_true",
+        help="Also remove the billing budget alert; default teardown restores it.",
+    )
 
     args = parser.parse_args()
 
@@ -794,6 +822,7 @@ def main() -> None:
             skip_terraform=args.skip_terraform,
             skip_argocd=args.skip_argocd,
             terraform_auto_approve=args.terraform_auto_approve,
+            destroy_budget_alert=args.destroy_budget_alert,
         )
     else:
         raise SystemExit(f"Unknown command: {args.command}")

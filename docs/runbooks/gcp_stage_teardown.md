@@ -17,13 +17,23 @@ Non-interactive Terraform (skips `yes` prompt):
 make gcp-stage-destroy GCP_STAGE_ARGS="--confirm --terraform-auto-approve"
 ```
 
+By default the automated teardown restores the Terraform-managed billing budget alert after removing
+the ephemeral stage resources. To retire the project/account and remove the alert too:
+
+```powershell
+make gcp-stage-destroy GCP_STAGE_ARGS="--confirm --terraform-auto-approve --destroy-budget-alert"
+```
+
 **Manual order:**
 
 1. `helm uninstall spaceops -n spaceops-stage`
 2. `kubectl delete namespace spaceops-stage`
 3. Optional: `kubectl delete namespace argocd`
 4. `cd infra/terraform/gcp && terraform destroy`
-5. Verify: `gcloud container clusters list`, `gcloud artifacts repositories list`
+5. Unless retiring the project, restore the alert:
+   `terraform apply "-target=google_billing_budget.spaceops"`
+6. Verify: `gcloud container clusters list`, `gcloud artifacts repositories list`,
+   `gcloud billing budgets list --billing-account=YOUR_BILLING_ACCOUNT`
 
 ---
 

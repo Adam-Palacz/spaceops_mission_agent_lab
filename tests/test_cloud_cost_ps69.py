@@ -83,6 +83,7 @@ def test_terraform_budget_optional_by_default() -> None:
     assert "billing_account_id" in budget
     assert 'replace(var.billing_account_id, "billingAccounts/", "")' in budget
     assert "data.google_project.current[0].number" in budget
+    assert "depends_on = [google_project_service.budget_apis]" in budget
     assert "count = var.enable_budget_alert ? 1 : 0" in budget
     assert "var.budget_currency_code" in budget
 
@@ -98,7 +99,7 @@ def test_schedule_scale_down_builds_gcloud_command() -> None:
         dry_run=True,
     )
     cmd = mod.build_gcloud_command(args)
-    assert cmd[0] == "gcloud"
+    assert "gcloud" in cmd[0].lower()
     assert "resize" in cmd
     assert "--num-nodes" in cmd
     assert cmd[cmd.index("--num-nodes") + 1] == "0"
@@ -148,3 +149,38 @@ def test_scale_down_dry_run_subprocess() -> None:
     assert proc.returncode == 0, proc.stderr
     assert "would_run=" in proc.stdout
     assert "num-nodes" in proc.stdout or "--num-nodes" in proc.stdout
+
+
+def test_ps72_drill_log_in_runbook() -> None:
+    text = RUNBOOK.read_text(encoding="utf-8")
+    for topic in (
+        "PS7.2 live drill log",
+        "2026-06-14",
+        "projects/78972438155",
+        "enable_budget_alert = false",
+        "billingAccounts/",
+        "budget_currency_code",
+    ):
+        assert topic in text, topic
+
+
+def test_ps72_spec_done() -> None:
+    ps72 = (
+        REPO_ROOT
+        / "roadmap"
+        / "02-production-scale"
+        / "sprint-7"
+        / "PS7.2-live-billing-alerts-drill.md"
+    )
+    assert ps72.is_file()
+    text = ps72.read_text(encoding="utf-8")
+    assert "| **Status** | Done |" in text
+    assert "spaceops-stage-monthly" in text
+    assert "cd ../../.." in text
+    assert "--destroy-budget-alert" in text
+
+
+def test_schedule_scale_down_resolves_gcloud_on_windows() -> None:
+    source = SCALE_DOWN.read_text(encoding="utf-8")
+    assert "def resolve_tool" in source
+    assert 'resolve_tool("gcloud")' in source

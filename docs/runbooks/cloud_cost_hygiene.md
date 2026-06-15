@@ -63,6 +63,7 @@ Then:
 ```bash
 cd infra/terraform/gcp
 terraform apply
+cd ../../..
 ```
 
 Creates a monthly project budget with 50% / 90% / 100% thresholds and email notification channels.
@@ -79,6 +80,17 @@ scripts/cloud/gcp_budget_setup.sh
 ### Stretch acceptance
 
 Wire budget in a live stage project; attach screenshot or `terraform output` reference in PR.
+
+### Failure modes (budget Terraform)
+
+| Symptom | Cause | Fix |
+|---------|-------|-----|
+| Budget API **400 invalid argument** | `billing_account_id` passed as full `billingAccounts/...` without normalization | Use short ID `012345-678901-ABCDEF` in `terraform.tfvars`; module strips prefix via `replace(var.billing_account_id, "billingAccounts/", "")` |
+| Budget API **400** with valid account | `budget_currency_code` ≠ billing account currency | `gcloud billing accounts describe BILLING_ACCOUNT_ID --format="value(currencyCode)"` — lab account uses **PLN** |
+| Budget API **400** on `projects` filter | Project **ID** used instead of project **number** | `budget.tf` uses `data.google_project.current[0].number` → `projects/78972438155` |
+| Budget create blocked (org policy / IAM) | Operator lacks `billing.budgets.create` | Set `enable_budget_alert = false` temporarily; record blocker in PR/spec; fix IAM or use Console |
+
+**Temporary bypass:** `enable_budget_alert = false` in `terraform.tfvars` — skips budget + notification channel resources; GKE/AR still apply.
 
 ---
 
@@ -120,7 +132,8 @@ Make wrapper: `make cloud-scale-down-check`
 1. **Cloud Scheduler** → HTTP target or **Cloud Run job** invoking scale-down script with SA that has
    `container.developer`.
 2. **Scale-up** job before business hours (e.g. 08:00 UTC).
-3. Alternative: **full teardown** `terraform destroy` Fri PM / `terraform apply` Mon AM for lab projects.
+3. Alternative: **full stage teardown** `make gcp-stage-down` Fri PM / `make gcp-stage-up` Mon AM
+   for lab projects. The wrapper restores the persistent budget alert after destroying stage resources.
 
 ### Before scale-down
 
@@ -161,6 +174,45 @@ Record review date in team notes or PR when executed (stretch acceptance).
 
 ---
 
+## 3b. PS7.2 live drill log (dated evidence)
+
+| Field | Value |
+|-------|--------|
+| **Date** | 2026-06-14 |
+| **Operator** | adam.palacz96@gmail.com |
+| **Project** | `spaceops-project-498213` (number `78972438155`) |
+| **Outcome** | PASS — budget alert live + node-pool scale-down drill executed |
+
+**Budget alert (Terraform):**
+
+- `terraform apply` with `enable_budget_alert = true`, `billing_account_id = "01F5D6-1CDDB6-32152A"`, `budget_currency_code = "PLN"`, `budget_amount_usd = 50`
+- Budget: `spaceops-stage-monthly` — thresholds 50% / 90% current spend, 100% forecast
+- Filter: `projects/78972438155` (project number, not project ID)
+- Notification: email channel → `adam.palacz96@gmail.com`
+- Verify: `gcloud billing budgets list --billing-account=01F5D6-1CDDB6-32152A`
+- `terraform output budget_enabled` → `true`
+
+**Scale-down drill (node pool):**
+
+```powershell
+$env:GCP_PROJECT_ID = "spaceops-project-498213"
+make cloud-scale-down-check   # dry-run: resize --num-nodes 0
+.venv\Scripts\python.exe scripts/cloud/schedule_scale_down.py --project spaceops-project-498213 --nodes 0
+.venv\Scripts\python.exe scripts/cloud/schedule_scale_down.py --project spaceops-project-498213 --nodes 1
+```
+
+Result: `spaceops-stage-pool` resized **1 → 0 → 1** successfully (~3 min down, ~1 min up).
+
+**Full shutdown drill (PS7.1/PS7.2):** `make gcp-stage-down` removes Helm workloads + ephemeral
+Terraform resources, then restores the persistent budget alert. The original drill executed
+2026-06-14 after the live demo and removed 19 resources — post-check: no GKE clusters, no AR repos.
+Use `--destroy-budget-alert` only when retiring the project/account.
+
+**Live re-verification (2026-06-15):** budget `spaceops-stage-monthly` restored with targeted
+Terraform apply; GKE cluster list remained empty.
+
+---
+
 ## 4. Cost estimate reference (stage)
 
 See [infra/terraform/gcp/README.md](../../infra/terraform/gcp/README.md) — order of magnitude **~$95–130/mo**
@@ -168,7 +220,7 @@ always-on (1 preemptible `e2-standard-2`, regional GKE). Tactics:
 
 - `preemptible_nodes = true` (PS6.8 default)
 - Overnight node pool → 0
-- `terraform destroy` when lab complete
+- `make gcp-stage-down` when lab compute is idle; add `--destroy-budget-alert` only at project retirement
 - Budget alert at 50% / 90%
 
 ---
@@ -197,3 +249,4 @@ always-on (1 preemptible `e2-standard-2`, regional GKE). Tactics:
 - [LLM cost guardrails (token budget)](llm_cost_guardrails.md)
 - [GCP stage deploy](gcp_stage_deploy.md)
 - [PS6.9 spec](../../roadmap/02-production-scale/sprint-6/PS6.9-billing-shutdown-controls.md)
+- [PS7.2 live drill spec](../../roadmap/02-production-scale/sprint-7/PS7.2-live-billing-alerts-drill.md)

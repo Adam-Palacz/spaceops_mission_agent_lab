@@ -6,8 +6,20 @@ from __future__ import annotations
 import argparse
 import os
 import shlex
+import shutil
 import subprocess
 import sys
+
+
+def resolve_tool(name: str) -> str:
+    """Full executable path (Windows needs gcloud.cmd, not bare 'gcloud')."""
+    path = shutil.which(name)
+    if not path:
+        raise SystemExit(
+            f"Missing {name} on PATH. Install it or run scripts/refresh_dev_path.ps1 "
+            f"in a new terminal."
+        )
+    return path
 
 
 def _parse_args() -> argparse.Namespace:
@@ -54,7 +66,7 @@ def build_gcloud_command(args: argparse.Namespace) -> list[str]:
             "Missing --project or GCP_PROJECT_ID. See docs/runbooks/cloud_cost_hygiene.md"
         )
     return [
-        "gcloud",
+        resolve_tool("gcloud"),
         "container",
         "clusters",
         "resize",

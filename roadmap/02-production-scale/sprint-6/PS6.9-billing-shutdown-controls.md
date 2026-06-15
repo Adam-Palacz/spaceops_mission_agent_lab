@@ -49,8 +49,8 @@ Complements PS5.7 host idle TTL (lab compose) with **platform-level** hygiene.
 
 - [x] **Minimum:** reviewer can explain infra cost vs LLM API cost controls from the runbook.
 - [x] **Minimum:** runbook includes budget alert setup, labels, shutdown, and orphan cleanup checklist.
-- [ ] **Stretch:** budget alert configured on stage project (screenshot or IaC reference in PR).
-- [ ] **Stretch:** runbook shutdown procedure executed once on non-prod (record date in PR).
+- [ ] **Stretch:** budget alert configured on stage project (screenshot or IaC reference in PR). — **Done PS7.2** (2026-06-14, [PS7.2](../../sprint-7/PS7.2-live-billing-alerts-drill.md))
+- [ ] **Stretch:** runbook shutdown procedure executed once on non-prod (record date in PR). — **Done PS7.2** (scale-down 1→0→1 + `gcp-stage-down`, 2026-06-14)
 
 ---
 

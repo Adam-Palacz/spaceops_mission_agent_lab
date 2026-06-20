@@ -1,4 +1,4 @@
-"""PS5.6 cost telemetry and honest budget guardrails."""
+"""PS5.6 cost telemetry and honest budget guardrails (PS7.6 postgres mode)."""
 
 from __future__ import annotations
 
@@ -32,6 +32,7 @@ _soft_warning_emitted = False
 class BudgetSnapshot:
     mode: str
     process_tokens_used: int
+    postgres_tokens_used: int | None
     token_budget: int
 
 
@@ -59,25 +60,45 @@ def _soft_warning_threshold() -> int:
     return int(budget * ratio)
 
 
-def enforce_budget_before_generate(*, node: str) -> None:
-    """Raise LLMBudgetExceededError when current mode budget blocks new calls."""
-    del node
-    mode = _budget_mode()
-    if mode == "postgres":
-        raise LLMGatewayProviderError(
-            "LLM_BUDGET_MODE=postgres is not implemented in PS5.6; use process mode or defer to PS6."
-        )
+def _maybe_emit_soft_warning(*, mode: str, used_tokens: int) -> None:
+    global _soft_warning_emitted
 
     budget = _token_budget()
     if budget <= 0:
         return
+    warn_at = _soft_warning_threshold()
+    if warn_at > 0 and used_tokens >= warn_at and not _soft_warning_emitted:
+        _soft_warning_emitted = True
+        _logger.warning(
+            "llm_budget_soft_warning mode=%s used_tokens=%d budget=%d",
+            mode,
+            used_tokens,
+            budget,
+        )
 
+
+def enforce_budget_before_generate(*, node: str) -> None:
+    """Raise LLMBudgetExceededError when current mode budget blocks new calls."""
+    del node
+    budget = _token_budget()
+    if budget <= 0:
+        return
+
+    mode = _budget_mode()
     if mode == "process":
         if _process_tokens_used >= budget:
             raise LLMBudgetExceededError(
                 "LLM token budget exceeded in process mode; set LLM_DAILY_TOKEN_BUDGET or restart process."
             )
         return
+
+    from apps.llm_usage_ledger import get_daily_tokens_used
+
+    used = get_daily_tokens_used()
+    if used >= budget:
+        raise LLMBudgetExceededError(
+            "LLM token budget exceeded in postgres mode; shared daily org cap reached (UTC day)."
+        )
 
 
 def record_llm_usage(
@@ -88,7 +109,7 @@ def record_llm_usage(
     total_tokens: int,
     estimated_cost_usd: float,
 ) -> None:
-    global _process_tokens_used, _soft_warning_emitted
+    global _process_tokens_used
 
     tokens = max(0, int(total_tokens or 0))
     backend = (backend_actual or "unknown").strip()[:64] or "unknown"
@@ -103,27 +124,29 @@ def record_llm_usage(
             backend_actual=backend, model_id=model, node=node_label
         ).inc(float(estimated_cost_usd))
 
-    if _budget_mode() != "process":
+    mode = _budget_mode()
+    if mode == "process":
+        _process_tokens_used += tokens
+        _maybe_emit_soft_warning(mode="process", used_tokens=_process_tokens_used)
         return
 
-    _process_tokens_used += tokens
-    budget = _token_budget()
-    if budget <= 0:
-        return
-    warn_at = _soft_warning_threshold()
-    if warn_at > 0 and _process_tokens_used >= warn_at and not _soft_warning_emitted:
-        _soft_warning_emitted = True
-        _logger.warning(
-            "llm_budget_soft_warning mode=process used_tokens=%d budget=%d",
-            _process_tokens_used,
-            budget,
-        )
+    from apps.llm_usage_ledger import add_daily_tokens
+
+    total = add_daily_tokens(tokens=tokens)
+    _maybe_emit_soft_warning(mode="postgres", used_tokens=total)
 
 
 def get_budget_snapshot_for_tests() -> BudgetSnapshot:
+    mode = _budget_mode()
+    postgres_used: int | None = None
+    if mode == "postgres":
+        from apps.llm_usage_ledger import get_daily_tokens_used
+
+        postgres_used = get_daily_tokens_used()
     return BudgetSnapshot(
-        mode=_budget_mode(),
+        mode=mode,
         process_tokens_used=_process_tokens_used,
+        postgres_tokens_used=postgres_used,
         token_budget=_token_budget(),
     )
 

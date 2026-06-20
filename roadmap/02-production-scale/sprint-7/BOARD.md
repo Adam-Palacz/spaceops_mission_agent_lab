@@ -7,7 +7,7 @@
 | PS7.4 | Production monitoring stack analysis (BL-001) | Done | [PS7.4](PS7.4-monitoring-production-analysis.md) — [monitoring-production-analysis.md](../../../docs/monitoring-production-analysis.md) |
 | PS7.5 | README per folder coverage (BL-002) | Done | [PS7.5](PS7.5-readme-per-folder.md) — data/kb/evals/infra subfolders + tests |
 | PS7.3 | Graph worker Variant A (PS6.11 defer) | Done | [PS7.3](PS7.3-graph-worker-variant-a.md) — agentWorker + Postgres queue + checkpoint resume |
-| PS7.6 | Postgres LLM budget mode (PS7b) | Deferred | [PS7.6](PS7.6-postgres-llm-budget-mode.md) |
+| PS7.6 | Postgres LLM budget mode (PS7b) | Done | [PS7.6](PS7.6-postgres-llm-budget-mode.md) — `llm_usage_ledger` + stage/prod Helm |
 | PS7.7 | Multi-cloud burst ADR (BL-004, PS7b) | Deferred | [PS7.7](PS7.7-multicloud-burst-adr.md) |
 | PS7.8 | Platform ops triage agent MVP (BL-005, PS7b) | Deferred | [PS7.8](PS7.8-platform-ops-triage-agent.md) |
 

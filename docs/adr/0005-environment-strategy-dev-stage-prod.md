@@ -62,26 +62,34 @@ map 1:1 to container env — no second config schema.
 | **`gpu` allowed** | Yes — local engineer smoke only (Compose profile or optional Helm toggle) | **Canary** — named Deployment/replica set after PS5.8 parity pass | **No** until promotion checklist + parity artifact + approver sign-off |
 | **`cursor_sh`** | Optional experiments | Policy-approved only | Policy-approved only |
 | **Secrets backend** | `.env` + `get_secret()` env fallback | ESO / SOPS + GSM (design PS6.6) | ESO / SOPS + GSM (required path) |
-| **`LLM_BUDGET_MODE`** | `process` | `process` | `process` |
+| **`LLM_BUDGET_MODE`** | `process` | `postgres` | `postgres` |
 | **`AGENT_DURABLE_CHECKPOINT_ENABLED`** | `false` default; `true` for checkpoint tests | `true` when PS6.11 acceptance runs | `true` only after PS6.11 runbook validated |
 | **GPU node pool / NIM in cluster** | Off (host Compose NIM for lab) | Off by default (Phase 7) | Off by default (Phase 7) |
 | **CI / gates** | Unit + integration; GPU-free default | + manifest lint; optional parity artifact for GPU changes | + manual approver; parity required for any GPU promotion |
 
 Extends [ADR 0004](0004-llm-backend-rollout.md) environment matrix with secrets, budget, and checkpoint columns.
 
-### 5. `LLM_BUDGET_MODE=postgres` — defer
+### 5. `LLM_BUDGET_MODE=postgres` — PS7.6
 
-**Decision:** keep **`process`** in all environments for PS6.
+**Decision (updated PS7.6):** **`dev`** stays on **`process`**. **`stage`** and **`prod`** Helm overlays
+use **`postgres`** with `LLM_DAILY_TOKEN_BUDGET` when a shared org cap is required.
 
-`LLM_BUDGET_MODE=postgres` (shared `llm_usage_ledger`) is **deferred** until:
+**Trigger met:** stage/prod run **multi-replica API** (and optional agent worker) where process-mode
+counters reset per pod and cannot enforce a shared daily cap.
 
-- multi-replica API or worker deployments need a **shared daily org cap** that survives pod restart, **and**
-- PS6.2 Helm wiring + migration ship in a follow-up task (PS6.2/PS6.11 or Phase 7).
+Implementation:
 
-**Trigger to implement:** first production claim of “hard daily token cap across replicas” or stage
-incident where process-mode reset caused spend overrun.
+- Table **`llm_usage_ledger`** — one row per **UTC calendar day**, `tokens_used` aggregate.
+- Alembic `20260603_0003` + `infra/sql/002_llm_usage_ledger.sql`.
+- `apps/llm_usage_ledger.py` — read/increment; `apps/llm_cost.py` — enforce + record.
+- Helm `values-stage.yaml` / `values-prod.yaml`: `budgetMode: postgres`, `dailyTokenBudget` set
+  (operator-tunable; `0` disables enforcement).
 
-Until then, selecting `postgres` continues to raise an explicit unsupported-mode error (PS5.6).
+**Semantics:** hard deny via `LLMBudgetExceededError` when UTC-day total ≥ budget; survives pod
+restart; small race overshoot possible under concurrent replicas (documented). Not a cloud-invoice
+cap — estimates only via Prometheus.
+
+**dev / local Compose:** remain `process` unless operator opts into postgres against a shared DB.
 
 ### 6. PS6.11 checkpoint fork — Variant B for PS6; Variant A in PS7.3
 

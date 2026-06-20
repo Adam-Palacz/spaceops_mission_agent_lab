@@ -25,8 +25,9 @@ Use this runbook when budget or cost telemetry indicates elevated spend or budge
 
 ## Mode guidance
 
-- `process` mode: good for local demos/session caps; resets on restart
-- `postgres` mode: use only after PS6 implementation for shared multi-worker cap semantics
+- `process` mode: local demos/session caps; resets on restart; **dev default**
+- `postgres` mode: shared UTC-day org cap across replicas; **stage/prod Helm default (PS7.6)**
+- Run `infra/sql/002_llm_usage_ledger.sql` or Alembic before first postgres-mode deploy on a fresh DB
 
 ## Related docs
 

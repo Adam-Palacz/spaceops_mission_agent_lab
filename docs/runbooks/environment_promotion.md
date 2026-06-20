@@ -67,7 +67,8 @@ Details: [ADR 0004](../adr/0004-llm-backend-rollout.md), [ADR 0005](../adr/0005-
 
 ## Budget mode
 
-All environments use **`LLM_BUDGET_MODE=process`** for PS6. Shared postgres ledger deferred per ADR 0005.
+All environments use **`LLM_BUDGET_MODE=process`** for local dev. **Stage/prod** use **`postgres`**
+(shared ledger) per ADR 0005 / PS7.6 — see [llm_cost_guardrails.md](../llm_cost_guardrails.md).
 Do not set `postgres` expecting org-wide enforcement until implemented.
 
 ## Checkpoint (PS6.11)

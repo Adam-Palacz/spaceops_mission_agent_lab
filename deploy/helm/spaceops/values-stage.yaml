@@ -18,6 +18,8 @@ api:
   replicas: 2
   llm:
     backend: openai
+    budgetMode: postgres
+    dailyTokenBudget: 250000
   checkpoint:
     enabled: true
 

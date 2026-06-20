@@ -7,7 +7,7 @@ This document defines cost telemetry and budget semantics for LLM calls.
 | Mode | Env | Storage | Semantics | Sprint default |
 |------|-----|---------|-----------|----------------|
 | **`process`** | `LLM_BUDGET_MODE=process` | In-process counter | Per API/worker process; **resets on restart**; suitable for **local lab / demo session guard** only | **Yes (default)** |
-| **`postgres`** | `LLM_BUDGET_MODE=postgres` | `llm_usage_ledger` table (or reuse audit DB) | Shared across workers; survives restart; required for any claim of **hard daily org cap** | Optional in PS5.6; if not implemented, document defer to PS6 |
+| **`postgres`** | `LLM_BUDGET_MODE=postgres` | `llm_usage_ledger` table (Postgres) | Shared UTC-day total across replicas; survives restart; **stage/prod Helm default (PS7.6)** | stage/prod when cap > 0 |
 
 `process` mode must not be described as a financial or multi-worker daily spend limit.
 
@@ -26,9 +26,22 @@ All labels are bounded and exclude incident/run identifiers.
 - Deny exception: `LLMBudgetExceededError`
 - No backend fallback and no cross-backend retry on budget deny
 
+## Postgres mode behavior (PS7.6)
+
+- Ledger table **`llm_usage_ledger`**: one row per **UTC calendar day**, column `tokens_used`.
+- `enforce_budget_before_generate()` reads today's total; `record_llm_usage()` increments after each call.
+- Soft warning uses the same `LLM_BUDGET_SOFT_WARNING_RATIO` threshold (logged once per process).
+- Hard deny: `LLMBudgetExceededError` when today's total is already at/above `LLM_DAILY_TOKEN_BUDGET`
+  before a new call. A call that pushes the ledger over the cap completes; the next call is denied.
+- Bootstrap: `alembic upgrade head` or `infra/sql/002_llm_usage_ledger.sql` on lab Postgres.
+- Helm stage/prod set `budgetMode: postgres` and positive `dailyTokenBudget` in values overlays.
+
+Concurrent replicas may allow a small overshoot under heavy parallel load; tune budget accordingly.
+
 ## Postgres mode status
 
-`LLM_BUDGET_MODE=postgres` is **deferred** per [ADR 0005](adr/0005-environment-strategy-dev-stage-prod.md): all PS6 environments use **`process`**. Selecting `postgres` raises an explicit configuration/runtime error until ledger + Helm wiring ship (trigger: shared org cap across replicas required).
+**Implemented (PS7.6).** Stage and prod Helm overlays default to `postgres` with configurable
+`LLM_DAILY_TOKEN_BUDGET`. Dev/Compose default remains `process`.
 
 ## Defaults
 

@@ -75,7 +75,7 @@ schemas and audit records (`roadmap/goals.md` §4.3).
 
 - No external LLM firewall (Lakera etc.) — pattern guards only.
 - KB quarantine is manual — operators review audit + re-index.
-- `LLM_BUDGET_MODE=postgres` org-wide cap deferred (ADR 0005).
+- `LLM_BUDGET_MODE=postgres` org-wide cap on stage/prod (PS7.6); dev stays `process` (ADR 0005).
 - Local `.env` file is operator responsibility on laptops.
 - TLS deferred on lab GKE LoadBalancer (PS6.8).
 

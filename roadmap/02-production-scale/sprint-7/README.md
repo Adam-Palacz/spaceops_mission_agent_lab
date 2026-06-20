@@ -42,7 +42,7 @@ Hard scope is PS7.1, PS7.2, PS7.4, and PS7.5. PS7.3 and PS7.6–PS7.8 are PS7b/d
 **PS7b / optional (explicit defer OK)**
 
 - [x] PS7.3: Variant A graph worker + test kill worker → resume.
-- [ ] PS7.6: `LLM_BUDGET_MODE=postgres` per ADR 0005 trigger.
+- [x] PS7.6: `LLM_BUDGET_MODE=postgres` per ADR 0005 trigger.
 - [ ] PS7.7: multi-cloud burst ADR (BL-004).
 - [ ] PS7.8: platform ops triage CLI (BL-005) read-only MVP.
 

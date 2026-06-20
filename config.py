@@ -95,8 +95,8 @@ class Settings(BaseSettings):
     llm_budget_mode: str = Field(
         default="process",
         description=(
-            "PS5.6 budget mode: process|postgres. process is per-process and resets on restart; "
-            "postgres is deferred to PS6."
+            "PS5.6/PS7.6 budget mode: process|postgres. process is per-process; "
+            "postgres uses llm_usage_ledger for shared UTC-day org cap."
         ),
     )
     llm_daily_token_budget: int = Field(

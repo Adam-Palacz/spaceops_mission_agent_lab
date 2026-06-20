@@ -9,7 +9,7 @@ from apps.llm_cost import (
     reset_llm_cost_state_for_tests,
 )
 from apps.llm_gateway import generate
-from apps.llm_gateway_errors import LLMBudgetExceededError, LLMGatewayProviderError
+from apps.llm_gateway_errors import LLMBudgetExceededError
 
 
 @pytest.fixture(autouse=True)
@@ -172,19 +172,34 @@ def test_ps56_openai_budget_exceeded_does_not_attempt_gpu(monkeypatch):
     assert calls == ["openai"]
 
 
-def test_ps56_postgres_mode_explicitly_not_implemented(monkeypatch):
+def test_ps56_postgres_mode_requires_positive_budget_to_enforce(monkeypatch):
     monkeypatch.setattr("config.settings.llm_budget_mode", "postgres")
     monkeypatch.setattr("config.settings.llm_daily_token_budget", 10)
     monkeypatch.setattr("config.settings.llm_backend", "openai")
     monkeypatch.setattr("config.settings.openai_api_key", "test-key")
-    with pytest.raises(LLMGatewayProviderError, match="not implemented"):
+    monkeypatch.setattr("apps.llm_usage_ledger.get_daily_tokens_used", lambda **_k: 10)
+    with pytest.raises(LLMBudgetExceededError, match="postgres mode"):
         generate(prompt="x", node="triage")
 
 
-def test_ps56_postgres_mode_fails_even_when_budget_disabled(monkeypatch):
+def test_ps56_postgres_mode_with_zero_budget_allows_calls(monkeypatch):
     monkeypatch.setattr("config.settings.llm_budget_mode", "postgres")
     monkeypatch.setattr("config.settings.llm_daily_token_budget", 0)
     monkeypatch.setattr("config.settings.llm_backend", "openai")
     monkeypatch.setattr("config.settings.openai_api_key", "test-key")
-    with pytest.raises(LLMGatewayProviderError, match="not implemented"):
-        generate(prompt="x", node="triage")
+    monkeypatch.setattr("apps.llm_usage_ledger.get_daily_tokens_used", lambda **_k: 999)
+    monkeypatch.setattr("apps.llm_usage_ledger.add_daily_tokens", lambda **_k: 999)
+    monkeypatch.setattr(
+        "apps.llm_gateway.get_backend_generator",
+        lambda backend: (
+            lambda **_: {
+                "backend_actual": backend,
+                "content": "ok",
+                "usage": {"total_tokens": 1},
+                "model_id": "gpt-4o-mini",
+                "latency_ms": 1,
+                "estimated_cost_usd": 0.0,
+            }
+        ),
+    )
+    generate(prompt="x", node="triage")

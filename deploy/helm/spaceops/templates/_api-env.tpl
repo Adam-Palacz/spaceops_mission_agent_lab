@@ -12,6 +12,10 @@
   value: {{ .Values.api.llm.backend | quote }}
 - name: LLM_BUDGET_MODE
   value: {{ .Values.api.llm.budgetMode | quote }}
+- name: LLM_DAILY_TOKEN_BUDGET
+  value: {{ .Values.api.llm.dailyTokenBudget | quote }}
+- name: LLM_BUDGET_SOFT_WARNING_RATIO
+  value: {{ .Values.api.llm.budgetSoftWarningRatio | quote }}
 - name: GPU_ACTIVITY_FILE
   value: "/app/var/llm_last_gpu_call_at"
 {{- if .Values.telemetryMcp.enabled }}

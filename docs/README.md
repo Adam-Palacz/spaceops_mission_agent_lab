@@ -15,6 +15,7 @@ The **docs/** directory holds project documentation that supports both humans an
 - **output_schema.md** — Strict agent output envelopes (`AgentReportV1`, fail-closed `output_schema_violation`, PS4.2).
 - **prompt_injection_threat_model.md** — Untrusted input threats, guards, audit codes (PS4.3).
 - **behavior_metrics.md** — Escalation rate, evidence coverage, stage latency metrics (PS4.6).
+- **[monitoring-production-analysis.md](monitoring-production-analysis.md)** — Production readiness of Postgres, OTel, Jaeger, Prometheus/Grafana (PS7.4 / BL-001).
 - **[runbooks/ci_gating_policy.md](runbooks/ci_gating_policy.md)** — Hard vs soft CI gates, OPA/HITL criteria, recovery (PS4.7).
 - **[runbooks/guardrails_quality_triage.md](runbooks/guardrails_quality_triage.md)** — Failed-gate triage, decision tree, PS4 symptom → action (PS4.8).
 - **[evals_llm_judge_hooks.md](evals_llm_judge_hooks.md)** — Optional future LLM-as-judge eval hooks (PS4.4, non-blocking).

@@ -5,7 +5,7 @@ Use this table when planning sprints — **status lives in the sprint BOARD**, n
 
 | ID | Verdict | Rationale | Scheduled in |
 |----|---------|-----------|--------------|
-| **BL-001** | **Partially done / misrouted** | Backlog linked PS1.9, but PS1.9 is **distributed tracing + W3C** (`docs/runbooks/distributed_tracing_ps19.md`), not production readiness analysis for Postgres/OTel/Jaeger. Missing `docs/monitoring-production-analysis.md`. | **PS7.4** — correct monitoring analysis |
+| **BL-001** | **Done (PS7.4)** | PS1.9 was tracing only; analysis delivered in [monitoring-production-analysis.md](../../docs/monitoring-production-analysis.md). | — |
 | **BL-002** | **Still relevant (partial)** | READMEs exist under `apps/*` and parts of `docs/`, but not `data/`, `kb/`, `evals/`, many `roadmap/` subfolders. Onboarding value remains high (NF7). | **PS7.5** — documentation hygiene |
 | **BL-003** | **Done — close** | `infra/docker-compose.yml` has `telemetry-mcp`, `kb-mcp`, persister, full stack; BL-003 goals met since PS1/compose hardening. | Archive in items.md; no new task |
 | **BL-004** | **Future** | Multi-cloud GPU burst — sensible **after** live GCP (PS7) and stable gateway (PS5). Does not block MVP. | **PS7.7** (ADR + simulation) or later NG / Phase 7 Stage 4 |

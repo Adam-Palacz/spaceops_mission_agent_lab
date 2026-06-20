@@ -21,7 +21,7 @@ restricted actions pass through **OPA policy** and optional **human approval**.
 | Tools | MCP (telemetry, KB, ticket, gitops) |
 | Policy | OPA Rego (`infra/opa/`) |
 | Evidence store | Postgres + pgvector; NATS ingest (ADR 0002) |
-| Observability | OTel → Jaeger; Prometheus/Grafana |
+| Observability | OTel → Jaeger; Prometheus/Grafana · prod gaps: [monitoring-production-analysis.md](../monitoring-production-analysis.md) (PS7.4) |
 | Packaging | Docker Compose (dev) · Helm / kind (PS6) · GCP skeleton (PS6.8) |
 
 ### Architecture diagram

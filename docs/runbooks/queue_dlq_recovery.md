@@ -157,3 +157,36 @@ When symptoms suggest MCP transport degradation (timeouts, connect resets, repea
    - restore MCP connectivity first,
    - wait for breaker reset window,
    - run a small verification incident before full traffic.
+
+## 9) AI-assisted platform ops triage (PS7.8 / BL-005)
+
+Read-only collector + ranked hypotheses for **platform/SRE** symptoms (queue, DLQ, MCP breakers).
+This is **not** the mission anomaly agent (`POST /runs`).
+
+### Collect evidence (JSON)
+
+```bash
+python -m scripts.platform_ops_triage --collect-only
+python -m scripts.platform_ops_triage --collect-only --output /tmp/platform-ops-snapshot.json
+```
+
+Uses API `/health`, `/dlq/telemetry` (or Postgres when reachable), MCP URL probes, and in-process
+circuit breaker snapshot.
+
+### Full triage report (rule-based; optional LLM summary)
+
+```bash
+python -m scripts.platform_ops_triage --no-llm
+python -m scripts.platform_ops_triage --fixture tests/fixtures/platform_ops/dlq_backlog.json --no-llm
+```
+
+Output includes `hypotheses` (confidence + rationale), `recommendations` (safe verify commands first),
+and `audit` block (timestamp, evidence sources, suggested steps).
+
+### Safety gates
+
+- **No write actions** in PS7.8 MVP — collector and analysis only.
+- `--apply` is rejected unless `--i-approve` is also passed (even then, MVP does not execute replay).
+- Low-confidence top hypothesis sets `escalate_to_human: true` — hand off to on-call.
+
+Module reference: `apps/platform_ops/` · Tests: `tests/test_platform_ops_ps78.py`.

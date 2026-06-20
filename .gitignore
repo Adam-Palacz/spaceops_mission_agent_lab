@@ -13,10 +13,15 @@ evals/reports/shadow_models_*.json
 evals/reports/backend_parity_*.json
 evals/reports/arm_*.json
 
-data/approvals/
-data/incidents/
-data/llm_runs/
-data/replay/runs/
+# Runtime data dirs — ignore generated artifacts; keep folder READMEs (PS7.5)
+data/approvals/*
+!data/approvals/README.md
+data/incidents/*
+!data/incidents/README.md
+data/llm_runs/*
+!data/llm_runs/README.md
+data/replay/runs/*
+!data/replay/runs/README.md
 data/replay/golden/reports/
 data/audit.ndjson
 

@@ -1,0 +1,25 @@
+{
+  "schema_version": "1",
+  "collected_at": "2026-06-03T12:00:00+00:00",
+  "environment": {
+    "kind": "local",
+    "api_base_url": "http://localhost:8000",
+    "nats_url_configured": true
+  },
+  "services": {
+    "api": {"url": "http://localhost:8000", "reachable": true, "status_code": 200},
+    "postgres": {"reachable": false, "error": "OperationalError"}
+  },
+  "queue": {
+    "dlq": {
+      "available": false,
+      "error": "OperationalError"
+    }
+  },
+  "mcp": {
+    "endpoints": [],
+    "circuit_breakers": [],
+    "open_mcp_circuits": []
+  },
+  "symptom_domains": ["queue_dlq"]
+}

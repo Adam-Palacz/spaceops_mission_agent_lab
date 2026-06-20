@@ -77,6 +77,14 @@ def reset_circuit(key: str | None = None) -> None:
         del _circuit[key]
 
 
+def get_circuit_snapshot() -> list[dict[str, str | int]]:
+    """Read-only circuit breaker states (PS7.8 platform ops collector)."""
+    return [
+        {"key": key, "state": state, "failure_count": count}
+        for key, (count, _, state) in sorted(_circuit.items())
+    ]
+
+
 def _is_retryable(exc: BaseException) -> bool:
     """Treat timeouts, connection errors, and 5xx as retryable."""
     import httpx

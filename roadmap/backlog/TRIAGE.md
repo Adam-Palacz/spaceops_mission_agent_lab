@@ -6,7 +6,7 @@ Use this table when planning sprints — **status lives in the sprint BOARD**, n
 | ID | Verdict | Rationale | Scheduled in |
 |----|---------|-----------|--------------|
 | **BL-001** | **Done (PS7.4)** | PS1.9 was tracing only; analysis delivered in [monitoring-production-analysis.md](../../docs/monitoring-production-analysis.md). | — |
-| **BL-002** | **Still relevant (partial)** | READMEs exist under `apps/*` and parts of `docs/`, but not `data/`, `kb/`, `evals/`, many `roadmap/` subfolders. Onboarding value remains high (NF7). | **PS7.5** — documentation hygiene |
+| **BL-002** | **Done (PS7.5)** | Folder READMEs added under `data/`, `kb/`, `evals/`, `infra/`; apps and roadmap phase folders already covered. | — |
 | **BL-003** | **Done — close** | `infra/docker-compose.yml` has `telemetry-mcp`, `kb-mcp`, persister, full stack; BL-003 goals met since PS1/compose hardening. | Archive in items.md; no new task |
 | **BL-004** | **Future** | Multi-cloud GPU burst — sensible **after** live GCP (PS7) and stable gateway (PS5). Does not block MVP. | **PS7.7** (ADR + simulation) or later NG / Phase 7 Stage 4 |
 | **BL-005** | **Relevant, different product** | Does **not** duplicate the mission agent (Triage→Report). This is a **platform ops** agent (queue, DLQ, MCP breaker) — SRE domain, not satellite anomaly telemetry. | **PS7.8** (read-only MVP) or separate track after PS7.1 |

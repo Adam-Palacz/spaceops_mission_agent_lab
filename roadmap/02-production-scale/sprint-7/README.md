@@ -37,7 +37,7 @@ Hard scope is PS7.1, PS7.2, PS7.4, and PS7.5. PS7.3 and PS7.6–PS7.8 are PS7b/d
 - [x] PS7.1: stage GKE + Helm with `values-gcp-stage.yaml`; demo A/B from runbook passed on `spaceops-project-498213` (2026-06-03).
 - [x] PS7.2: budget alert in project + runbook entry (dated drill on `spaceops-project-498213`, 2026-06-14).
 - [x] PS7.4: `docs/monitoring-production-analysis.md` with recommendations.
-- [ ] PS7.5: READMEs for BL-002 folder list (minimum: `data/`, `kb/`, `evals/`, `infra/` subfolders).
+- [x] PS7.5: READMEs for BL-002 folder list (minimum: `data/`, `kb/`, `evals/`, `infra/` subfolders).
 
 **PS7b / optional (explicit defer OK)**
 

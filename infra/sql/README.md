@@ -1,5 +1,7 @@
 # SQL migrations / one-off scripts
 
+Postgres bootstrap SQL for local and stage stacks (pgvector extension, KB chunks table, etc.).
+
 ## 001_kb_vector.sql
 
 Creates the `vector` extension and the `kb_chunks` table for RAG (runbooks and postmortems).

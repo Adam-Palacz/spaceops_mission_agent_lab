@@ -8,8 +8,6 @@ import os
 import sys
 from datetime import datetime, timedelta, timezone
 
-from apps.agent.checkpointing import ensure_checkpoint_table
-
 
 def _parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(
@@ -41,6 +39,8 @@ def _conn():
 
 
 def main() -> int:
+    from apps.agent.checkpointing import ensure_checkpoint_table
+
     args = _parse_args()
     dry_run = args.dry_run or not args.apply
     cutoff = datetime.now(timezone.utc) - timedelta(days=args.older_than_days)

@@ -41,6 +41,7 @@ def _default_test_settings(monkeypatch):
     )
     monkeypatch.setattr(config.settings, "otel_exporter_otlp_endpoint", "")
     monkeypatch.setattr(config.settings, "agent_durable_checkpoint_enabled", False)
+    monkeypatch.setattr(config.settings, "agent_worker_enabled", False)
     yield
 
 

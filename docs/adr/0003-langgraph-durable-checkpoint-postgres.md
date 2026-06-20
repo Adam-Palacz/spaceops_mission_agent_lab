@@ -34,6 +34,20 @@ For queue-driven workloads (PS3.2+):
 
 Checkpointing helps resume control flow, but does not replace domain-level idempotency for tool calls.
 
+## Variant A — queue-driven worker (PS7.3)
+
+When `AGENT_WORKER_ENABLED=true` on the **api** Deployment:
+
+- `POST /runs` enqueues to Postgres table `agent_run_queue` (202 Accepted).
+- **`agentWorker`** Deployment (`python -m apps.workers.agent_graph`) claims jobs with
+  `FOR UPDATE SKIP LOCKED` + lease (`agent_run_queue_lease_seconds`).
+- Checkpointing is enabled on the **worker** (`agentWorker.checkpoint.enabled`); api may keep
+  checkpoint disabled.
+- Worker kill mid-run: expired lease → reclaim → `run_pipeline(..., resume=True)` from checkpoint.
+- Idempotency: completed checkpoint rows skip re-execution; PS3.2 side-effect guards unchanged.
+
+Helm overlay: `values-checkpoint-variant-a.yaml`. Status API: `GET /runs/queue/{run_id}`.
+
 ## Retention
 
 PS3.9 scope stores checkpoints without TTL cleanup automation.

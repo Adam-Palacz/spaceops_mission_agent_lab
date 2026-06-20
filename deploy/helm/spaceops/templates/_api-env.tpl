@@ -1,4 +1,4 @@
-{{- define "spaceops.apiEnv" -}}
+{{- define "spaceops.commonAppEnv" -}}
 - name: POSTGRES_PASSWORD
   valueFrom:
     secretKeyRef:
@@ -14,8 +14,6 @@
   value: {{ .Values.api.llm.budgetMode | quote }}
 - name: GPU_ACTIVITY_FILE
   value: "/app/var/llm_last_gpu_call_at"
-- name: AGENT_DURABLE_CHECKPOINT_ENABLED
-  value: {{ .Values.api.checkpoint.enabled | quote }}
 {{- if .Values.telemetryMcp.enabled }}
 - name: TELEMETRY_MCP_URL
   value: {{ printf "http://%s-telemetry-mcp:%v/mcp" (include "spaceops.fullname" .) .Values.telemetryMcp.port | quote }}
@@ -44,8 +42,24 @@
 - name: GPU_LLM_BASE_URL
   value: {{ printf "http://%s-nim:%v" (include "spaceops.fullname" .) .Values.nim.port | quote }}
 {{- end }}
+{{- end }}
+
+{{- define "spaceops.apiEnv" -}}
+{{- include "spaceops.commonAppEnv" . }}
+- name: AGENT_DURABLE_CHECKPOINT_ENABLED
+  value: {{ .Values.api.checkpoint.enabled | quote }}
 {{- range $key, $val := .Values.api.extraEnv }}
 - name: {{ $key }}
   value: {{ $val | quote }}
 {{- end }}
+{{- end }}
+
+{{- define "spaceops.agentWorkerEnv" -}}
+{{- include "spaceops.commonAppEnv" . }}
+- name: AGENT_DURABLE_CHECKPOINT_ENABLED
+  value: {{ .Values.agentWorker.checkpoint.enabled | quote }}
+- name: AGENT_WORKER_ID
+  valueFrom:
+    fieldRef:
+      fieldPath: metadata.name
 {{- end }}

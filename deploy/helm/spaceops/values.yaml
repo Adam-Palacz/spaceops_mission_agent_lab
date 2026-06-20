@@ -162,6 +162,9 @@ nim:
 agentWorker:
   enabled: false
   replicas: 1
+  # Checkpoint runs on worker when Variant A is enabled (api may stay false).
+  checkpoint:
+    enabled: true
 
 secrets:
   # Dev/lab only: render a Kubernetes Secret from install-time --set (never commit real keys).

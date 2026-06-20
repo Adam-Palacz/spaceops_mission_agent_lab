@@ -6,6 +6,7 @@ import importlib.util
 import re
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -109,6 +110,19 @@ def test_checkpoint_dev_overlay_enables_flag() -> None:
 def test_checkpoint_dev_values_structure() -> None:
     doc = yaml.safe_load(CHECKPOINT_VALUES.read_text(encoding="utf-8"))
     assert doc["api"]["checkpoint"]["enabled"] is True
+
+
+def test_k8s_checkpoint_demo_dry_run_variant_a() -> None:
+    proc = subprocess.run(
+        [sys.executable, str(DEMO), "--dry-run", "--variant-a"],
+        capture_output=True,
+        text=True,
+        cwd=str(REPO_ROOT),
+        check=False,
+    )
+    assert proc.returncode == 0, proc.stderr
+    assert "values-checkpoint-variant-a.yaml" in proc.stdout
+    assert "agent-worker" in proc.stdout
 
 
 def test_k8s_checkpoint_demo_dry_run() -> None:

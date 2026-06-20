@@ -18,7 +18,7 @@ no separate graph worker in PS6.
 | **api Deployment** | Runs agent graph inline on `POST /runs`; persists checkpoints when enabled |
 | **Postgres** | Table `agent_graph_checkpoints` (same DB as app; auto-created on first write) |
 | **`POST /runs/resume`** | Operator trigger to continue from saved `next_node` + `run_id` |
-| **agentWorker** | **Disabled** (`agentWorker.enabled: false`) — Variant A deferred Phase 7 |
+| **agentWorker** | **Disabled** by default (`agentWorker.enabled: false`) — enable via `values-checkpoint-variant-a.yaml` (PS7.3) |
 
 Enable checkpointing:
 
@@ -85,8 +85,8 @@ Rolling update / pod delete during active run?
 │   └─ Use replay from stored input (POST /replays/{run_id}/run)
 │       OR start fresh POST /runs (new execution)
 │
-└─ Queue consumer (future Variant A)?
-    └─ PS3.2 idempotency still required — checkpoint ≠ side-effect dedupe
+└─ Queue consumer (Variant A — PS7.3)?
+    └─ Worker lease reclaim + checkpoint resume; PS3.2 idempotency still required
 ```
 
 ### Rolling Helm upgrade (api pod restart)
@@ -260,7 +260,7 @@ restarts.
 | Duplicate side effects after resume | Idempotency on tools — not a checkpoint bug |
 | Table missing | First run with checkpoint enabled; or run `ensure_checkpoint_table()` |
 | Rollout killed all progress | Was checkpoint enabled **before** run started? |
-| `agent-worker` pod CrashLoop | Expected — worker disabled; set `agentWorker.enabled: false` |
+| `agent-worker` pod CrashLoop | Check `AGENT_DURABLE_CHECKPOINT_ENABLED` on worker; Postgres URL; disable worker if using Variant B only |
 
 ---
 
@@ -272,8 +272,43 @@ restarts.
 
 ---
 
-## Variant A deferral (explicit)
+## Variant A — queue-driven worker (PS7.3)
 
-Separate queue-driven graph worker (`agentWorker.enabled: true`) is **not** PS6.11 acceptance.
-Trigger to implement Variant A: dedicated Phase 7 task + ADR amendment when queue consumer ships
-(`apps/workers/agent_graph`).
+| Component | Role |
+|-----------|------|
+| **api Deployment** | `POST /runs` → 202 + `agent_run_queue` row when `AGENT_WORKER_ENABLED=true` |
+| **agentWorker Deployment** | `python -m apps.workers.agent_graph` — claims jobs, runs graph with checkpoints |
+| **Postgres `agent_run_queue`** | Claim/lease queue (ADR 0001 pattern) |
+| **`GET /runs/queue/{run_id}`** | Poll queue + checkpoint status |
+
+Enable locally:
+
+```bash
+helm upgrade spaceops deploy/helm/spaceops -n spaceops-dev \
+  -f deploy/helm/spaceops/values.yaml \
+  -f deploy/helm/spaceops/values-dev.yaml \
+  -f deploy/helm/spaceops/values-minimal-dev.yaml \
+  -f deploy/helm/spaceops/values-checkpoint-variant-a.yaml \
+  --set secrets.postgresPassword="${K8S_POSTGRES_PASSWORD:-spaceops}" \
+  --wait
+```
+
+### Kill worker mid-run (acceptance)
+
+1. `POST /runs` → capture `run_id` (202).
+2. `kubectl delete pod -n spaceops-dev -l app.kubernetes.io/component=agent-worker --wait=false`
+3. Wait for new worker pod Ready; lease reclaims stale job.
+4. `GET /runs/queue/{run_id}` → `queue_status: done`, `checkpoint_status: completed`
+   (or `POST /runs/resume` to enqueue explicit resume).
+
+Or: `make k8s-checkpoint-demo K8S_CHECKPOINT_DEMO_ARGS="--variant-a --dry-run"`
+
+**Idempotency:** worker skips runs whose checkpoint is already `completed`; tool side effects still
+require PS3.2 guards.
+
+---
+
+## Variant A deferral (superseded by PS7.3)
+
+Separate queue-driven graph worker is **optional** — default remains Variant B (`agentWorker.enabled: false`).
+Use `values-checkpoint-variant-a.yaml` when validating PS7.3.

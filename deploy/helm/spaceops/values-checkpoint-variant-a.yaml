@@ -1,0 +1,14 @@
+# PS7.3 — Variant A: api enqueues; agent-worker runs graph + checkpoints.
+# Layer on values-minimal-dev.yaml + values-checkpoint-dev.yaml optional base.
+
+api:
+  checkpoint:
+    enabled: false
+  extraEnv:
+    AGENT_WORKER_ENABLED: "true"
+
+agentWorker:
+  enabled: true
+  replicas: 1
+  checkpoint:
+    enabled: true

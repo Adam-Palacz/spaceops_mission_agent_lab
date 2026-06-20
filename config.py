@@ -224,6 +224,20 @@ class Settings(BaseSettings):
         description="Prefix strategy for durable checkpoint thread_id: '<prefix>:<incident_id>'.",
     )
 
+    # PS7.3 Variant A — api enqueues; separate worker Deployment consumes queue.
+    agent_worker_enabled: bool = Field(
+        default=False,
+        description="When true, POST /runs enqueues to agent_run_queue instead of inline graph.",
+    )
+    agent_run_queue_poll_seconds: float = Field(
+        default=1.0,
+        description="Worker poll interval when queue is empty.",
+    )
+    agent_run_queue_lease_seconds: int = Field(
+        default=300,
+        description="Lease duration for a claimed queue job before reclaim.",
+    )
+
     # S3.1: model lifecycle / shadow-testing
     agent_model_id: str = Field(
         default="gpt-4o-mini",

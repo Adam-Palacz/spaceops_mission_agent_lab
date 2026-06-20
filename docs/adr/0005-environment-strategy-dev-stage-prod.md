@@ -83,23 +83,21 @@ incident where process-mode reset caused spend overrun.
 
 Until then, selecting `postgres` continues to raise an explicit unsupported-mode error (PS5.6).
 
-### 6. PS6.11 checkpoint fork — Variant B for PS6
+### 6. PS6.11 checkpoint fork — Variant B for PS6; Variant A in PS7.3
 
-**Decision:** PS6 accepts **Variant B — API-only checkpoint proof**.
+**Decision:** PS6 accepts **Variant B — API-only checkpoint proof**. **PS7.3** adds **Variant A**
+as an optional Helm overlay for queue-driven graph execution.
 
-| Variant | Deploy target | PS6 status |
-|---------|---------------|------------|
-| **A — worker split** | Dedicated agent graph Deployment + queue consumer | **Deferred to Phase 7** |
-| **B — API-only** | Checkpoint in **api** Deployment; kill pod → `POST /runs/resume` | **Accepted for PS6 Done** |
+| Variant | Deploy target | Status |
+|---------|---------------|--------|
+| **A — worker split** | Dedicated `agentWorker` Deployment + Postgres `agent_run_queue` | **PS7.3** — `values-checkpoint-variant-a.yaml`; kill worker → lease reclaim + resume |
+| **B — API-only** | Checkpoint in **api** Deployment; kill pod → `POST /runs/resume` | **PS6 default** — `values-stage.yaml`, `values-checkpoint-dev.yaml` |
 
-Rationale: current runtime triggers `run_pipeline()` from API (`POST /runs`); only
-`telemetry-persister` exists as a separate worker. Variant B proves PS3.9 in-cluster without
-queue refactor.
+Rationale (PS6): runtime triggered `run_pipeline()` from API; Variant B proved PS3.9 in-cluster without
+queue refactor. Rationale (PS7.3): separate worker + claim/lease queue decouples long runs from API
+request thread; checkpoint remains in Postgres per ADR 0003.
 
-**Defer trigger for Variant A:** queue-driven agent runs at scale or requirement to run graphs
-off the API request thread.
-
-See [docs/runbooks/environment_promotion.md](../runbooks/environment_promotion.md) and PS6.11 spec.
+See [graph_worker_checkpoint_ops.md](../runbooks/graph_worker_checkpoint_ops.md) and PS7.3 spec.
 
 ### 7. Promotion rules (`dev → stage → prod`)
 

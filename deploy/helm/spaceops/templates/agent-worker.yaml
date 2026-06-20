@@ -27,7 +27,7 @@ spec:
           imagePullPolicy: {{ .Values.images.api.pullPolicy }}
           command: ["python", "-m", "apps.workers.agent_graph"]
           env:
-            {{- include "spaceops.apiEnv" . | nindent 12 }}
+            {{- include "spaceops.agentWorkerEnv" . | nindent 12 }}
           readinessProbe:
             exec:
               command: ["python", "-c", "import sys; sys.exit(0)"]

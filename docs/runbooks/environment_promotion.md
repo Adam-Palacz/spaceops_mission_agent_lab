@@ -77,7 +77,7 @@ PS6 uses **Variant B (API-only):**
 - Enable `AGENT_DURABLE_CHECKPOINT_ENABLED=true` on **api** Deployment in stage for acceptance tests.
 - Proof: long run → delete api pod → complete via `POST /runs/resume`.
 
-Worker split (Variant A) deferred to Phase 7.
+Worker split (Variant A) optional via `values-checkpoint-variant-a.yaml` (PS7.3); default remains Variant B.
 
 ## K8s / GitOps notes
 

@@ -96,4 +96,4 @@ Enable on **api** Deployment: `api.checkpoint.enabled: true` (stage overlay). Lo
 Sets `AGENT_DURABLE_CHECKPOINT_ENABLED` via `_api-env.tpl`. Retention stub: `scripts/checkpoint_retention.py`.
 Runbook: [graph_worker_checkpoint_ops.md](../../../docs/runbooks/graph_worker_checkpoint_ops.md).
 
-No separate agent worker unless `agentWorker.enabled` (Variant A — Phase 7 defer).
+No separate agent worker unless `agentWorker.enabled` (Variant A — `values-checkpoint-variant-a.yaml`, PS7.3).

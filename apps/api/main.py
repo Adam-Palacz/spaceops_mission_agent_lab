@@ -496,7 +496,29 @@ def _build_sim_incident_id(declared_incident_id: str) -> str:
 def trigger_run(payload: RunTriggerPayload) -> JSONResponse:
     """
     Trigger an agent run. Runs Triage → Investigate → Decide → Report; returns report.
+    PS7.3: when AGENT_WORKER_ENABLED=true, enqueues for agent-worker Deployment (202).
     """
+    from apps.agent.run_queue import agent_worker_enabled, enqueue_run, new_run_id
+
+    if agent_worker_enabled():
+        run_id = new_run_id()
+        enqueue_run(
+            run_id=run_id,
+            incident_id=payload.incident_id,
+            payload=payload.payload,
+            resume=False,
+            replay_source="api",
+        )
+        return JSONResponse(
+            status_code=202,
+            content={
+                "status": "accepted",
+                "run_id": run_id,
+                "incident_id": payload.incident_id,
+                "message": "Queued for agent-worker; poll GET /runs/queue/{run_id}",
+            },
+        )
+
     from apps.agent.graph import run_pipeline
 
     runs_dir = DATA_DIR / "incidents"
@@ -572,7 +594,28 @@ def resume_run(payload: ResumeRunPayload) -> JSONResponse:
     """
     PS3.9: Operator action to resume a checkpointed run with same run_id.
     Requires durable checkpoints enabled and Postgres reachable.
+    PS7.3: when AGENT_WORKER_ENABLED=true, enqueues resume for agent-worker (202).
     """
+    from apps.agent.run_queue import agent_worker_enabled, enqueue_run
+
+    if agent_worker_enabled():
+        enqueue_run(
+            run_id=payload.run_id,
+            incident_id=payload.incident_id,
+            payload=payload.payload,
+            resume=True,
+            replay_source="resume",
+        )
+        return JSONResponse(
+            status_code=202,
+            content={
+                "status": "accepted",
+                "run_id": payload.run_id,
+                "incident_id": payload.incident_id,
+                "message": "Resume queued for agent-worker",
+            },
+        )
+
     from apps.agent.graph import run_pipeline
 
     try:
@@ -602,6 +645,28 @@ def resume_run(payload: ResumeRunPayload) -> JSONResponse:
             "report": report,
         },
     )
+
+
+@app.get("/runs/queue/{run_id}")
+def get_run_queue_status(run_id: str) -> JSONResponse:
+    """PS7.3: queue + checkpoint status for Variant A async runs."""
+    from apps.agent.checkpointing import load_checkpoint
+    from apps.agent.run_queue import get_queue_job
+
+    job = get_queue_job(run_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Queue job not found")
+    cp = load_checkpoint(run_id)
+    content: dict[str, Any] = {
+        "run_id": run_id,
+        "incident_id": job.incident_id,
+        "queue_status": job.status,
+        "resume": job.resume,
+    }
+    if cp:
+        content["checkpoint_status"] = cp.status
+        content["next_node"] = cp.next_node
+    return JSONResponse(status_code=200, content=content)
 
 
 def _simulate_run_core(

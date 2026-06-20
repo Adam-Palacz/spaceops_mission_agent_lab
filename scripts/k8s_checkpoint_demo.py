@@ -33,6 +33,11 @@ def _parse_args() -> argparse.Namespace:
         help="Run helm upgrade, POST /runs, delete api pod, POST /runs/resume.",
     )
     p.add_argument(
+        "--variant-a",
+        action="store_true",
+        help="PS7.3: use values-checkpoint-variant-a.yaml; kill agent-worker pod.",
+    )
+    p.add_argument(
         "--dry-run",
         action="store_true",
         help="Print planned steps only (default when --execute omitted).",
@@ -45,12 +50,14 @@ def _run(cmd: list[str], *, check: bool = True) -> subprocess.CompletedProcess[s
     return subprocess.run(cmd, check=check, text=True, cwd=str(REPO_ROOT))
 
 
-def _helm_upgrade() -> None:
+def _helm_upgrade(*, variant_a: bool = False) -> None:
     files = [
         "values.yaml",
         "values-dev.yaml",
         "values-minimal-dev.yaml",
-        "values-checkpoint-dev.yaml",
+        "values-checkpoint-variant-a.yaml"
+        if variant_a
+        else "values-checkpoint-dev.yaml",
     ]
     cmd = [
         "helm",
@@ -79,6 +86,12 @@ def _api_post(path: str, body: dict) -> dict:
         method="POST",
     )
     with urllib.request.urlopen(req, timeout=300) as resp:
+        return json.loads(resp.read().decode("utf-8"))
+
+
+def _api_get(path: str) -> dict:
+    url = f"http://127.0.0.1:{API_LOCAL_PORT}{path}"
+    with urllib.request.urlopen(url, timeout=30) as resp:
         return json.loads(resp.read().decode("utf-8"))
 
 
@@ -115,16 +128,32 @@ def _wait_api() -> None:
 def main() -> int:
     args = _parse_args()
     dry = args.dry_run or not args.execute
+    variant_a = bool(args.variant_a)
+    kill_component = "agent-worker" if variant_a else "api"
+    values_note = (
+        "values-checkpoint-variant-a.yaml (AGENT_WORKER_ENABLED=true)"
+        if variant_a
+        else "values-checkpoint-dev.yaml (AGENT_DURABLE_CHECKPOINT_ENABLED=true)"
+    )
 
     steps = [
-        "helm upgrade with values-checkpoint-dev.yaml (AGENT_DURABLE_CHECKPOINT_ENABLED=true)",
+        f"helm upgrade with {values_note}",
         f"kubectl port-forward svc/{HELM_RELEASE}-api -n {NAMESPACE} {API_LOCAL_PORT}:8000",
         f"POST /runs incident_id={INCIDENT_ID} (capture run_id)",
-        f"kubectl delete pod -l app.kubernetes.io/component=api -n {NAMESPACE}",
-        "kubectl wait for api Ready",
-        "POST /runs/resume with same run_id",
+        f"kubectl delete pod -l app.kubernetes.io/component={kill_component} -n {NAMESPACE}",
+        f"kubectl wait for {kill_component} Ready",
+        (
+            "GET /runs/queue/{run_id} until done (Variant A)"
+            if variant_a
+            else "POST /runs/resume with same run_id"
+        ),
     ]
-    print("PS6.11 checkpoint demo (Variant B — api Deployment)")
+    label = (
+        "PS7.3 Variant A — agent-worker"
+        if variant_a
+        else "PS6.11 Variant B — api Deployment"
+    )
+    print(f"{label} checkpoint demo")
     for i, step in enumerate(steps, 1):
         print(f"  {i}. {step}")
     if dry:
@@ -137,7 +166,7 @@ def main() -> int:
         if not shutil.which(tool):
             raise SystemExit(f"Missing {tool} on PATH")
 
-    _helm_upgrade()
+    _helm_upgrade(variant_a=variant_a)
     pf = _port_forward()
     try:
         _wait_api()
@@ -151,7 +180,7 @@ def main() -> int:
         }
         started = _api_post("/runs", run_body)
         run_id = started.get("run_id") or started.get("id")
-        print(f"started run_id={run_id!r}")
+        print(f"started run_id={run_id!r} status={started.get('status')!r}")
         _run(
             [
                 "kubectl",
@@ -160,7 +189,7 @@ def main() -> int:
                 "-n",
                 NAMESPACE,
                 "-l",
-                "app.kubernetes.io/component=api",
+                f"app.kubernetes.io/component={kill_component}",
                 "--wait=false",
             ]
         )
@@ -171,16 +200,29 @@ def main() -> int:
                 "--for=condition=Ready",
                 "pod",
                 "-l",
-                "app.kubernetes.io/component=api",
+                f"app.kubernetes.io/component={kill_component}",
                 "-n",
                 NAMESPACE,
                 "--timeout=120s",
             ]
         )
-        time.sleep(2)
+        time.sleep(3)
         _wait_api()
         if not run_id:
-            raise SystemExit("No run_id in POST /runs response — cannot resume")
+            raise SystemExit("No run_id in POST /runs response — cannot continue")
+        if variant_a:
+            for _ in range(60):
+                try:
+                    status = _api_get(f"/runs/queue/{run_id}")
+                except urllib.error.HTTPError:
+                    time.sleep(2)
+                    continue
+                print(json.dumps(status, indent=2)[:2000])
+                if status.get("queue_status") == "done":
+                    print("PS7.3 gate: OK")
+                    return 0
+                time.sleep(2)
+            raise SystemExit("Timed out waiting for queue job completion")
         resumed = _api_post(
             "/runs/resume",
             {"run_id": run_id, "incident_id": INCIDENT_ID, "payload": {}},

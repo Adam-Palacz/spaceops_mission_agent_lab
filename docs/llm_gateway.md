@@ -35,6 +35,7 @@ generate(
 | `backend_actual` | Adapter that served the call |
 | `fallback_used` | `false` in PS5.1 (PS5.4 sets fallback) |
 | `fallback_reason` | Empty when no fallback |
+| `backend_routing_reason` | Audit reason for backend selection (PS7.7); e.g. `configured:openai`, `fallback:gpu_timeout`, `kill_switch_active` |
 | `estimated_cost_usd` | OpenAI arm only when rate card set (PS5.2); else `0.0` |
 
 ## OpenAI backend (PS5.2 — reference cloud arm)

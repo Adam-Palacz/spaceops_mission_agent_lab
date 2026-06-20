@@ -38,6 +38,7 @@ def record_gateway_provenance(
     backend_actual: str,
     fallback_used: bool,
     fallback_reason: str,
+    backend_routing_reason: str = "",
 ) -> None:
     """Append one generate() record when capture is active (best-effort)."""
     with _lock:
@@ -52,6 +53,7 @@ def record_gateway_provenance(
                 "backend_actual": backend_actual,
                 "fallback_used": bool(fallback_used),
                 "fallback_reason": str(fallback_reason or ""),
+                "backend_routing_reason": str(backend_routing_reason or ""),
             }
         )
 

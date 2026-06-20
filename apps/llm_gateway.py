@@ -26,6 +26,11 @@ from apps.llm_gateway_errors import (
     LLMGatewayTimeoutError,
 )
 from apps.llm_provenance import record_gateway_provenance
+from apps.llm_burst_routing import (
+    BurstRoutingSignals,
+    decide_burst_route,
+    explain_gateway_routing_reason,
+)
 from apps.model_selection import get_current_model_id
 
 _logger = logging.getLogger(__name__)
@@ -58,6 +63,7 @@ def generate(
     Returns:
       content, model_id, provider (alias of backend_actual), latency_ms, usage,
       backend_requested, backend_actual, fallback_used, fallback_reason
+      backend_routing_reason (PS7.7)
     """
     resolved_model = (model_id or "").strip() or get_current_model_id()
     started = time.perf_counter()
@@ -143,6 +149,12 @@ def generate(
         )
 
     estimated_cost = float(raw.get("estimated_cost_usd") or 0)
+    backend_routing_reason = _resolve_backend_routing_reason(
+        backend_requested=backend_requested,
+        backend_actual=backend_actual,
+        fallback_used=fallback_used,
+        fallback_reason=fallback_reason,
+    )
     record_llm_usage(
         node=node,
         backend_actual=backend_actual,
@@ -153,7 +165,7 @@ def generate(
     _logger.info(
         "llm_gateway_call node=%s provider=%s backend_requested=%s backend_actual=%s "
         "outcome=success model_id=%s latency_ms=%d total_tokens=%d "
-        "fallback_used=%s fallback_reason=%s estimated_cost_usd=%.6f",
+        "fallback_used=%s fallback_reason=%s backend_routing_reason=%s estimated_cost_usd=%.6f",
         node,
         backend_actual,
         backend_requested,
@@ -163,6 +175,7 @@ def generate(
         int(usage.get("total_tokens") or 0),
         fallback_used,
         fallback_reason,
+        backend_routing_reason,
         estimated_cost,
     )
     record_gateway_provenance(
@@ -171,6 +184,7 @@ def generate(
         backend_actual=backend_actual,
         fallback_used=fallback_used,
         fallback_reason=fallback_reason,
+        backend_routing_reason=backend_routing_reason,
     )
     return {
         "content": str(raw.get("content") or ""),
@@ -182,8 +196,59 @@ def generate(
         "backend_actual": backend_actual,
         "fallback_used": fallback_used,
         "fallback_reason": fallback_reason,
+        "backend_routing_reason": backend_routing_reason,
         "estimated_cost_usd": estimated_cost,
     }
+
+
+def _resolve_backend_routing_reason(
+    *,
+    backend_requested: str,
+    backend_actual: str,
+    fallback_used: bool,
+    fallback_reason: str,
+) -> str:
+    if not getattr(settings, "llm_burst_routing_audit", True):
+        return ""
+
+    kill_switch = bool(getattr(settings, "llm_burst_kill_switch", False))
+    policy_reason: str | None = None
+
+    if getattr(settings, "llm_burst_enabled", False) and not kill_switch:
+        from apps.llm_backends.resilience import can_use_gpu_backend
+
+        burst_healthy = True
+        if (getattr(settings, "llm_burst_backend", "gpu") or "gpu").strip() == "gpu":
+            burst_healthy, _ = can_use_gpu_backend()
+
+        policy = decide_burst_route(
+            BurstRoutingSignals(
+                kill_switch=False,
+                burst_enabled=True,
+                primary_backend="openai",
+                burst_backend=str(
+                    getattr(settings, "llm_burst_backend", "gpu") or "gpu"
+                ),
+                primary_healthy=True,
+                burst_healthy=burst_healthy,
+                budget_ok=True,
+                burst_within_cost_ceiling=True,
+                burst_latency_p95_ms=None,
+                latency_sla_ms=int(
+                    getattr(settings, "llm_burst_latency_sla_ms", 2000) or 2000
+                ),
+            )
+        )
+        policy_reason = policy.backend_routing_reason
+
+    return explain_gateway_routing_reason(
+        backend_requested=backend_requested,
+        backend_actual=backend_actual,
+        fallback_used=fallback_used,
+        fallback_reason=fallback_reason,
+        kill_switch=kill_switch,
+        burst_policy_reason=policy_reason,
+    )
 
 
 def _fallback_to_openai_or_raise(

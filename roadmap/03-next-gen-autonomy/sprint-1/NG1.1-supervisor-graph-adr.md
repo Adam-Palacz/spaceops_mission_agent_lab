@@ -4,13 +4,13 @@
 
 ## Description
 
-Create ADR 0010 and a disabled-by-default routing skeleton for a Flight Director supervisor graph.
+Create ADR 0011 and a disabled-by-default routing skeleton for a Flight Director supervisor graph.
 The supervisor routes incidents to subsystem specialists (initially Power and Thermal; ADCS remains
 future scope) and merges their findings back into the existing Plan/Report path.
 
 ## Requirements
 
-- [ ] ADR 0010 documents graph topology, routing contract, specialist boundaries, and rollback plan.
+- [ ] ADR 0011 documents graph topology, routing contract, specialist boundaries, and rollback plan.
 - [ ] Feature flag `MULTI_AGENT_ENABLED` defaults to off in every environment.
 - [ ] Supervisor node has a typed input/output contract and does not bypass existing evidence, OPA, or HITL gates.
 - [ ] Routing decisions are deterministic enough for fixture tests.

@@ -24,7 +24,7 @@ The **docs/** directory holds project documentation that supports both humans an
 - **[llm_gpu_backend.md](llm_gpu_backend.md)** — Optional NVIDIA NIM backend, `gpu` compose profile, and manual smoke checklist (PS5.3 / PS5.7).
 - **[llm_cost_guardrails.md](llm_cost_guardrails.md)** — Cost telemetry and process/postgres budget modes (PS5.6).
 - **[evals_backend_parity.md](evals_backend_parity.md)** — OpenAI vs GPU parity reports, invalid-arm rules, and promotion criteria (PS5.8).
-- **[adr/README.md](adr/README.md)** — ADR index 0001–0009 (PS6.10).
+- **[adr/README.md](adr/README.md)** — ADR index 0001–0010 (PS6.10).
 - **[adr/0005-environment-strategy-dev-stage-prod.md](adr/0005-environment-strategy-dev-stage-prod.md)** — `dev` / `stage` / `prod` model, promotion gates (PS6.1).
 - **[threat_model.md](threat_model.md)** — Portfolio threat model: injection, tool abuse, poisoning, secrets (PS6.10).
 - **[portfolio/README.md](portfolio/README.md)** — External reviewer entry: demos, runbooks, dependency hygiene (PS6.10).

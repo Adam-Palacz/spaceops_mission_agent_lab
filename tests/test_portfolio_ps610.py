@@ -94,7 +94,7 @@ def test_threat_model_maps_threats_to_controls() -> None:
 
 def test_adr_index_covers_ps6_and_themes() -> None:
     text = ADR_INDEX.read_text(encoding="utf-8")
-    for adr in ("0002", "0003", "0004", "0005", "0006", "0007", "0008", "0009"):
+    for adr in ("0002", "0003", "0004", "0005", "0006", "0007", "0008", "0009", "0010"):
         assert adr in text
     assert "Superseded" in text
     assert "llm_gateway.md" in text

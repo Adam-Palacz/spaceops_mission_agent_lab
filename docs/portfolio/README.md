@@ -157,7 +157,7 @@ Rollout and fallback: [llm_backend_rollout.md](../runbooks/llm_backend_rollout.m
 
 ## ADR index
 
-Cross-cutting decisions: [docs/adr/README.md](../adr/README.md) (0001–0009, append-only log).
+Cross-cutting decisions: [docs/adr/README.md](../adr/README.md) (0001–0010, append-only log).
 
 | Theme | ADR | Sprint |
 |-------|-----|--------|
@@ -169,6 +169,7 @@ Cross-cutting decisions: [docs/adr/README.md](../adr/README.md) (0001–0009, ap
 | Secrets | [0007](../adr/0007-secrets-management-k8s.md) | PS6.6 |
 | GitOps | [0008](../adr/0008-gitops-argocd.md) | PS6.7 |
 | GCP baseline | [0009](../adr/0009-gcp-baseline-portable-first.md) | PS6.8 |
+| Multi-cloud burst | [0010](../adr/0010-multicloud-burst-routing.md) | PS7.7 |
 
 Gateway contract detail (non-ADR): [llm_gateway.md](../llm_gateway.md).
 
@@ -202,6 +203,7 @@ and secrets leakage to PS4/PS5/PS6 controls (tests, OPA, evals, runbooks).
 | [llm_cost_guardrails.md](../runbooks/llm_cost_guardrails.md) | Dev / SRE | Token budget incidents |
 | [llm_backend_rollout.md](../runbooks/llm_backend_rollout.md) | Dev / SRE | Backend migration |
 | [llm_backend_fallback.md](../runbooks/llm_backend_fallback.md) | SRE | GPU → OpenAI fallback |
+| [multicloud_burst_routing.md](../runbooks/multicloud_burst_routing.md) | SRE / Platform | PS7.7 burst routing simulation and kill-switch audit |
 | [ci_gating_policy.md](../runbooks/ci_gating_policy.md) | Dev | Hard vs soft CI gates (PS4.7) |
 | [guardrails_minimum_hardening.md](../runbooks/guardrails_minimum_hardening.md) | Dev | Fail-closed escalation rules |
 | [guardrails_quality_triage.md](../runbooks/guardrails_quality_triage.md) | Dev | CI gate failure triage |

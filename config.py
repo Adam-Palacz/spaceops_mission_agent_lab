@@ -110,6 +110,26 @@ class Settings(BaseSettings):
         default=0.8,
         description="PS5.6 process-mode soft warning threshold ratio before hard deny.",
     )
+    llm_burst_enabled: bool = Field(
+        default=False,
+        description="PS7.7: enable burst policy simulation (cloud B); live routing deferred.",
+    )
+    llm_burst_kill_switch: bool = Field(
+        default=False,
+        description="PS7.7: force primary backend; audit reason kill_switch_active.",
+    )
+    llm_burst_backend: str = Field(
+        default="gpu",
+        description="PS7.7: burst backend id stand-in for cloud B inference endpoint.",
+    )
+    llm_burst_latency_sla_ms: int = Field(
+        default=2000,
+        description="PS7.7: burst p95 latency SLA gate for policy simulation.",
+    )
+    llm_burst_routing_audit: bool = Field(
+        default=True,
+        description="PS7.7: attach backend_routing_reason to gateway calls and provenance.",
+    )
     openai_base_url: str = Field(
         default="https://api.openai.com",
         description="OpenAI API base URL (root or full chat completions URL).",

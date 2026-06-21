@@ -48,9 +48,12 @@ def test_analysis_not_ps19_tracing_doc() -> None:
     assert "distributed_tracing_ps19.md" in text
 
 
-def test_analysis_links_follow_up_tasks() -> None:
+def test_analysis_maps_follow_up_tasks_to_production_readiness() -> None:
     text = DOC.read_text(encoding="utf-8")
     assert "PS7b" in text
+    assert "Production Readiness" in text
+    for task in ("PR1.1", "PR1.2", "PR2.4"):
+        assert task in text
     assert "TLS" in text or "tls" in text
     assert "sampling" in text.lower()
 

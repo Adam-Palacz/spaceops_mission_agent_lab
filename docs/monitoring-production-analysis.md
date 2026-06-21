@@ -48,8 +48,8 @@ Legend: **OK** = acceptable for stated environment · **Gap** = missing for prod
 | **Resource limits** | None in compose | Configurable via `postgres.resources` | Gap default | Set requests/limits on stage/prod overlays |
 | **Monitoring** | App uses DB; no postgres_exporter | Same | Gap | Add exporter or managed-DB metrics in prod |
 
-**Production checklist item:** evidence DB on **managed Postgres** with backup, encryption at rest,
-and connection pooling (PgBouncer or managed proxy) before prod pilot.
+**Production readiness owner:** [PR2.1](../roadmap/02.5-production-readiness/sprint-2/PR2.1-postgres-ha-backup-restore.md)
+for HA posture, backup, restore drill, encryption, RTO/RPO, and data integrity checks.
 
 ---
 
@@ -59,15 +59,15 @@ and connection pooling (PgBouncer or managed proxy) before prod pilot.
 |--------|---------|------|----------|----------------|
 | **Config** | `infra/otel-collector.yaml` | ConfigMap mirror in `observability.yaml` | OK | Keep single source; consider Helm subchart later |
 | **Receivers** | OTLP gRPC/HTTP on 4317/4318 | ClusterIP only | OK in-cluster | Do not expose 4317 on public LB |
-| **TLS** | `tls.insecure: true` → Jaeger | Same | Gap prod | PS7b: OTLP mTLS or sidecar TLS termination |
+| **TLS** | `tls.insecure: true` → Jaeger | Same | Gap prod | PR1.1: OTLP mTLS or sidecar TLS termination |
 | **Processors** | `batch` only | `batch` only | Gap prod | Add `memory_limiter`, `probabilistic_sampler` |
 | **Sampling** | Head sampling not configured (100%) | Same | Gap prod | Tail or probabilistic sampling (e.g. 10% + error boost) |
 | **HA** | Single container | `replicas: 1` | Gap prod | Multiple collectors + k8s service or agent sidecar pattern |
 | **Health / limits** | No healthcheck in compose | No probes in template | Gap | Add `/` health extension or k8s probes + CPU/mem limits |
 | **Metrics pipeline** | Traces only | Traces only | Gap | Optional metrics exporter → Prometheus (OTLP metrics) |
 
-**Production checklist item:** secured OTLP ingress, sampling policy documented, collector resource
-limits, and alert on export failures.
+**Production readiness owner:** [PR1.1](../roadmap/02.5-production-readiness/sprint-1/PR1.1-k8s-monitoring-stack.md)
+for secured OTLP ingress, sampling policy, collector resource limits, and export-failure alerts.
 
 ---
 
@@ -82,8 +82,8 @@ limits, and alert on export failures.
 | **HA** | Single | Single replica | Gap prod | Distributed Jaeger or managed alternative |
 | **Correlation** | `trace_id` in API/report/UI (PS2.5) | Same | OK | Keep deep links; add service.name filters in runbooks |
 
-**Production checklist item:** persistent trace backend with defined retention; do not rely on
-all-in-one for prod traffic.
+**Production readiness owner:** [PR2.4](../roadmap/02.5-production-readiness/sprint-2/PR2.4-retention-privacy.md)
+for persistent or managed trace backend decision, minimum implementation path, and defined retention.
 
 ---
 
@@ -98,8 +98,9 @@ all-in-one for prod traffic.
 | **HA** | Single | N/A | Gap prod | Thanos / Mimir / managed Prometheus |
 | **Alerting** | None in repo | N/A | Gap | Alertmanager rules for escalation rate, error rate (see behavior_metrics.md) |
 
-**Production checklist item:** deploy Prometheus (or GCP Cloud Monitoring scrape) on stage/prod;
-dashboards for SLOs in [behavior_metrics.md](behavior_metrics.md).
+**Production readiness owner:** [PR1.1](../roadmap/02.5-production-readiness/sprint-1/PR1.1-k8s-monitoring-stack.md)
+for Prometheus or managed metrics deployment and [PR1.2](../roadmap/02.5-production-readiness/sprint-1/PR1.2-slo-alerts.md)
+for SLO dashboards and alert rules.
 
 ---
 
@@ -112,8 +113,8 @@ dashboards for SLOs in [behavior_metrics.md](behavior_metrics.md).
 | **Dashboards** | Provisioned JSON (`infra/grafana/provisioning/`) | N/A | OK baseline | Extend with PS4.6 panels; add SLO board (PS7b) |
 | **Datasource** | Prometheus at `http://prometheus:9090` | N/A | OK compose | Point to in-cluster Prometheus or cloud metrics |
 
-**Production checklist item:** Grafana behind auth; link from portfolio only for lab; use managed
-dashboards or GitOps-provisioned dashboards in prod.
+**Production readiness owner:** [PR1.2](../roadmap/02.5-production-readiness/sprint-1/PR1.2-slo-alerts.md)
+for authenticated dashboards, SLO panels, and production-pilot alert visibility.
 
 ---
 
@@ -186,15 +187,19 @@ Use this as a gate; not all items are required for **stage** or **portfolio** de
 
 ---
 
-## PS7b follow-up tasks (optional)
+## Production Readiness follow-up mapping
 
-| ID | Task | Rationale |
-|----|------|-----------|
-| PS7b-M1 | Helm subchart or values overlay for Prometheus + Grafana | Close K8s metrics gap |
-| PS7b-M2 | OTel Collector: TLS + probabilistic sampling | Cost and security |
-| PS7b-M3 | Jaeger → persistent storage or migrate to Cloud Trace / Tempo | Retention on GKE |
-| PS7b-M4 | SLO dashboard (escalation rate, stage p95, tool failure rate) | PS4.6 + behavior_metrics PromQL |
-| PS7b-M5 | `postgres_exporter` + disk/connection alerts | Data plane visibility |
+PS7.4 originally identified PS7b-M* monitoring follow-ups. They are now owned by the dedicated
+[Production Readiness](../roadmap/02.5-production-readiness/) phase so they do not remain optional
+or compete with Next-Gen Autonomy work.
+
+| Former ID | Production Readiness owner | Rationale |
+|-----------|----------------------------|-----------|
+| PS7b-M1 | [PR1.1](../roadmap/02.5-production-readiness/sprint-1/PR1.1-k8s-monitoring-stack.md) | Helm/GitOps or managed Prometheus + Grafana closes the K8s metrics gap. |
+| PS7b-M2 | [PR1.1](../roadmap/02.5-production-readiness/sprint-1/PR1.1-k8s-monitoring-stack.md) | OTLP TLS, collector limits, and sampling are part of the K8s monitoring baseline. |
+| PS7b-M3 | [PR2.4](../roadmap/02.5-production-readiness/sprint-2/PR2.4-retention-privacy.md) | Persistent/managed traces, retention, and privacy belong with trace/log retention policy. |
+| PS7b-M4 | [PR1.2](../roadmap/02.5-production-readiness/sprint-1/PR1.2-slo-alerts.md) | SLO dashboards and alert rules use PS4.6 behavior metrics and PromQL. |
+| PS7b-M5 | [PR1.1](../roadmap/02.5-production-readiness/sprint-1/PR1.1-k8s-monitoring-stack.md) | `postgres_exporter` or managed DB metrics close data-plane visibility gaps. |
 
 ---
 

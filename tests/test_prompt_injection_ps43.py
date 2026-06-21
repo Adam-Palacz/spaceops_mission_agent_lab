@@ -46,7 +46,9 @@ def test_ps43_payload_injection_escalates_at_triage():
         out = triage(state)
     mock_llm.assert_not_called()
     assert out.get("escalated") is True
-    assert (out.get("escalation_packet") or {}).get("reason") == PROMPT_INJECTION_DETECTED
+    assert (out.get("escalation_packet") or {}).get(
+        "reason"
+    ) == PROMPT_INJECTION_DETECTED
     assert out.get("injection_guard_status") == "violation"
 
 
@@ -91,7 +93,9 @@ def test_ps43_check_escalation_on_evidence_injection():
     with patch("apps.agent.nodes._audit_prompt_injection") as audit_mock:
         out = check_escalation(state)
     assert out.get("escalated") is True
-    assert (out.get("escalation_packet") or {}).get("reason") == PROMPT_INJECTION_DETECTED
+    assert (out.get("escalation_packet") or {}).get(
+        "reason"
+    ) == PROMPT_INJECTION_DETECTED
     audit_mock.assert_called()
 
 

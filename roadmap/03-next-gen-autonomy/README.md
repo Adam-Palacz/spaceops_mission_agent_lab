@@ -4,6 +4,10 @@ Extend SpaceOps from **L1/L2** (MVP + production scale) toward **L3 assisted** a
 autonomy — per [03-next-gen-autonomy.md](../03-next-gen-autonomy.md).
 
 **Entry:** PS6 (minimum) + recommended PS7.1 (stage cloud) for demos in a prod-like environment.
+For production-pilot or NG3+ promotion, complete [Production Readiness](../02.5-production-readiness/)
+PR1-PR3 hard gates first. NG1-NG2 may run in parallel when scoped to local or stage-lab proof.
+
+**Phase analysis:** [PHASE_ANALYSIS.md](PHASE_ANALYSIS.md).
 
 ---
 
@@ -45,7 +49,7 @@ Estimate: **~2 weeks per sprint**, 3–4 tasks each.
 | Item | Where |
 |------|--------|
 | BL-003 | Closed (compose) — [TRIAGE](../backlog/TRIAGE.md) |
-| BL-004 | PS7.7 or after NG4 |
+| BL-004 | Closed in PS7.7; live burst remains future resilience work outside NG hard gates |
 | BL-005 | PS7.8 (platform ops) — different domain than mission agent |
 
 ---

@@ -20,7 +20,11 @@ Source strategy: [`../02-production-scale.md`](../02-production-scale.md).
 | **PS6** | [sprint-6/](sprint-6/) | K8s/GitOps/cloud-ready packaging + portfolio-grade operational artifacts. |
 | **PS7** | [sprint-7/](sprint-7/) | Live GCP stage, monitoring/README backlog, PS7b worker/budget/burst/platform ops — **closed** ([SPRINT_REVIEW](sprint-7/SPRINT_REVIEW.md)) |
 
-**Next phase (L3/L4):** [03-next-gen-autonomy/](../03-next-gen-autonomy/) (NG1–NG5).
+**Phase review:** [PHASE_REVIEW.md](PHASE_REVIEW.md).
+
+**Production readiness bridge:** [02.5-production-readiness/](../02.5-production-readiness/) (PR1-PR3).
+
+**Next autonomy phase (L3/L4):** [03-next-gen-autonomy/](../03-next-gen-autonomy/) (NG1-NG5).
 
 ---
 

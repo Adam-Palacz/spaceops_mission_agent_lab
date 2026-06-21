@@ -8,7 +8,8 @@
 
 ## Executive summary
 
-PS7 closed the **PS6 stretch** and **backlog operational debt** before Next-Gen Autonomy (NG1).
+PS7 closed the **PS6 stretch** and **backlog operational debt** before the dedicated
+Production Readiness track and Next-Gen Autonomy (NG1).
 Hard scope delivered **live GKE stage proof** (`make gcp-stage-up` / `gcp-stage-down`), **wired GCP
 budget alerts** with a dated scale-down drill, **production monitoring analysis** (BL-001), and
 **folder README coverage** (BL-002).
@@ -82,7 +83,7 @@ folder docs.
 
 ### Documentation & backlog (PS7.4–PS7.5)
 
-- **BL-001:** [monitoring-production-analysis.md](../../../docs/monitoring-production-analysis.md) — Compose vs Helm gaps (Prometheus/Grafana on K8s, OTLP TLS, Jaeger retention); PS7b follow-ups listed.
+- **BL-001:** [monitoring-production-analysis.md](../../../docs/monitoring-production-analysis.md) — Compose vs Helm gaps (Prometheus/Grafana on K8s, OTLP TLS, Jaeger retention); follow-ups now mapped to [Production Readiness](../../02.5-production-readiness/) PR tasks.
 - **BL-002:** READMEs under `data/`, `kb/`, `evals/`, `infra/` (+ runtime folder READMEs with gitignore exceptions).
 
 ### Platform depth (PS7.3, PS7.6–PS7.8)
@@ -150,7 +151,7 @@ New or extended test modules (representative):
 | Risk | Mitigation |
 |------|------------|
 | **Stage cluster not permanent** | Treat GKE as lab; re-run `gcp-stage-up` before external demos; document cost in PS7.2 runbook. |
-| **Prometheus/Grafana gap on K8s** | PS7.4 PS7b-M1 follow-up; do not claim full prod observability until wired. |
+| **Prometheus/Grafana gap on K8s** | Tracked in [PR1.1](../../02.5-production-readiness/sprint-1/PR1.1-k8s-monitoring-stack.md); do not claim full prod observability until wired. |
 | **Live multi-cloud burst** | ADR 0010 Stage 2+; simulation and audit only in PS7.7. |
 | **Platform ops `--apply`** | MVP read-only; replay remediate stays manual via `scripts/replay_queue.py`. |
 | **Checkpoint + worker ops** | Run Variant A overlay only when queue/worker proof needed; operator runbook for kill/resume. |
@@ -162,9 +163,13 @@ New or extended test modules (representative):
 **Close PS7** for planning and delivery. Hard scope (live cloud + backlog docs) and PS7b expansions
 are integrated, tested, and documented.
 
-**Next:** [NG sprint 1](../../03-next-gen-autonomy/sprint-1/) — multi-agent supervisor (ADR 0011);
-stage/cloud optional for NG local proof. Optional follow-ups from PS7.4 (Helm Prometheus, OTLP TLS,
-managed Jaeger) remain PS7b-M* items, not NG blockers.
+**Next canonical phase:** [Production Readiness](../../02.5-production-readiness/) — PR1-PR3 harden
+observability, backup/restore, secrets, security, release gates, and operational drills before any
+production-pilot claim.
+
+**Parallel autonomy work:** [NG sprint 1](../../03-next-gen-autonomy/sprint-1/) may start for local
+or stage-lab proof of the multi-agent supervisor (ADR 0011). NG3+ and production-pilot promotion
+should wait for Production Readiness hard gates.
 
 ---
 
@@ -174,3 +179,5 @@ managed Jaeger) remain PS7b-M* items, not NG blockers.
 - [BOARD.md](BOARD.md) — 8/8 Done; sprint closed reference.
 - [SPRINT_REVIEW.md](SPRINT_REVIEW.md) — this file.
 - [../README.md](../README.md) — PS7 row references live cloud + backlog closure.
+- [../../02.5-production-readiness/](../../02.5-production-readiness/) — canonical production
+  readiness follow-up phase.

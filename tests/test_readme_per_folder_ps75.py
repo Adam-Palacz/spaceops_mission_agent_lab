@@ -48,6 +48,7 @@ REQUIRED_README_DIRS = [
     "infra/grafana/provisioning/dashboards",
     "infra/grafana/provisioning/datasources",
     "roadmap/02-production-scale",
+    "roadmap/02.5-production-readiness",
     "roadmap/03-next-gen-autonomy",
 ]
 

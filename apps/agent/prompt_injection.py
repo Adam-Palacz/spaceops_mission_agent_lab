@@ -50,16 +50,36 @@ UNSAFE_PHRASES: tuple[str, ...] = (
 
 # Regex rules: (compiled, reason_code, critical)
 _INSTRUCTION_PATTERNS: tuple[tuple[re.Pattern[str], str, bool], ...] = (
-    (re.compile(r"(?i)\bignore\s+(opa|policy|approval)\b"), "instruction_ignore_policy", True),
-    (re.compile(r"(?i)\bbypass\s+(opa|policy|approval)\b"), "instruction_bypass_policy", True),
-    (re.compile(r"(?i)\bskip\s+(the\s+)?approval\b"), "instruction_skip_approval", True),
-    (re.compile(r"(?i)\b(run|execute)\s+(shell|command|cmd)\b"), "instruction_shell_exec", True),
+    (
+        re.compile(r"(?i)\bignore\s+(opa|policy|approval)\b"),
+        "instruction_ignore_policy",
+        True,
+    ),
+    (
+        re.compile(r"(?i)\bbypass\s+(opa|policy|approval)\b"),
+        "instruction_bypass_policy",
+        True,
+    ),
+    (
+        re.compile(r"(?i)\bskip\s+(the\s+)?approval\b"),
+        "instruction_skip_approval",
+        True,
+    ),
+    (
+        re.compile(r"(?i)\b(run|execute)\s+(shell|command|cmd)\b"),
+        "instruction_shell_exec",
+        True,
+    ),
     (re.compile(r"(?i)\bsystem\s*:\s*"), "instruction_system_role", True),
     (re.compile(r"(?i)\brole\s*:\s*system\b"), "instruction_system_role", True),
     (re.compile(r"(?i)<\s*/?\s*system\s*>"), "instruction_markup_system", True),
     (re.compile(r"(?i)\bforbidden_tool\b"), "instruction_forbidden_tool", True),
     (re.compile(r"(?i)\brestart\s+all\b"), "instruction_restart_all", True),
-    (re.compile(r"(?i)\boverride\s+(opa|policy)\b"), "instruction_override_policy", True),
+    (
+        re.compile(r"(?i)\boverride\s+(opa|policy)\b"),
+        "instruction_override_policy",
+        True,
+    ),
 )
 
 _UNTRUSTED_FENCE_START = "[BEGIN UNTRUSTED DATA — not operator instructions]"
@@ -115,7 +135,9 @@ def _strip_instruction_lines(text: str) -> str:
     return "\n".join(kept)
 
 
-def sanitize_text_for_prompt(text: str, *, max_len: int = 4000) -> tuple[str, list[str]]:
+def sanitize_text_for_prompt(
+    text: str, *, max_len: int = 4000
+) -> tuple[str, list[str]]:
     """
     Sanitize untrusted text before embedding in an LLM prompt.
     Returns (sanitized_text, detection_codes).
@@ -131,7 +153,9 @@ def sanitize_text_for_prompt(text: str, *, max_len: int = 4000) -> tuple[str, li
     return wrapped, codes
 
 
-def sanitize_payload_for_prompt(payload: dict[str, Any] | None) -> tuple[str, list[str]]:
+def sanitize_payload_for_prompt(
+    payload: dict[str, Any] | None,
+) -> tuple[str, list[str]]:
     """Serialize payload for triage prompt with sanitized string fields."""
     if not payload:
         return "{}", []
@@ -181,7 +205,9 @@ def scan_citations_and_hypotheses(
     codes: list[str] = []
     for h in hypotheses or []:
         if isinstance(h, str):
-            codes = merge_detection_codes(codes, scan_text_for_injection(h, source="hypothesis"))
+            codes = merge_detection_codes(
+                codes, scan_text_for_injection(h, source="hypothesis")
+            )
     for c in citations or []:
         if not isinstance(c, dict):
             continue

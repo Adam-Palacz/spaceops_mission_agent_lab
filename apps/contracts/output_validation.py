@@ -38,9 +38,7 @@ class OutputSchemaViolation(Exception):
         return OUTPUT_SCHEMA_VIOLATION
 
 
-def operator_message_from_validation_error(
-    envelope: str, exc: ValidationError
-) -> str:
+def operator_message_from_validation_error(envelope: str, exc: ValidationError) -> str:
     """Short, operator-readable summary without stack traces."""
     errors = exc.errors()
     if not errors:
@@ -73,9 +71,7 @@ def validate_tool_result(data: object) -> dict[str, Any]:
     except ValidationError as exc:
         raise OutputSchemaViolation(
             envelope="tool_result",
-            operator_message=operator_message_from_validation_error(
-                "tool_result", exc
-            ),
+            operator_message=operator_message_from_validation_error("tool_result", exc),
             detail=exc.json(),
         ) from exc
     return model.model_dump()
@@ -146,7 +142,9 @@ def escalation_packet_for_schema_violation(
         "what_to_check": [
             "Review agent pipeline logs and recent code/deploy changes.",
             "Inspect validation detail in run metadata when available.",
-            detail[:240] if detail else "See audit log for guardrail_escalation entries.",
+            detail[:240]
+            if detail
+            else "See audit log for guardrail_escalation entries.",
         ],
     }
     return validate_escalation_packet(packet)

@@ -19,4 +19,4 @@
 
 - **PS7.2** requires GCP credentials — PS7.4–PS7.5 can run in parallel without cloud.
 - **PS7.3** does not block NG1; Variant B is enough to start multi-agent locally.
-- **PS7.3, PS7.6–PS7.8** default to **PS7b** unless hard scope finishes early.
+- **Sprint closed:** 8/8 Done — see [SPRINT_REVIEW.md](SPRINT_REVIEW.md).

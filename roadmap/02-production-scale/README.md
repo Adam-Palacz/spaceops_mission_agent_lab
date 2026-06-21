@@ -18,7 +18,7 @@ Source strategy: [`../02-production-scale.md`](../02-production-scale.md).
 | **PS4** | [sprint-4/](sprint-4/) | Expanded safety controls and measurable quality gates. |
 | **PS5** | [sprint-5/](sprint-5/) | LLM backend portability (OpenAI/GPU optional), gateway controls, cost guardrails. |
 | **PS6** | [sprint-6/](sprint-6/) | K8s/GitOps/cloud-ready packaging + portfolio-grade operational artifacts. |
-| **PS7** | [sprint-7/](sprint-7/) | Live GCP stage + monitoring/README backlog (hard: PS7.1–PS7.2, PS7.4–PS7.5); PS7b defers worker/budget/BL-004/005. |
+| **PS7** | [sprint-7/](sprint-7/) | Live GCP stage, monitoring/README backlog, PS7b worker/budget/burst/platform ops — **closed** ([SPRINT_REVIEW](sprint-7/SPRINT_REVIEW.md)) |
 
 **Next phase (L3/L4):** [03-next-gen-autonomy/](../03-next-gen-autonomy/) (NG1–NG5).
 

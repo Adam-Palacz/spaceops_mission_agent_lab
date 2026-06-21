@@ -7,7 +7,9 @@ stays optional unless the sprint is explicitly expanded.
 **Strategic source:** [Phase 7 — Cloud Deployment](../../02-production-scale.md#phase-7--cloud-deployment-gcp-first-k8s-portable), [PS6 SPRINT_REVIEW](../sprint-6/SPRINT_REVIEW.md), [backlog TRIAGE](../../backlog/TRIAGE.md).
 
 **Sprint shape:** **ops + cloud proof** — smaller than PS6, larger than a single hotfix. Estimate: **2 weeks**.
-Hard scope is PS7.1, PS7.2, PS7.4, and PS7.5. PS7.3 and PS7.6–PS7.8 are PS7b/defer candidates.
+Hard scope is PS7.1, PS7.2, PS7.4, and PS7.5. PS7.3 and PS7.6–PS7.8 were PS7b/defer candidates but **also completed** in this sprint.
+
+**Sprint review:** [SPRINT_REVIEW.md](SPRINT_REVIEW.md) (2026-06-03).
 
 ---
 

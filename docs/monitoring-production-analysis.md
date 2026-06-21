@@ -21,13 +21,13 @@ readiness** of Postgres, OTel Collector, Jaeger, Prometheus, and Grafana.
 | **Postgres** | Single container + volume | StatefulSet + PVC | **Lab OK** · prod needs managed DB + backup |
 | **OTel Collector** | Single, OTLP plaintext | Single Deployment, ClusterIP | **Lab OK** · prod needs TLS + HA + sampling |
 | **Jaeger** | all-in-one, in-memory traces | all-in-one in-cluster | **Lab OK** · prod needs persistent/managed backend |
-| **Prometheus** | Compose-only scrape | **Not in Helm chart** | **Gap** on K8s/stage/GKE |
-| **Grafana** | Compose-only, default creds | **Not in Helm chart** | **Gap** on K8s/stage/GKE |
+| **Prometheus** | Compose-only scrape | PR1.1 overlay (`values-monitoring-stage.yaml`) | **PR gated** for production pilot |
+| **Grafana** | Compose-only, default creds | PR1.1 overlay (`values-monitoring-stage.yaml`) | **PR gated** for production pilot |
 
 **Verdict:** The stack is **appropriate for dev, portfolio demos, and stage proof** (traces + metrics
 on Compose; traces on GKE stage via port-forward). It is **not production-complete** without managed
-Postgres, secured OTLP, trace/metrics retention policy, Prometheus/Grafana on cluster (or cloud
-equivalents), and SLO dashboards.
+Postgres, secured OTLP, trace/metrics retention policy, PR1.1 monitoring overlay (or cloud
+equivalents), and PR1.2 SLO dashboards.
 
 ---
 
@@ -91,12 +91,12 @@ for persistent or managed trace backend decision, minimum implementation path, a
 
 | Aspect | Compose | Helm | OK / Gap | Recommendation |
 |--------|---------|------|----------|----------------|
-| **Presence** | `prom/prometheus:v3.10.0` service | **Not packaged** (PS6.2 scope) | OK compose | Gap K8s/GKE |
-| **Scrape config** | `host.docker.internal:8000/metrics` | N/A | OK compose | In K8s: ServiceMonitor or Pod annotation scrape |
-| **Metrics exposed** | S2.9 + PS4.6 behavior metrics on `/metrics` | Same endpoint on api Deployment | OK app | Wire scrape target in cluster |
-| **Retention** | Default 15d (Prometheus default) | N/A | Gap | Set `--storage.tsdb.retention.time` explicitly |
+| **Presence** | `prom/prometheus:v3.10.0` service | PR1.1 overlay | OK compose | Enable `values-monitoring-stage.yaml` for stage/prod pilot |
+| **Scrape config** | `host.docker.internal:8000/metrics` | Static in-cluster scrape config | OK PR1.1 | Move to ServiceMonitor if adopting Prometheus Operator |
+| **Metrics exposed** | S2.9 + PS4.6 behavior metrics on `/metrics` | API, NATS, OTel, postgres exporter | OK PR1.1 | Worker endpoint remains accepted gap |
+| **Retention** | Default 15d (Prometheus default) | Explicit overlay value | OK PR1.1 | Review retention in PR2.4 |
 | **HA** | Single | N/A | Gap prod | Thanos / Mimir / managed Prometheus |
-| **Alerting** | None in repo | N/A | Gap | Alertmanager rules for escalation rate, error rate (see behavior_metrics.md) |
+| **Alerting** | None in repo | Dashboard only | Gap | PR1.2 adds alert rules for escalation rate, error rate (see behavior_metrics.md) |
 
 **Production readiness owner:** [PR1.1](../roadmap/02.5-production-readiness/sprint-1/PR1.1-k8s-monitoring-stack.md)
 for Prometheus or managed metrics deployment and [PR1.2](../roadmap/02.5-production-readiness/sprint-1/PR1.2-slo-alerts.md)
@@ -108,10 +108,10 @@ for SLO dashboards and alert rules.
 
 | Aspect | Compose | Helm | OK / Gap | Recommendation |
 |--------|---------|------|----------|----------------|
-| **Presence** | `grafana/grafana:12.4.0` | **Not packaged** | OK compose | Gap K8s/GKE |
-| **Auth** | `admin/admin` default | N/A | Gap prod | SSO or strong secret + disable anonymous |
-| **Dashboards** | Provisioned JSON (`infra/grafana/provisioning/`) | N/A | OK baseline | Extend with PS4.6 panels; add SLO board (PS7b) |
-| **Datasource** | Prometheus at `http://prometheus:9090` | N/A | OK compose | Point to in-cluster Prometheus or cloud metrics |
+| **Presence** | `grafana/grafana:12.4.0` | PR1.1 overlay | OK PR1.1 | Add SLO board in PR1.2 |
+| **Auth** | `admin/admin` default | Admin password from Secret, anonymous disabled | OK PR1.1 | SSO remains prod follow-up |
+| **Dashboards** | Provisioned JSON (`infra/grafana/provisioning/`) | PR1.1 overview dashboard | OK PR1.1 | Extend with SLO board in PR1.2 |
+| **Datasource** | Prometheus at `http://prometheus:9090` | In-cluster Prometheus Service | OK PR1.1 | Managed metrics alternative allowed |
 
 **Production readiness owner:** [PR1.2](../roadmap/02.5-production-readiness/sprint-1/PR1.2-slo-alerts.md)
 for authenticated dashboards, SLO panels, and production-pilot alert visibility.
@@ -159,15 +159,19 @@ for authenticated dashboards, SLO panels, and production-pilot alert visibility.
 
 ## Environment matrix
 
-| Capability | Compose dev | Helm minimal-dev | Helm stage / GKE |
-|------------|-------------|------------------|------------------|
-| Traces → Jaeger | Yes (4317 exposed) | Optional (off default) | Yes (`observability.*.enabled: true`) |
-| Jaeger UI | `:16686` | port-forward | port-forward / optional ingress |
-| Prometheus | Yes | No | No |
-| Grafana | Yes | No | No |
-| Behavior metrics scrape | Yes (host scrape) | Manual if api port-forward | **Not wired** — gap |
+| Capability | Compose dev | Helm minimal-dev | Helm stage / GKE (baseline) | GKE + PR1.1 overlay |
+|------------|-------------|------------------|-----------------------------|---------------------|
+| Traces → Jaeger | Yes (4317 exposed) | Optional (off default) | Yes (`observability.*.enabled: true`) | Same |
+| Jaeger UI | `:16686` | port-forward | port-forward / optional ingress | Same |
+| Prometheus | Yes | No | No (opt-in overlay) | Yes — `values-monitoring-stage.yaml` |
+| Grafana | Yes | No | No (opt-in overlay) | Yes — admin from Secret, anonymous off |
+| Behavior metrics scrape | Yes (host scrape) | Manual if api port-forward | Wired when overlay enabled (API `/metrics`, NATS, postgres exporter, OTel) | Same |
+| postgres_exporter | No | No | No (opt-in overlay) | Yes — PR1.1 |
+| Worker standalone `/metrics` | N/A | N/A | Accepted gap (Variant A worker) | Accepted gap — see PR1.1 notes |
 
-See [gcp_stage_deploy.md](runbooks/gcp_stage_deploy.md) — Jaeger/OTel yes; Grafana/Prometheus no on GKE.
+Baseline stage deploy keeps Jaeger/OTel only. Enable Prometheus/Grafana/postgres-exporter with
+`-f deploy/helm/spaceops/values-monitoring-stage.yaml` — see [gcp_stage_deploy.md](runbooks/gcp_stage_deploy.md)
+§7 (bring-up, scrape smoke, mesh-sidecar note).
 
 ---
 

@@ -197,7 +197,7 @@ def preflight_kubectl() -> None:
     )
 
 
-def helm_value_files(*, full_stack: bool) -> list[Path]:
+def helm_value_files(*, full_stack: bool, monitoring: bool) -> list[Path]:
     files = [
         HELM_CHART / "values.yaml",
         HELM_CHART / "values-stage.yaml",
@@ -206,6 +206,8 @@ def helm_value_files(*, full_stack: bool) -> list[Path]:
     if full_stack:
         files.insert(2, HELM_CHART / "values-stage-full.yaml")
         files.insert(3, HELM_CHART / "values-ops-config-mounts.yaml")
+    if monitoring:
+        files.insert(-1, HELM_CHART / "values-monitoring-stage.yaml")
     for path in files:
         if not path.is_file():
             raise SystemExit(f"Missing Helm values: {path}")
@@ -492,6 +494,7 @@ def apply_ops_config() -> None:
 def cmd_deploy(
     *,
     full_stack: bool,
+    monitoring: bool,
     skip_secrets: bool,
     skip_migrate: bool,
     skip_kb_index: bool,
@@ -524,6 +527,35 @@ def cmd_deploy(
             cwd=str(REPO_ROOT),
             env=env,
         )
+        if monitoring:
+            password = os.getenv("GRAFANA_ADMIN_PASSWORD", "spaceops-stage-admin")
+            print("Creating/updating Grafana admin Secret for monitoring overlay ...")
+            secret_yaml = subprocess.run(
+                [
+                    resolve_tool("kubectl"),
+                    "create",
+                    "secret",
+                    "generic",
+                    "spaceops-stage-monitoring-secrets",
+                    "-n",
+                    NAMESPACE,
+                    f"--from-literal=grafana-admin-password={password}",
+                    "--dry-run=client",
+                    "-o",
+                    "yaml",
+                ],
+                check=True,
+                text=True,
+                capture_output=True,
+                cwd=str(REPO_ROOT),
+            )
+            subprocess.run(
+                [resolve_tool("kubectl"), "apply", "-f", "-"],
+                input=secret_yaml.stdout,
+                check=True,
+                text=True,
+                cwd=str(REPO_ROOT),
+            )
 
     apply_ops_config()
 
@@ -559,7 +591,7 @@ def cmd_deploy(
         "--timeout",
         wait_timeout,
     ]
-    for vf in helm_value_files(full_stack=full_stack):
+    for vf in helm_value_files(full_stack=full_stack, monitoring=monitoring):
         cmd.extend(["-f", str(vf)])
 
     print("Running:", " ".join(cmd))
@@ -722,6 +754,11 @@ def main() -> None:
         action="store_true",
         help="Skip values-stage-full.yaml (telemetry MCP only)",
     )
+    p_deploy.add_argument(
+        "--monitoring",
+        action="store_true",
+        help="Include PR1.1 values-monitoring-stage.yaml and Grafana admin Secret.",
+    )
     p_deploy.add_argument("--skip-secrets", action="store_true")
     p_deploy.add_argument(
         "--skip-migrate",
@@ -791,6 +828,7 @@ def main() -> None:
     if args.command == "deploy":
         cmd_deploy(
             full_stack=not args.minimal,
+            monitoring=args.monitoring,
             skip_secrets=args.skip_secrets,
             skip_migrate=args.skip_migrate,
             skip_kb_index=args.skip_kb_index,

@@ -1,0 +1,23 @@
+# Production Readiness PR1.1 — monitoring-enabled stage overlay.
+# Layer after values-stage.yaml. Requires the Grafana admin password Secret:
+#   kubectl create secret generic spaceops-stage-monitoring-secrets \
+#     -n spaceops-stage --from-literal=grafana-admin-password='...'
+
+observability:
+  otelCollector:
+    enabled: true
+    replicas: 2
+    tlsMode: mesh-sidecar
+    samplingPercentage: 25
+  jaeger:
+    enabled: true
+  prometheus:
+    enabled: true
+    retention: 15d
+  grafana:
+    enabled: true
+    admin:
+      existingSecret: spaceops-stage-monitoring-secrets
+      passwordKey: grafana-admin-password
+  postgresExporter:
+    enabled: true

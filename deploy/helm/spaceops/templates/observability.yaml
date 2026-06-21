@@ -79,18 +79,36 @@ data:
             endpoint: 0.0.0.0:4317
           http:
             endpoint: 0.0.0.0:4318
+    extensions:
+      health_check:
+        endpoint: 0.0.0.0:13133
     processors:
+      memory_limiter:
+        check_interval: 1s
+        limit_mib: 384
+        spike_limit_mib: 128
+      probabilistic_sampler:
+        sampling_percentage: {{ .Values.observability.otelCollector.samplingPercentage }}
       batch: {}
     exporters:
       otlp/jaeger:
         endpoint: {{ include "spaceops.fullname" . }}-jaeger:4317
         tls:
+          {{- if eq .Values.observability.otelCollector.tlsMode "mtls-secret" }}
+          insecure: false
+          {{- else }}
+          # plaintext-internal and mesh-sidecar both keep app traffic plaintext; mesh mTLS is transparent.
           insecure: true
+          {{- end }}
     service:
+      extensions: [health_check]
+      telemetry:
+        metrics:
+          address: 0.0.0.0:8888
       pipelines:
         traces:
           receivers: [otlp]
-          processors: [batch]
+          processors: [memory_limiter, probabilistic_sampler, batch]
           exporters: [otlp/jaeger]
 ---
 apiVersion: v1
@@ -110,6 +128,12 @@ spec:
     - name: otlp-http
       port: 4318
       targetPort: otlp-http
+    - name: health
+      port: 13133
+      targetPort: health
+    - name: metrics
+      port: 8888
+      targetPort: metrics
   selector:
     {{- include "spaceops.selectorLabels" . | nindent 4 }}
     app.kubernetes.io/component: otel-collector
@@ -123,7 +147,7 @@ metadata:
     {{- include "spaceops.labels" . | nindent 4 }}
     app.kubernetes.io/component: otel-collector
 spec:
-  replicas: 1
+  replicas: {{ .Values.observability.otelCollector.replicas }}
   selector:
     matchLabels:
       {{- include "spaceops.selectorLabels" . | nindent 6 }}
@@ -133,6 +157,10 @@ spec:
       labels:
         {{- include "spaceops.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: otel-collector
+      {{- if eq .Values.observability.otelCollector.tlsMode "mesh-sidecar" }}
+      annotations:
+        sidecar.istio.io/inject: "true"
+      {{- end }}
     spec:
       serviceAccountName: {{ include "spaceops.componentServiceAccountName" (dict "root" . "component" "otel-collector") }}
       containers:
@@ -145,6 +173,24 @@ spec:
               containerPort: 4317
             - name: otlp-http
               containerPort: 4318
+            - name: health
+              containerPort: 13133
+            - name: metrics
+              containerPort: 8888
+          readinessProbe:
+            httpGet:
+              path: /
+              port: health
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: health
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            {{- toYaml .Values.observability.otelCollector.resources | nindent 12 }}
           volumeMounts:
             - name: config
               mountPath: /etc/otel-collector.yaml

@@ -18,16 +18,29 @@ Postgres, NATS/queue, OTel collector, and platform components.
 
 ## Checklist
 
-- [ ] K8s monitoring path implemented or managed-monitoring path documented with manifests.
-- [ ] API and worker scrape targets visible.
-- [ ] Postgres and queue metrics visible or explicitly tracked as accepted gaps with owners.
-- [ ] OTLP TLS or sidecar/mesh termination configured for stage/prod path.
-- [ ] Collector sampling and resource-limit policy documented.
-- [ ] Grafana dashboards or managed dashboard links documented.
-- [ ] Runbook updated: monitoring bring-up, access, and teardown.
+- [x] K8s monitoring path implemented or managed-monitoring path documented with manifests.
+- [x] API scrape target visible; worker standalone scrape is an accepted gap until a worker metrics endpoint/sidecar exists.
+- [x] Postgres and queue metrics visible through `postgres-exporter` and NATS monitoring scrape.
+- [x] OTLP sidecar/mesh termination configured for stage/prod path via `tlsMode: mesh-sidecar`.
+- [x] Collector sampling and resource-limit policy documented.
+- [x] Grafana dashboards or managed dashboard links documented.
+- [x] Runbook updated: monitoring bring-up, access, and teardown.
 
 ## Test requirements
 
 - Helm template/lint for monitoring-enabled values.
 - A smoke command or runbook step showing scrape targets are up.
 - Link/documentation test for new runbook references.
+
+## Implementation notes
+
+- Added `deploy/helm/spaceops/values-monitoring-stage.yaml`.
+- Added Helm templates for Prometheus, Grafana, and `postgres-exporter`.
+- Hardened OTel Collector with health probes, resources, memory limiter, probabilistic sampling,
+  internal metrics, and `mesh-sidecar` TLS mode.
+- Updated `deploy/helm/spaceops/README.md`, `docs/runbooks/gcp_stage_deploy.md`, and
+  `docs/monitoring-production-analysis.md`.
+
+## Status
+
+Done.

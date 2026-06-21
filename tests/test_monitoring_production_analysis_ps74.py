@@ -58,6 +58,13 @@ def test_analysis_maps_follow_up_tasks_to_production_readiness() -> None:
     assert "sampling" in text.lower()
 
 
+def test_analysis_environment_matrix_documents_pr11_overlay() -> None:
+    text = DOC.read_text(encoding="utf-8")
+    assert "GKE + PR1.1 overlay" in text
+    assert "values-monitoring-stage.yaml" in text
+    assert "Grafana/Prometheus no on GKE" not in text
+
+
 def test_portfolio_and_docs_index_link_analysis() -> None:
     assert "monitoring-production-analysis.md" in PORTFOLIO.read_text(encoding="utf-8")
     assert "monitoring-production-analysis.md" in DOCS_INDEX.read_text(encoding="utf-8")

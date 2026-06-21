@@ -26,8 +26,10 @@ make gcp-stage-destroy GCP_STAGE_ARGS="--confirm --terraform-auto-approve --dest
 
 **Manual order:**
 
-1. `helm uninstall spaceops -n spaceops-stage`
-2. `kubectl delete namespace spaceops-stage`
+1. `helm uninstall spaceops -n spaceops-stage` (removes PR1.1 Prometheus/Grafana/postgres-exporter
+   when the monitoring overlay was enabled)
+2. `kubectl delete namespace spaceops-stage` (also removes `spaceops-stage-monitoring-secrets` if
+   created for Grafana admin password)
 3. Optional: `kubectl delete namespace argocd`
 4. `cd infra/terraform/gcp && terraform destroy`
 5. Unless retiring the project, restore the alert:

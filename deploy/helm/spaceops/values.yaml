@@ -147,9 +147,60 @@ observability:
   otelCollector:
     enabled: false
     image: otel/opentelemetry-collector-contrib:0.96.0
+    replicas: 1
+    # plaintext-internal | mesh-sidecar | mtls-secret
+    tlsMode: plaintext-internal
+    samplingPercentage: 100
+    resources:
+      requests:
+        cpu: 50m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
   jaeger:
     enabled: false
     image: jaegertracing/all-in-one:1.55
+  prometheus:
+    enabled: false
+    image: prom/prometheus:v3.10.0
+    port: 9090
+    retention: 15d
+    scrapeInterval: 15s
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: "1"
+        memory: 1Gi
+  grafana:
+    enabled: false
+    image: grafana/grafana:12.4.0
+    port: 3000
+    admin:
+      user: admin
+      password: ""
+      existingSecret: ""
+      passwordKey: grafana-admin-password
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+  postgresExporter:
+    enabled: false
+    image: prometheuscommunity/postgres-exporter:v0.15.0
+    port: 9187
+    resources:
+      requests:
+        cpu: 25m
+        memory: 64Mi
+      limits:
+        cpu: 200m
+        memory: 128Mi
 
 # Phase 7 prep — off by default (PS6.2).
 nim:

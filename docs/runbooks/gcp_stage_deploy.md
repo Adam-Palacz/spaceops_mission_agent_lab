@@ -263,8 +263,9 @@ curl -s "http://$(kubectl get svc spaceops-api -n spaceops-stage -o jsonpath='{.
 | telemetry-mcp | yes | yes |
 | kb-mcp, ticket-mcp, gitops-mcp | no | **yes** |
 | jaeger, otel-collector | yes | yes |
+| prometheus / grafana / postgres-exporter | no | optional via `values-monitoring-stage.yaml` (PR1.1) |
 | nim / GPU | no | no (Phase 7; use laptop NIM hybrid) |
-| grafana / UI | no | no (compose-only; PS6.2 scope) |
+| UI | no | no (compose-only; PS6.2 scope) |
 
 ---
 
@@ -346,6 +347,37 @@ Script flow: `GET /health` → ingest fixture → wait for persister → `POST /
 kubectl logs -n spaceops-stage -l app.kubernetes.io/component=api -f
 kubectl port-forward -n spaceops-stage svc/spaceops-jaeger 16686:16686
 ```
+
+**PR1.1 monitoring overlay:** create the Grafana admin Secret, then add
+`-f deploy/helm/spaceops/values-monitoring-stage.yaml` to the Helm command in section 4.
+
+```bash
+kubectl create secret generic spaceops-stage-monitoring-secrets \
+  -n spaceops-stage \
+  --from-literal=grafana-admin-password='REPLACE_ME'
+kubectl port-forward -n spaceops-stage svc/spaceops-prometheus 9090:9090
+kubectl port-forward -n spaceops-stage svc/spaceops-grafana 3000:3000
+```
+
+Prometheus targets expected after the overlay: `spaceops-api`, `spaceops-nats`,
+`spaceops-postgres`, and `spaceops-otel-collector`. Variant A `agent-worker` does not expose a
+standalone metrics port yet; use API run metrics, queue/DLQ metrics, and traces for worker
+operations until PR1.4 or a later worker metrics endpoint closes that gap.
+
+**Scrape smoke (PR1.1):** with `kubectl port-forward ... svc/spaceops-prometheus 9090:9090` running:
+
+```bash
+curl -s http://127.0.0.1:9090/api/v1/targets \
+  | jq -r '.data.activeTargets[] | select(.health=="up") | .labels.job' | sort -u
+# Expected jobs: spaceops-api spaceops-nats spaceops-otel-collector spaceops-postgres
+```
+
+Without `jq`, open `http://127.0.0.1:9090/targets` and confirm the four jobs above are **UP**.
+
+**OTLP TLS (`tlsMode: mesh-sidecar`):** the OTel collector overlay sets `sidecar.istio.io/inject:
+"true"`. Transparent mTLS applies only when a service mesh (e.g. Istio) is installed on the cluster.
+Without mesh, in-cluster OTLP stays plaintext as in the PS6/PS7 lab baseline — not a regression for
+ephemeral stage.
 
 Manual curls: [portfolio README](../portfolio/README.md) (use `:8000` on LoadBalancer IP).
 

@@ -15,6 +15,12 @@ helm template spaceops deploy/helm/spaceops \
 # Stage / prod overlays
 helm template spaceops deploy/helm/spaceops -f deploy/helm/spaceops/values.yaml -f deploy/helm/spaceops/values-stage.yaml
 helm template spaceops deploy/helm/spaceops -f deploy/helm/spaceops/values.yaml -f deploy/helm/spaceops/values-prod.yaml
+
+# Stage with PR1.1 monitoring stack
+helm template spaceops deploy/helm/spaceops \
+  -f deploy/helm/spaceops/values.yaml \
+  -f deploy/helm/spaceops/values-stage.yaml \
+  -f deploy/helm/spaceops/values-monitoring-stage.yaml
 ```
 
 Makefile: `make helm-template`
@@ -44,8 +50,11 @@ GitOps (PS6.7, optional): [docs/runbooks/gitops_bootstrap.md](../../../docs/runb
 | `gitops-mcp` | Deployment + Service | `gitopsMcp.enabled` |
 | `otel-collector` | Deployment + ConfigMap | `observability.otelCollector.enabled` |
 | `jaeger` | Deployment + Service | `observability.jaeger.enabled` |
+| `prometheus` | Deployment + Service + scrape ConfigMap | `observability.prometheus.enabled` |
+| `grafana` | Deployment + Service + provisioning ConfigMap | `observability.grafana.enabled` |
+| `postgres-exporter` | Deployment + Service | `observability.postgresExporter.enabled` |
 | `nim-llm` | Deployment + Service | `nim.enabled` (+ nodeSelector/tolerations) |
-| `prometheus` / `grafana` / `ui` | — | out of PS6.2 scope |
+| `ui` | — | out of chart scope |
 | Agent graph worker (future) | Deployment stub | `agentWorker.enabled` (Variant A / Phase 7) |
 
 ## Profiles
@@ -56,6 +65,7 @@ GitOps (PS6.7, optional): [docs/runbooks/gitops_bootstrap.md](../../../docs/runb
 | `values-minimal-dev.yaml` | Safe baseline: api, postgres, opa, telemetry-mcp, persister, nats |
 | `values-dev.yaml` | Namespace `spaceops-dev`, lab secrets |
 | `values-stage.yaml` | Integration, checkpoint on api, optional observability |
+| `values-monitoring-stage.yaml` | PR1.1 monitoring overlay: Prometheus, Grafana, postgres exporter, OTel sampling/mesh-ready TLS |
 | `values-stage-full.yaml` | All in-cluster MCPs (kb/ticket/gitops) for GKE stage demo |
 | `values-gcp-stage.yaml` | Artifact Registry repos + LoadBalancer API |
 | `values-prod.yaml` | Stricter persistence, full MCP set optional |
@@ -97,3 +107,43 @@ Sets `AGENT_DURABLE_CHECKPOINT_ENABLED` via `_api-env.tpl`. Retention stub: `scr
 Runbook: [graph_worker_checkpoint_ops.md](../../../docs/runbooks/graph_worker_checkpoint_ops.md).
 
 No separate agent worker unless `agentWorker.enabled` (Variant A — `values-checkpoint-variant-a.yaml`, PS7.3).
+
+## Production Readiness monitoring (PR1.1)
+
+`values-monitoring-stage.yaml` adds the K8s monitoring stack that was intentionally absent from
+the PS6/PS7 lab baseline:
+
+- Prometheus scrapes `spaceops-api:/metrics`, NATS `/varz`, the OTel collector internal metrics,
+  and `postgres-exporter`.
+- Grafana is provisioned with a Prometheus datasource and a compact SpaceOps overview dashboard.
+- The OTel collector gets health probes, resource limits, memory limiting, probabilistic sampling,
+  and `tlsMode: mesh-sidecar` for stage/prod service-mesh TLS termination.
+
+Create the Grafana admin Secret before enabling the overlay:
+
+```bash
+kubectl create secret generic spaceops-stage-monitoring-secrets \
+  -n spaceops-stage \
+  --from-literal=grafana-admin-password='REPLACE_ME'
+```
+
+Render or install with:
+
+```bash
+helm upgrade --install spaceops deploy/helm/spaceops \
+  -n spaceops-stage \
+  -f deploy/helm/spaceops/values.yaml \
+  -f deploy/helm/spaceops/values-stage.yaml \
+  -f deploy/helm/spaceops/values-monitoring-stage.yaml
+```
+
+Access during stage drills:
+
+```bash
+kubectl port-forward -n spaceops-stage svc/spaceops-prometheus 9090:9090
+kubectl port-forward -n spaceops-stage svc/spaceops-grafana 3000:3000
+```
+
+Variant A agent-worker still has no standalone HTTP metrics endpoint; PR1.1 treats worker scrape as
+an accepted gap. Worker progress is visible through API run metrics, queue/DLQ metrics, traces, and
+the PR1.4 failure-test pack until a worker metrics sidecar or endpoint is added.

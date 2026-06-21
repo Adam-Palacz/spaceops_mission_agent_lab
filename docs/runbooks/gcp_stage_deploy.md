@@ -374,6 +374,18 @@ curl -s http://127.0.0.1:9090/api/v1/targets \
 
 Without `jq`, open `http://127.0.0.1:9090/targets` and confirm the four jobs above are **UP**.
 
+**SLO/alert smoke (PR1.2):**
+
+```bash
+curl -s http://127.0.0.1:9090/api/v1/rules
+curl -s http://127.0.0.1:9090/api/v1/alerts
+```
+
+Confirm the `spaceops.slo.rules` group exists with `SpaceOpsApiDown`,
+`SpaceOpsHighRunErrorRate`, `SpaceOpsEvidencePolicyViolations`, and
+`SpaceOpsSyntheticPr12Probe`. The synthetic rule is inert (`vector(0)`) by default; see
+[slo-production-readiness.md](../slo-production-readiness.md) for the temporary `vector(1)` drill.
+
 **OTLP TLS (`tlsMode: mesh-sidecar`):** the OTel collector overlay sets `sidecar.istio.io/inject:
 "true"`. Transparent mTLS applies only when a service mesh (e.g. Istio) is installed on the cluster.
 Without mesh, in-cluster OTLP stays plaintext as in the PS6/PS7 lab baseline — not a regression for

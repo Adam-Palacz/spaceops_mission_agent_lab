@@ -84,6 +84,8 @@ data:
   prometheus.yml: |
     global:
       scrape_interval: {{ .Values.observability.prometheus.scrapeInterval }}
+    rule_files:
+      - /etc/prometheus/rules/*.yml
     scrape_configs:
       - job_name: spaceops-api
         metrics_path: /metrics
@@ -111,6 +113,110 @@ data:
           - targets:
               - {{ include "spaceops.fullname" . }}-otel-collector:8888
       {{- end }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "spaceops.fullname" . }}-prometheus-rules
+  namespace: {{ include "spaceops.namespace" . }}
+  labels:
+    {{- include "spaceops.labels" . | nindent 4 }}
+    app.kubernetes.io/component: prometheus
+data:
+  spaceops-slo-rules.yml: |
+    groups:
+      - name: spaceops.slo.rules
+        rules:
+          - alert: SpaceOpsApiDown
+            expr: up{job="spaceops-api"} == 0
+            for: 5m
+            labels:
+              severity: page
+              route: platform
+            annotations:
+              summary: "SpaceOps API scrape target is down"
+              runbook: "docs/slo-production-readiness.md#alert-routing"
+          - alert: SpaceOpsSlowRunP95
+            expr: histogram_quantile(0.95, sum by (le)(rate(agent_run_duration_seconds_bucket[15m]))) > 60
+            for: 15m
+            labels:
+              severity: ticket
+              route: mission-agent
+            annotations:
+              summary: "Agent run p95 latency exceeds 60s"
+              runbook: "docs/slo-production-readiness.md#slo-catalog"
+          - alert: SpaceOpsHighRunErrorRate
+            expr: sum(rate(agent_runs_total{status="error"}[15m])) / clamp_min(sum(rate(agent_runs_total[15m])), 1) > 0.05
+            for: 15m
+            labels:
+              severity: page
+              route: mission-agent
+            annotations:
+              summary: "Agent run error rate exceeds 5%"
+              runbook: "docs/slo-production-readiness.md#slo-catalog"
+          - alert: SpaceOpsHighEscalationRate
+            expr: sum(rate(agent_escalations_total[15m])) / clamp_min(sum(rate(agent_behavior_runs_total[15m])), 1) > 0.40
+            for: 15m
+            labels:
+              severity: ticket
+              route: mission-agent
+            annotations:
+              summary: "Escalation rate exceeds 40%"
+              runbook: "docs/slo-production-readiness.md#slo-catalog"
+          - alert: SpaceOpsEvidencePolicyViolations
+            expr: sum(rate(agent_evidence_coverage_total{policy_status="violation"}[15m])) > 0
+            for: 5m
+            labels:
+              severity: page
+              route: safety
+            annotations:
+              summary: "Evidence policy violations detected"
+              runbook: "docs/slo-production-readiness.md#slo-catalog"
+          - alert: SpaceOpsOpaToolFailures
+            expr: sum(rate(agent_tool_outcome_total{tool="opa_check",outcome="failure"}[15m])) > 0
+            for: 5m
+            labels:
+              severity: page
+              route: safety
+            annotations:
+              summary: "OPA tool failures detected"
+              runbook: "docs/slo-production-readiness.md#alert-routing"
+          - alert: SpaceOpsLlmBudgetExceeded
+            expr: increase(agent_escalations_total{reason="budget_exceeded"}[15m]) > 0
+            for: 0m
+            labels:
+              severity: ticket
+              route: cost
+            annotations:
+              summary: "LLM budget exhaustion caused escalation"
+              runbook: "docs/slo-production-readiness.md#slo-catalog"
+          - alert: SpaceOpsNatsScrapeDown
+            expr: up{job="spaceops-nats"} == 0
+            for: 5m
+            labels:
+              severity: page
+              route: platform
+            annotations:
+              summary: "NATS monitoring scrape target is down"
+              runbook: "docs/slo-production-readiness.md#alert-routing"
+          - alert: SpaceOpsPostgresExporterDown
+            expr: up{job="spaceops-postgres"} == 0
+            for: 5m
+            labels:
+              severity: page
+              route: data-plane
+            annotations:
+              summary: "Postgres exporter scrape target is down"
+              runbook: "docs/slo-production-readiness.md#alert-routing"
+          - alert: SpaceOpsSyntheticPr12Probe
+            expr: vector(0)
+            for: 0m
+            labels:
+              severity: ticket
+              route: synthetic
+            annotations:
+              summary: "Synthetic PR1.2 alert rule; temporarily change expr to vector(1) during alert drills"
+              runbook: "docs/slo-production-readiness.md#synthetic-alert-trigger"
 ---
 apiVersion: v1
 kind: Service
@@ -179,10 +285,15 @@ spec:
             - name: config
               mountPath: /etc/prometheus/prometheus.yml
               subPath: prometheus.yml
+            - name: rules
+              mountPath: /etc/prometheus/rules
       volumes:
         - name: config
           configMap:
             name: {{ include "spaceops.fullname" . }}-prometheus-config
+        - name: rules
+          configMap:
+            name: {{ include "spaceops.fullname" . }}-prometheus-rules
 {{- end }}
 {{- if .Values.observability.grafana.enabled }}
 ---
@@ -216,7 +327,7 @@ data:
           path: /etc/grafana/provisioning/dashboards
   spaceops-overview.json: |
     {
-      "title": "SpaceOps Stage Overview",
+      "title": "SpaceOps Production Readiness SLO",
       "schemaVersion": 39,
       "version": 1,
       "panels": [
@@ -225,6 +336,42 @@ data:
           "title": "Agent runs",
           "targets": [{"expr": "sum(agent_runs_total)"}],
           "gridPos": {"x": 0, "y": 0, "w": 8, "h": 4}
+        },
+        {
+          "type": "stat",
+          "title": "API availability",
+          "targets": [{"expr": "avg_over_time(up{job=\"spaceops-api\"}[15m])"}],
+          "gridPos": {"x": 0, "y": 4, "w": 8, "h": 4}
+        },
+        {
+          "type": "stat",
+          "title": "Run error rate",
+          "targets": [{"expr": "sum(rate(agent_runs_total{status=\"error\"}[15m])) / clamp_min(sum(rate(agent_runs_total[15m])), 1)"}],
+          "gridPos": {"x": 8, "y": 4, "w": 8, "h": 4}
+        },
+        {
+          "type": "stat",
+          "title": "Escalation rate",
+          "targets": [{"expr": "sum(rate(agent_escalations_total[15m])) / clamp_min(sum(rate(agent_behavior_runs_total[15m])), 1)"}],
+          "gridPos": {"x": 16, "y": 4, "w": 8, "h": 4}
+        },
+        {
+          "type": "timeseries",
+          "title": "Evidence violations",
+          "targets": [{"expr": "sum(rate(agent_evidence_coverage_total{policy_status=\"violation\"}[15m]))"}],
+          "gridPos": {"x": 0, "y": 8, "w": 8, "h": 4}
+        },
+        {
+          "type": "timeseries",
+          "title": "OPA failures",
+          "targets": [{"expr": "sum(rate(agent_tool_outcome_total{tool=\"opa_check\",outcome=\"failure\"}[15m]))"}],
+          "gridPos": {"x": 8, "y": 8, "w": 8, "h": 4}
+        },
+        {
+          "type": "timeseries",
+          "title": "Budget exceeded escalations",
+          "targets": [{"expr": "increase(agent_escalations_total{reason=\"budget_exceeded\"}[15m])"}],
+          "gridPos": {"x": 16, "y": 8, "w": 8, "h": 4}
         },
         {
           "type": "timeseries",

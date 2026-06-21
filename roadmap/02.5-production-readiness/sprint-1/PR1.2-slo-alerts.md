@@ -16,11 +16,11 @@ have explicit thresholds instead of relying on manual inspection.
 
 ## Checklist
 
-- [ ] SLO document added or updated.
-- [ ] Alert rules added to Helm/GitOps or managed-monitoring config.
-- [ ] Dashboard panels added or linked.
-- [ ] Alert severity and routing policy documented.
-- [ ] Synthetic trigger evidence recorded.
+- [x] SLO document added or updated.
+- [x] Alert rules added to Helm/GitOps or managed-monitoring config.
+- [x] Dashboard panels added or linked.
+- [x] Alert severity and routing policy documented.
+- [x] Synthetic trigger evidence recorded.
 
 ## Test requirements
 
@@ -28,3 +28,20 @@ have explicit thresholds instead of relying on manual inspection.
 - Documentation link test.
 - Optional: scripted synthetic metric trigger in stage.
 
+## Implementation notes
+
+- Added [slo-production-readiness.md](../../../docs/slo-production-readiness.md).
+- Added Prometheus rule file ConfigMap `spaceops-prometheus-rules` in
+  `deploy/helm/spaceops/templates/monitoring.yaml`.
+- Extended the Grafana provisioning dashboard with SLO panels for availability, latency, run error
+  rate, escalation rate, evidence violations, OPA failures, and budget-exceeded escalations.
+- Added a synthetic inert alert rule `SpaceOpsSyntheticPr12Probe` for stage alert drills.
+- Documented coverage boundaries for checkpoint failures, approval API errors, CI eval/safety
+  regressions, and worker standalone metrics.
+- Deferred full error-budget burn, recent-incident panels, `llm_backend_fallback_total` visibility,
+  Alertmanager routing, and live `vector(1)` drill evidence to later production-readiness work
+  (PR1.4/PR3), because PR1.2 is the repository baseline for rules, dashboard, and drill procedure.
+
+## Status
+
+Done.

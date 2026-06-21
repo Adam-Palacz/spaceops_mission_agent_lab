@@ -115,7 +115,8 @@ the PS6/PS7 lab baseline:
 
 - Prometheus scrapes `spaceops-api:/metrics`, NATS `/varz`, the OTel collector internal metrics,
   and `postgres-exporter`.
-- Grafana is provisioned with a Prometheus datasource and a compact SpaceOps overview dashboard.
+- Grafana is provisioned with a Prometheus datasource and a compact SpaceOps SLO dashboard.
+- Prometheus loads PR1.2 alert rules from `spaceops-prometheus-rules`.
 - The OTel collector gets health probes, resource limits, memory limiting, probabilistic sampling,
   and `tlsMode: mesh-sidecar` for stage/prod service-mesh TLS termination.
 
@@ -143,6 +144,8 @@ Access during stage drills:
 kubectl port-forward -n spaceops-stage svc/spaceops-prometheus 9090:9090
 kubectl port-forward -n spaceops-stage svc/spaceops-grafana 3000:3000
 ```
+
+Alert rules and SLOs: [slo-production-readiness.md](../../../docs/slo-production-readiness.md).
 
 Variant A agent-worker still has no standalone HTTP metrics endpoint; PR1.1 treats worker scrape as
 an accepted gap. Worker progress is visible through API run metrics, queue/DLQ metrics, traces, and

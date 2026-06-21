@@ -96,7 +96,7 @@ for persistent or managed trace backend decision, minimum implementation path, a
 | **Metrics exposed** | S2.9 + PS4.6 behavior metrics on `/metrics` | API, NATS, OTel, postgres exporter | OK PR1.1 | Worker endpoint remains accepted gap |
 | **Retention** | Default 15d (Prometheus default) | Explicit overlay value | OK PR1.1 | Review retention in PR2.4 |
 | **HA** | Single | N/A | Gap prod | Thanos / Mimir / managed Prometheus |
-| **Alerting** | None in repo | Dashboard only | Gap | PR1.2 adds alert rules for escalation rate, error rate (see behavior_metrics.md) |
+| **Alerting** | None in compose baseline | PR1.2 Prometheus rules | OK pilot baseline | Alertmanager or managed alert routing remains prod follow-up |
 
 **Production readiness owner:** [PR1.1](../roadmap/02.5-production-readiness/sprint-1/PR1.1-k8s-monitoring-stack.md)
 for Prometheus or managed metrics deployment and [PR1.2](../roadmap/02.5-production-readiness/sprint-1/PR1.2-slo-alerts.md)
@@ -108,13 +108,15 @@ for SLO dashboards and alert rules.
 
 | Aspect | Compose | Helm | OK / Gap | Recommendation |
 |--------|---------|------|----------|----------------|
-| **Presence** | `grafana/grafana:12.4.0` | PR1.1 overlay | OK PR1.1 | Add SLO board in PR1.2 |
+| **Presence** | `grafana/grafana:12.4.0` | PR1.1 overlay | OK PR1.1 | SLO board added in PR1.2 |
 | **Auth** | `admin/admin` default | Admin password from Secret, anonymous disabled | OK PR1.1 | SSO remains prod follow-up |
-| **Dashboards** | Provisioned JSON (`infra/grafana/provisioning/`) | PR1.1 overview dashboard | OK PR1.1 | Extend with SLO board in PR1.2 |
+| **Dashboards** | Provisioned JSON (`infra/grafana/provisioning/`) | PR1.2 production-readiness SLO dashboard | OK pilot baseline | Error-budget burn, recent incidents, and backend fallback panels remain follow-up work |
 | **Datasource** | Prometheus at `http://prometheus:9090` | In-cluster Prometheus Service | OK PR1.1 | Managed metrics alternative allowed |
 
 **Production readiness owner:** [PR1.2](../roadmap/02.5-production-readiness/sprint-1/PR1.2-slo-alerts.md)
-for authenticated dashboards, SLO panels, and production-pilot alert visibility.
+for production-pilot SLO panels and Prometheus alert-rule visibility. Authenticated Grafana is
+covered by the PR1.1 overlay secret defaults; Alertmanager, recent-incident panels, backend fallback
+panels, and error-budget burn calculations remain follow-up work.
 
 ---
 
@@ -163,8 +165,8 @@ for authenticated dashboards, SLO panels, and production-pilot alert visibility.
 |------------|-------------|------------------|-----------------------------|---------------------|
 | Traces → Jaeger | Yes (4317 exposed) | Optional (off default) | Yes (`observability.*.enabled: true`) | Same |
 | Jaeger UI | `:16686` | port-forward | port-forward / optional ingress | Same |
-| Prometheus | Yes | No | No (opt-in overlay) | Yes — `values-monitoring-stage.yaml` |
-| Grafana | Yes | No | No (opt-in overlay) | Yes — admin from Secret, anonymous off |
+| Prometheus | Yes | No | No (opt-in overlay) | Yes — `values-monitoring-stage.yaml` + PR1.2 SLO rules |
+| Grafana | Yes | No | No (opt-in overlay) | Yes — admin from Secret, anonymous off, PR1.2 SLO dashboard |
 | Behavior metrics scrape | Yes (host scrape) | Manual if api port-forward | Wired when overlay enabled (API `/metrics`, NATS, postgres exporter, OTel) | Same |
 | postgres_exporter | No | No | No (opt-in overlay) | Yes — PR1.1 |
 | Worker standalone `/metrics` | N/A | N/A | Accepted gap (Variant A worker) | Accepted gap — see PR1.1 notes |

@@ -8,8 +8,8 @@ gate releases.
 - Prometheus/Grafana or managed monitoring is deployed for K8s stage through Helm or GitOps.
 - SLO dashboard and alert rules cover API, agent worker, queue/DLQ, Postgres, LLM budget, and
   safety/eval regressions.
-- Stage operating policy is explicit: recommended long-lived stage, or cost-approved ephemeral
-  stage with tested recreate and secret bootstrap timing.
+- Stage operating policy is explicit: ephemeral by default, with time-boxed long-lived windows only
+  for soak, game day, or external review evidence.
 - Soak, load, and failure tests produce evidence for readiness review.
 
 ## Definition of done

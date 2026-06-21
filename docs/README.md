@@ -17,6 +17,7 @@ The **docs/** directory holds project documentation that supports both humans an
 - **behavior_metrics.md** — Escalation rate, evidence coverage, stage latency metrics (PS4.6).
 - **[monitoring-production-analysis.md](monitoring-production-analysis.md)** — Production readiness of Postgres, OTel, Jaeger, Prometheus/Grafana (PS7.4 / BL-001).
 - **[slo-production-readiness.md](slo-production-readiness.md)** — PR1.2 SLO catalog, alert routing, and synthetic alert drill.
+- **[runbooks/stage_operating_policy.md](runbooks/stage_operating_policy.md)** — PR1.3 stage policy: ephemeral-by-default GKE, ownership, cost guardrails, RTO, secrets, and drift checks.
 - **Folder READMEs** — Each major repo folder (`data/`, `kb/`, `evals/`, `infra/`, `apps/`, `roadmap/`, …) has a short `README.md` for onboarding (PS7.5 / BL-002).
 - **[runbooks/ci_gating_policy.md](runbooks/ci_gating_policy.md)** — Hard vs soft CI gates, OPA/HITL criteria, recovery (PS4.7).
 - **[runbooks/guardrails_quality_triage.md](runbooks/guardrails_quality_triage.md)** — Failed-gate triage, decision tree, PS4 symptom → action (PS4.8).
@@ -130,7 +131,7 @@ The **docs/** directory holds project documentation that supports both humans an
 | Field | Value |
 |-------|--------|
 | **Document version** | 1.1 |
-| **Last updated** | 2026-05-29 |
+| **Last updated** | 2026-06-21 |
 
 ### Instructions for AI when working in `docs/`
 

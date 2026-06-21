@@ -6,7 +6,8 @@ validate + documentation only.
 
 **Related:** [ADR 0009](../adr/0009-gcp-baseline-portable-first.md),
 [infra/terraform/gcp/README.md](../../infra/terraform/gcp/README.md),
-[PS6.9 billing controls](../../roadmap/02-production-scale/sprint-6/PS6.9-billing-shutdown-controls.md)
+[PS6.9 billing controls](../../roadmap/02-production-scale/sprint-6/PS6.9-billing-shutdown-controls.md),
+[stage operating policy](stage_operating_policy.md)
 
 ---
 
@@ -23,6 +24,10 @@ validate + documentation only.
 ---
 
 ## Quick path
+
+Stage is **ephemeral by default** per [stage_operating_policy.md](stage_operating_policy.md). Before
+bringing it up, record the owner and teardown time; use a long-lived window only for soak, game day,
+or external review evidence.
 
 Bring up the full stage stack and validate smoke + scenarios A/B:
 
@@ -295,6 +300,8 @@ and ready, but not required for the portfolio demo.
 | **GitOps** | Ongoing stage sync from Git | `make gitops-install` + `make gitops-bootstrap` |
 
 Do **not** run both on the same release — pick one owner for `spaceops` in `spaceops-stage`.
+The ownership and drift-detection rules are defined in
+[stage_operating_policy.md](stage_operating_policy.md).
 
 ### Enable Argo CD on this GKE cluster
 
@@ -400,6 +407,8 @@ Checkpoint proof (`api.checkpoint.enabled: true`): [graph_worker_checkpoint_ops.
 ## 8. Cost and shutdown
 
 See cost table in [infra/terraform/gcp/README.md](../../infra/terraform/gcp/README.md).
+The canonical policy is [stage_operating_policy.md](stage_operating_policy.md): ephemeral by
+default, time-boxed long-lived stage only with owner, end time, budget alert, and daily drift check.
 
 **Full teardown (trial end):** [gcp_stage_teardown.md](gcp_stage_teardown.md) — `make gcp-stage-down`
 
@@ -429,7 +438,9 @@ For a **serverless portfolio slice** without in-cluster Postgres/NATS:
 
 ## 10. Destroy and recreate (stretch acceptance)
 
-Target: one engineer can destroy and recreate stage in ~45 minutes (excluding secret population).
+Target: one engineer can destroy and recreate stage in **<= 75 minutes** excluding manual population
+of new real secrets. See [stage_operating_policy.md](stage_operating_policy.md) for the RTO budget
+and drift-check drill.
 
 ```bash
 helm uninstall spaceops -n spaceops-stage

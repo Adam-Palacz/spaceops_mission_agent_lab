@@ -1,7 +1,9 @@
 # Runbook — GCP stage teardown (trial end / lab shutdown)
 
 Remove SpaceOps **stage** workloads and Terraform-managed resources in `spaceops-project` (or your
-`project_id` in `terraform.tfvars`). Use when the free trial ends or you move to a **new GCP account**.
+`project_id` in `terraform.tfvars`). Stage is **ephemeral by default** per
+[stage_operating_policy.md](stage_operating_policy.md); use teardown after PR verification, demos,
+or any failed partial recreate that cannot be completed cleanly.
 
 **Automated (recommended):**
 
@@ -97,6 +99,21 @@ gcloud container clusters delete spaceops-stage `
 | Repo / Helm / runbooks | Unchanged — reuse for next account |
 | PS7.1 live proof | Re-run PS7.1 checklist on **new** project when ready |
 
+## Policy verification
+
+After teardown, verify the selected ephemeral policy:
+
+```powershell
+gcloud container clusters list --project $env:GCP_PROJECT_ID --region us-central1
+gcloud artifacts repositories list --project $env:GCP_PROJECT_ID --location us-central1
+cd infra/terraform/gcp
+terraform state list
+```
+
+Expected: no `spaceops-stage` cluster, no transient Artifact Registry repository unless intentionally
+kept, and Terraform state limited to persistent budget-alert resources unless a long-lived window is
+approved. See [stage_operating_policy.md](stage_operating_policy.md) for drift detection and RTO.
+
 ## Local cleanup before migrating accounts
 
 Do this only after the old project is destroyed or intentionally abandoned:
@@ -119,5 +136,6 @@ Then create a fresh `terraform.tfvars` for the new account from `terraform.tfvar
 ## Cross-links
 
 - [gcp_stage_deploy.md](gcp_stage_deploy.md) — bring-up
+- [stage_operating_policy.md](stage_operating_policy.md) — stage ownership, cost, RTO, drift checks
 - [cloud_cost_hygiene.md](cloud_cost_hygiene.md) — budgets and orphans
 - [PS7.1 spec](../../roadmap/02-production-scale/sprint-7/PS7.1-live-stage-gke-deploy.md)

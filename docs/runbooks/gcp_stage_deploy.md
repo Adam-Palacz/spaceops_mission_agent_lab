@@ -390,8 +390,22 @@ curl -s http://127.0.0.1:9090/api/v1/alerts
 
 Confirm the `spaceops.slo.rules` group exists with `SpaceOpsApiDown`,
 `SpaceOpsHighRunErrorRate`, `SpaceOpsEvidencePolicyViolations`, and
-`SpaceOpsSyntheticPr12Probe`. The synthetic rule is inert (`vector(0)`) by default; see
+`SpaceOpsSyntheticPr12Probe`. The synthetic rule is inert (`vector(0) == 1`) by default; see
 [slo-production-readiness.md](../slo-production-readiness.md) for the temporary `vector(1)` drill.
+
+**Soak/load/failure pack (PR1.4):** before a long-lived window or production-readiness review, run
+the CI-safe plan first and then the live profile during the approved stage window:
+
+```powershell
+make pr14-stage-test-pack
+make pr14-stage-test-pack PR14_ARGS="--profile pilot-short --mode plan"
+```
+
+For the live PR1.4 run, do not use the cost-minimized preemptible single-node Terraform defaults.
+Use `infra/terraform/gcp/terraform.pr14-stable.tfvars.example` so Postgres and monitoring survive the
+test window.
+
+Full procedure and acceptance thresholds: [stage_soak_load_failure.md](stage_soak_load_failure.md).
 
 **OTLP TLS (`tlsMode: mesh-sidecar`):** the OTel collector overlay sets `sidecar.istio.io/inject:
 "true"`. Transparent mTLS applies only when a service mesh (e.g. Istio) is installed on the cluster.

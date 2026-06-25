@@ -1,0 +1,106 @@
+{
+  "schema_version": "pr14.stage-test-pack.v1",
+  "result": "pass",
+  "profile": {
+    "name": "pilot-short",
+    "target_duration_minutes": 30,
+    "actual_window": {
+      "start": "2026-06-23T17:34:43+02:00",
+      "end": "2026-06-23T18:06:03+02:00",
+      "duration_minutes": 31.33
+    },
+    "fixture_mix": {
+      "scenario_a": "executed every cycle",
+      "scenario_b": "executed every cycle",
+      "ingest_only": "covered by repeated ingest bursts"
+    }
+  },
+  "environment": {
+    "project": "spaceops-project-498213",
+    "cluster": "spaceops-stage",
+    "region": "us-central1",
+    "terraform_profile": "terraform.pr14-stable.tfvars.example",
+    "node_profile": "2 x e2-standard-4, non-preemptible",
+    "api_url": "http://35.225.147.241:8000",
+    "helm_release": "spaceops",
+    "helm_revision_after_restore": 4
+  },
+  "soak": {
+    "cycles": 10,
+    "success": 10,
+    "failures": 0,
+    "extension_seconds": 190,
+    "final_smoke": "pass"
+  },
+  "failure_scenarios": [
+    {
+      "id": "F1",
+      "name": "api_pod_restart",
+      "status": "pass",
+      "evidence": "kubectl rollout restart deploy/spaceops-api; rollout status succeeded; smoke and Scenario A/B passed after recovery.",
+      "owner": "platform"
+    },
+    {
+      "id": "F2",
+      "name": "agent_worker_restart",
+      "status": "not_applicable",
+      "evidence": "No deploy/pod with app.kubernetes.io/component=agent-worker exists in this Variant B stage profile.",
+      "owner": "mission-agent"
+    },
+    {
+      "id": "F3",
+      "name": "opa_unavailable",
+      "status": "pass",
+      "evidence": "Scaled spaceops-opa to 0; no OPA pods remained; Scenario A/B completed with controlled escalation; OPA restored to 1/1.",
+      "owner": "security"
+    },
+    {
+      "id": "F4",
+      "name": "postgres_restart",
+      "status": "pass",
+      "evidence": "kubectl rollout restart statefulset/spaceops-postgres; rollout status succeeded; smoke and Scenario A/B passed after recovery.",
+      "owner": "data"
+    },
+    {
+      "id": "F5",
+      "name": "queue_dlq_pressure",
+      "status": "pass",
+      "evidence": "5/5 burst runs passed; /dlq/telemetry returned count=0; Prometheus up query returned 1 for api, nats, otel, and postgres.",
+      "owner": "platform"
+    },
+    {
+      "id": "F6",
+      "name": "llm_backend_failure",
+      "status": "pass",
+      "evidence": "Temporarily set OPENAI_BASE_URL=http://127.0.0.1:9; Scenario A returned HTTP 200 with escalation; API logs recorded LLMGatewayProviderError and backend_actual=unserved.",
+      "owner": "mission-agent"
+    },
+    {
+      "id": "F7",
+      "name": "budget_exhaustion",
+      "status": "pass",
+      "evidence": "Temporarily set LLM_DAILY_TOKEN_BUDGET=1; second Scenario A returned HTTP 200 with escalation; API logs recorded LLMBudgetExceededError. No backend fallback was used.",
+      "owner": "cost"
+    }
+  ],
+  "observability": {
+    "prometheus_targets": "all up: spaceops-api, spaceops-nats, spaceops-otel-collector, spaceops-postgres",
+    "prometheus_rules": "spaceops.slo.rules loaded, all rules health=ok",
+    "prometheus_alerts_end_state": "[]",
+    "dlq_end_state": {
+      "count": 0
+    }
+  },
+  "restore": {
+    "canonical_deploy": "pass",
+    "managed_fields_recovery": "helm template | kubectl apply --server-side --force-conflicts --field-manager=helm -f -",
+    "final_deploy": "scripts/gcp_stage.py deploy --monitoring",
+    "final_smoke_and_demo": "pass",
+    "final_helm_status": "deployed"
+  },
+  "backlog_items": [],
+  "notes": [
+    "F2 is not applicable until Variant A agent-worker is enabled on stage.",
+    "F7 PromQL did not retain a budget_exceeded vector in the queried window; API logs provide the evidence for LLMBudgetExceededError."
+  ]
+}

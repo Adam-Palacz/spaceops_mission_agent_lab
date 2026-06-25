@@ -28,6 +28,7 @@ REQUIRED_TF = [
     "main.tf",
     "outputs.tf",
     "terraform.tfvars.example",
+    "terraform.pr14-stable.tfvars.example",
     "README.md",
 ]
 
@@ -61,6 +62,14 @@ def test_readme_covers_vars_state_cost_destroy() -> None:
     readme = (TF_DIR / "README.md").read_text(encoding="utf-8").lower()
     for topic in ("variable", "state", "cost", "terraform destroy", "portability"):
         assert topic in readme, topic
+    assert "pr1.4 stable stage profile" in readme
+
+
+def test_pr14_stable_tfvars_uses_non_preemptible_capacity() -> None:
+    text = (TF_DIR / "terraform.pr14-stable.tfvars.example").read_text(encoding="utf-8")
+    assert "node_count        = 2" in text
+    assert 'machine_type      = "e2-standard-4"' in text
+    assert "preemptible_nodes = false" in text
 
 
 def test_runbook_portability_and_ps69_crosslink() -> None:

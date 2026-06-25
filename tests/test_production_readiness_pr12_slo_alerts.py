@@ -88,7 +88,7 @@ def test_slo_alert_rules_render_with_routes_and_severities() -> None:
         assert rendered[alert]["labels"]["severity"] in {"page", "ticket"}
         assert rendered[alert]["labels"]["route"]
         assert "runbook" in rendered[alert]["annotations"]
-    assert rendered["SpaceOpsSyntheticPr12Probe"]["expr"] == "vector(0)"
+    assert rendered["SpaceOpsSyntheticPr12Probe"]["expr"] == "vector(0) == 1"
 
 
 @pytest.mark.skipif(not _helm_available(), reason="helm CLI not installed")

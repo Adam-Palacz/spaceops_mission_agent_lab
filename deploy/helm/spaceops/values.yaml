@@ -201,6 +201,17 @@ observability:
       limits:
         cpu: 200m
         memory: 128Mi
+  natsExporter:
+    enabled: false
+    image: natsio/prometheus-nats-exporter:0.16.0
+    port: 7777
+    resources:
+      requests:
+        cpu: 25m
+        memory: 64Mi
+      limits:
+        cpu: 200m
+        memory: 128Mi
 
 # Phase 7 prep — off by default (PS6.2).
 nim:

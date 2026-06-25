@@ -199,6 +199,7 @@ and secrets leakage to PS4/PS5/PS6 controls (tests, OPA, evals, runbooks).
 | [gcp_stage_deploy.md](../runbooks/gcp_stage_deploy.md) | SRE | GKE stage deploy (stretch) |
 | [gcp_stage_teardown.md](../runbooks/gcp_stage_teardown.md) | SRE | GKE stage teardown (`make gcp-stage-down`) |
 | [stage_operating_policy.md](../runbooks/stage_operating_policy.md) | SRE / Platform | Stage ownership, ephemeral policy, RTO, drift checks |
+| [stage_soak_load_failure.md](../runbooks/stage_soak_load_failure.md) | SRE / Platform | PR1.4 stage soak, load, and failure test pack |
 | [cloud_cost_hygiene.md](../runbooks/cloud_cost_hygiene.md) | SRE / FinOps | GCP budget, scale-down |
 | [gpu_cost_hygiene.md](../runbooks/gpu_cost_hygiene.md) | Dev | Local NIM idle TTL (PS5.7) |
 | [llm_cost_guardrails.md](../runbooks/llm_cost_guardrails.md) | Dev / SRE | Token budget incidents |

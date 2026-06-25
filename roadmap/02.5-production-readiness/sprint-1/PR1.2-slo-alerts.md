@@ -36,6 +36,8 @@ have explicit thresholds instead of relying on manual inspection.
 - Extended the Grafana provisioning dashboard with SLO panels for availability, latency, run error
   rate, escalation rate, evidence violations, OPA failures, and budget-exceeded escalations.
 - Added a synthetic inert alert rule `SpaceOpsSyntheticPr12Probe` for stage alert drills.
+  The inert expression is `vector(0) == 1`; plain `vector(0)` still produces a
+  Prometheus series and therefore fires.
 - Documented coverage boundaries for checkpoint failures, approval API errors, CI eval/safety
   regressions, and worker standalone metrics.
 - Deferred full error-budget burn, recent-incident panels, `llm_backend_fallback_total` visibility,

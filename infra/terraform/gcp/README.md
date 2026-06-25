@@ -45,6 +45,25 @@ See [ADR 0009](../../../docs/adr/0009-gcp-baseline-portable-first.md) and
 
 Copy `terraform.tfvars.example` → `terraform.tfvars` (gitignored) and set `project_id`.
 
+### PR1.4 stable stage profile
+
+The default profile is cost-conscious and uses one preemptible `e2-standard-2` node. That is fine for
+short lab deploys, but it is not reliable enough for PR1.4 soak/load/failure evidence with the full
+monitoring overlay.
+
+For PR1.4 live evidence, use `terraform.pr14-stable.tfvars.example` as an overlay:
+
+```bash
+cd infra/terraform/gcp
+terraform init
+terraform plan -var-file=terraform.pr14-stable.tfvars.example
+terraform apply -var-file=terraform.pr14-stable.tfvars.example -auto-approve
+```
+
+This profile uses two non-preemptible `e2-standard-4` nodes with `pd-standard` boot disks. It costs
+more than the lab default, so keep the stage window time-boxed and run teardown immediately after the
+evidence run.
+
 ## State backend
 
 **Local (default):** `terraform apply` writes `terraform.tfstate` locally — fine for one engineer
@@ -144,6 +163,7 @@ Then follow [gcp_stage_deploy.md](../../../docs/runbooks/gcp_stage_deploy.md) fo
 | Budget **400 invalid argument** | `budget.tf` strips any `billingAccounts/` prefix before passing `billing_account_id` to the provider, uses project number, and avoids unsupported label filters |
 | Budget **400 invalid argument** with valid account | Set `budget_currency_code` to billing account currency (`gcloud billing accounts describe ... --format="value(currencyCode)"`) |
 | **SSD_TOTAL_GB exceeded** | Broken regional default pool can exceed quota. Defaults now use one node zone plus `pd-standard` 30GB for the temporary default pool; delete the broken `ERROR` cluster and re-apply. |
+| PR1.4 Postgres Pending after node replacement | Use `terraform.pr14-stable.tfvars.example` for non-preemptible capacity; the lab default can lose the single preemptible node during the run. |
 | Budget optional for lab | Set `enable_budget_alert = false` in `terraform.tfvars` |
 
 After a failed apply, run `terraform apply` again (or `terraform destroy` to reset).

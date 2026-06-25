@@ -93,7 +93,7 @@ for persistent or managed trace backend decision, minimum implementation path, a
 |--------|---------|------|----------|----------------|
 | **Presence** | `prom/prometheus:v3.10.0` service | PR1.1 overlay | OK compose | Enable `values-monitoring-stage.yaml` for stage/prod pilot |
 | **Scrape config** | `host.docker.internal:8000/metrics` | Static in-cluster scrape config | OK PR1.1 | Move to ServiceMonitor if adopting Prometheus Operator |
-| **Metrics exposed** | S2.9 + PS4.6 behavior metrics on `/metrics` | API, NATS, OTel, postgres exporter | OK PR1.1 | Worker endpoint remains accepted gap |
+| **Metrics exposed** | S2.9 + PS4.6 behavior metrics on `/metrics` | API, NATS exporter, OTel, postgres exporter | OK PR1.1 | Worker endpoint remains accepted gap |
 | **Retention** | Default 15d (Prometheus default) | Explicit overlay value | OK PR1.1 | Review retention in PR2.4 |
 | **HA** | Single | N/A | Gap prod | Thanos / Mimir / managed Prometheus |
 | **Alerting** | None in compose baseline | PR1.2 Prometheus rules | OK pilot baseline | Alertmanager or managed alert routing remains prod follow-up |
@@ -167,7 +167,7 @@ panels, and error-budget burn calculations remain follow-up work.
 | Jaeger UI | `:16686` | port-forward | port-forward / optional ingress | Same |
 | Prometheus | Yes | No | No (opt-in overlay) | Yes — `values-monitoring-stage.yaml` + PR1.2 SLO rules |
 | Grafana | Yes | No | No (opt-in overlay) | Yes — admin from Secret, anonymous off, PR1.2 SLO dashboard |
-| Behavior metrics scrape | Yes (host scrape) | Manual if api port-forward | Wired when overlay enabled (API `/metrics`, NATS, postgres exporter, OTel) | Same |
+| Behavior metrics scrape | Yes (host scrape) | Manual if api port-forward | Wired when overlay enabled (API `/metrics`, NATS exporter, postgres exporter, OTel) | Same |
 | postgres_exporter | No | No | No (opt-in overlay) | Yes — PR1.1 |
 | Worker standalone `/metrics` | N/A | N/A | Accepted gap (Variant A worker) | Accepted gap — see PR1.1 notes |
 

@@ -31,7 +31,8 @@ POSTGRES_PASSWORD ?= spaceops
 	k8s-rollout-demo k8s-isolation-verify k8s-secrets-bootstrap gitops-install gitops-bootstrap \
 	gitops-status gitops-rollout-demo gitops-handoff terraform-gcp-validate cloud-scale-down-check k8s-checkpoint-demo \
 	gcp-stage-up gcp-stage-down gcp-stage-deploy gcp-stage-smoke gcp-stage-demo gcp-stage-status \
-	gcp-stage-images gcp-terraform-ar gcp-kube-credentials gcp-stage-destroy
+	gcp-stage-images gcp-terraform-ar gcp-kube-credentials gcp-stage-destroy pr14-stage-test-pack \
+	terraform-gcp-pr14-plan
 
 help: ## Show this help (default goal)
 	@echo SpaceOps Makefile - targets mirror CI where practical.
@@ -185,6 +186,9 @@ ops-config-kustomize-render: ## Regenerate deploy/gitops/ops-config-kustomize fr
 terraform-gcp-validate: ## PS6.8 terraform init -backend=false && validate in infra/terraform/gcp
 	cd infra/terraform/gcp && terraform init -backend=false && terraform validate
 
+terraform-gcp-pr14-plan: ## PR1.4 stable stage Terraform plan (non-preemptible, larger node pool)
+	cd infra/terraform/gcp && terraform init && terraform plan -var-file=terraform.pr14-stable.tfvars.example
+
 cloud-scale-down-check: ## PS6.9 Dry-run GKE node pool scale-down (set GCP_PROJECT_ID)
 	$(PYTHON_RUN) scripts/cloud/schedule_scale_down.py --dry-run $(if $(GCP_PROJECT_ID),--project $(GCP_PROJECT_ID),)
 
@@ -233,3 +237,8 @@ gcp-kube-credentials: ## Refresh kubectl context for stage GKE (GCP_PROJECT_ID r
 
 gcp-stage-destroy: ## Tear down Helm + namespace + terraform destroy (requires GCP_STAGE_ARGS=--confirm)
 	$(PYTHON_RUN) scripts/gcp_stage.py teardown $(GCP_STAGE_TEARDOWN_ARGS)
+
+PR14_ARGS ?= --profile dry-run --mode dry-run
+
+pr14-stage-test-pack: ## PR1.4 CI-safe soak/load/failure plan and report generator
+	$(PYTHON_RUN) scripts/stage_pr14.py $(PR14_ARGS)

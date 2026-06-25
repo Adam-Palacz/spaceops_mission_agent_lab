@@ -18,6 +18,7 @@ The **docs/** directory holds project documentation that supports both humans an
 - **[monitoring-production-analysis.md](monitoring-production-analysis.md)** — Production readiness of Postgres, OTel, Jaeger, Prometheus/Grafana (PS7.4 / BL-001).
 - **[slo-production-readiness.md](slo-production-readiness.md)** — PR1.2 SLO catalog, alert routing, and synthetic alert drill.
 - **[runbooks/stage_operating_policy.md](runbooks/stage_operating_policy.md)** — PR1.3 stage policy: ephemeral-by-default GKE, ownership, cost guardrails, RTO, secrets, and drift checks.
+- **[runbooks/stage_soak_load_failure.md](runbooks/stage_soak_load_failure.md)** — PR1.4 soak/load/failure profiles, thresholds, dry-run automation, and live evidence requirements.
 - **Folder READMEs** — Each major repo folder (`data/`, `kb/`, `evals/`, `infra/`, `apps/`, `roadmap/`, …) has a short `README.md` for onboarding (PS7.5 / BL-002).
 - **[runbooks/ci_gating_policy.md](runbooks/ci_gating_policy.md)** — Hard vs soft CI gates, OPA/HITL criteria, recovery (PS4.7).
 - **[runbooks/guardrails_quality_triage.md](runbooks/guardrails_quality_triage.md)** — Failed-gate triage, decision tree, PS4 symptom → action (PS4.8).

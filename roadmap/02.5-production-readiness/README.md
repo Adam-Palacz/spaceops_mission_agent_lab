@@ -12,7 +12,7 @@ Source strategy: [`../02.5-production-readiness.md`](../02.5-production-readines
 
 | Sprint | Folder | Goal |
 |--------|--------|------|
-| **PR1** | [sprint-1/](sprint-1/) | Observability, SLOs, long-lived stage policy, soak/failure tests. |
+| **PR1** | [sprint-1/](sprint-1/) | Observability, SLOs, stage operating policy, soak/failure tests. |
 | **PR2** | [sprint-2/](sprint-2/) | Data durability, secrets rotation, security review, trace/log retention. |
 | **PR3** | [sprint-3/](sprint-3/) | Release gates, incident drills, production pilot plan, final go/no-go review. |
 
@@ -44,4 +44,3 @@ Source strategy: [`../02.5-production-readiness.md`](../02.5-production-readines
 - Treat observability, backup/restore, secrets, and release gates as blocking requirements.
 - Keep implementation evidence in docs/runbooks, tests, Helm/GitOps overlays, and sprint reviews.
 - Do not mark a task Done with analysis only when the spec requires an executed drill.
-

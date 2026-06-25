@@ -40,12 +40,15 @@ def _bash_path(path: Path) -> str:
         ("cygpath", f"/{drive}/{rest}"),
     )
     for converter, converted in converters:
-        proc = subprocess.run(
-            ["bash", "-lc", f"command -v {converter} >/dev/null"],
-            text=True,
-            capture_output=True,
-            timeout=10,
-        )
+        try:
+            proc = subprocess.run(
+                ["bash", "-lc", f"command -v {converter} >/dev/null"],
+                text=True,
+                capture_output=True,
+                timeout=10,
+            )
+        except subprocess.TimeoutExpired:
+            continue
         if proc.returncode == 0:
             return converted
     pytest.skip("No bash path converter (wslpath/cygpath) available on Windows.")

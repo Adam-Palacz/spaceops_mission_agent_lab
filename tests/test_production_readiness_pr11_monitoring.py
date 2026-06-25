@@ -54,6 +54,7 @@ def test_monitoring_stage_overlay_renders_expected_components() -> None:
         "prometheus",
         "grafana",
         "postgres-exporter",
+        "nats-exporter",
         "otel-collector",
     ):
         assert ("Service", f"spaceops-{component}") in by_name
@@ -75,7 +76,7 @@ def test_prometheus_scrapes_stage_targets() -> None:
         "job_name: spaceops-api",
         "spaceops-api:8000",
         "job_name: spaceops-nats",
-        "spaceops-nats:8222",
+        "spaceops-nats-exporter:7777",
         "job_name: spaceops-postgres",
         "spaceops-postgres-exporter:9187",
         "job_name: spaceops-otel-collector",

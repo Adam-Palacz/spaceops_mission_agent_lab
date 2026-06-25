@@ -14,10 +14,10 @@ gate releases.
 
 ## Definition of done
 
-- [ ] PR1 board is complete.
-- [ ] Stage monitoring is accessible and documented.
-- [ ] SLO/alert rules are tested with at least one synthetic trigger.
-- [ ] Stage policy is referenced from deployment and teardown runbooks.
-- [ ] Soak/failure test results are attached or summarized in a sprint review.
+- [x] PR1 board is complete.
+- [x] Stage monitoring is accessible and documented.
+- [x] SLO/alert rules are tested with at least one synthetic trigger.
+- [x] Stage policy is referenced from deployment and teardown runbooks.
+- [x] Soak/failure test results are attached or summarized in a sprint review.
 
-See [BOARD.md](BOARD.md).
+See [BOARD.md](BOARD.md) and [SPRINT_REVIEW.md](SPRINT_REVIEW.md).

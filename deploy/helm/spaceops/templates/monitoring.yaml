@@ -71,6 +71,72 @@ spec:
             {{- toYaml .Values.observability.postgresExporter.resources | nindent 12 }}
 {{- end }}
 {{- if .Values.observability.prometheus.enabled }}
+{{- if and .Values.nats.enabled .Values.observability.natsExporter.enabled }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "spaceops.fullname" . }}-nats-exporter
+  namespace: {{ include "spaceops.namespace" . }}
+  labels:
+    {{- include "spaceops.labels" . | nindent 4 }}
+    app.kubernetes.io/component: nats-exporter
+spec:
+  type: ClusterIP
+  ports:
+    - name: metrics
+      port: {{ .Values.observability.natsExporter.port }}
+      targetPort: metrics
+  selector:
+    {{- include "spaceops.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: nats-exporter
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "spaceops.fullname" . }}-nats-exporter
+  namespace: {{ include "spaceops.namespace" . }}
+  labels:
+    {{- include "spaceops.labels" . | nindent 4 }}
+    app.kubernetes.io/component: nats-exporter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "spaceops.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: nats-exporter
+  template:
+    metadata:
+      labels:
+        {{- include "spaceops.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: nats-exporter
+    spec:
+      serviceAccountName: {{ include "spaceops.componentServiceAccountName" (dict "root" . "component" "nats-exporter") }}
+      containers:
+        - name: nats-exporter
+          image: {{ .Values.observability.natsExporter.image }}
+          imagePullPolicy: IfNotPresent
+          args:
+            - -varz
+            - http://{{ include "spaceops.fullname" . }}-nats:{{ .Values.nats.monitoringPort }}
+          ports:
+            - name: metrics
+              containerPort: {{ .Values.observability.natsExporter.port }}
+          readinessProbe:
+            httpGet:
+              path: /metrics
+              port: metrics
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /metrics
+              port: metrics
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            {{- toYaml .Values.observability.natsExporter.resources | nindent 12 }}
+{{- end }}
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -94,10 +160,10 @@ data:
               - {{ include "spaceops.fullname" . }}-api:{{ .Values.api.port }}
       {{- if .Values.nats.enabled }}
       - job_name: spaceops-nats
-        metrics_path: /varz
+        metrics_path: /metrics
         static_configs:
           - targets:
-              - {{ include "spaceops.fullname" . }}-nats:{{ .Values.nats.monitoringPort }}
+              - {{ include "spaceops.fullname" . }}-nats-exporter:{{ .Values.observability.natsExporter.port }}
       {{- end }}
       {{- if .Values.observability.postgresExporter.enabled }}
       - job_name: spaceops-postgres
@@ -209,7 +275,7 @@ data:
               summary: "Postgres exporter scrape target is down"
               runbook: "docs/slo-production-readiness.md#alert-routing"
           - alert: SpaceOpsSyntheticPr12Probe
-            expr: vector(0)
+            expr: vector(0) == 1
             for: 0m
             labels:
               severity: ticket

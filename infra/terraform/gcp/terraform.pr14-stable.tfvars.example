@@ -1,0 +1,13 @@
+# PR1.4 stable stage profile.
+# Copy these values into terraform.tfvars, or pass:
+#   terraform apply -var-file=terraform.pr14-stable.tfvars.example
+#
+# This is intentionally more expensive than the default lab profile.
+# Use only for a time-boxed PR1.4 soak/load/failure window, then destroy stage.
+
+node_count        = 2
+machine_type      = "e2-standard-4"
+preemptible_nodes = false
+node_disk_size_gb = 50
+node_disk_type    = "pd-standard"
+

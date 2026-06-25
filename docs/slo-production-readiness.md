@@ -66,7 +66,7 @@ deferred:
 
 ## Synthetic alert trigger
 
-The rules include `SpaceOpsSyntheticPr12Probe` with `expr: vector(0)`, so it is inert by default.
+The rules include `SpaceOpsSyntheticPr12Probe` with `expr: vector(0) == 1`, so it is inert by default.
 During a stage drill:
 
 1. Temporarily override the rule expression to `vector(1)` in a throwaway branch or one-off Helm
@@ -80,7 +80,7 @@ During a stage drill:
    ```
 
 4. Confirm `SpaceOpsSyntheticPr12Probe` is firing.
-5. Revert the expression to `vector(0)` and redeploy.
+5. Revert the expression to `vector(0) == 1` and redeploy.
 
 Repo evidence for this task is static: Helm renders the rule file and tests assert the synthetic
 rule, severity labels, dashboard panels, and PR1.2 documentation links.

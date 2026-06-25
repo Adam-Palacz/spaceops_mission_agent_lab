@@ -21,3 +21,5 @@ observability:
       passwordKey: grafana-admin-password
   postgresExporter:
     enabled: true
+  natsExporter:
+    enabled: true
